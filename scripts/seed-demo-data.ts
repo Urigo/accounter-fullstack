@@ -231,8 +231,13 @@ async function seedDemoData() {
   console.log(`✅ Demo seed target accepted (${verdict.because})`);
 
   // A remote target is still announced loudly. ENFORCE_LOCAL_DB=1 turns the announcement into
-  // a refusal, for a machine that never seeds a deployed database.
-  warnIfRemoteDatabase(target, 'the demo data seed');
+  // a refusal, for a machine that never seeds a deployed database. Rethrown as a refusal so it
+  // is printed like the others, as a message without a stack trace.
+  try {
+    warnIfRemoteDatabase(target, 'the demo data seed');
+  } catch (error) {
+    throw new DemoSeedRefusedError(error instanceof Error ? error.message : String(error));
+  }
 
   try {
     await client.connect();

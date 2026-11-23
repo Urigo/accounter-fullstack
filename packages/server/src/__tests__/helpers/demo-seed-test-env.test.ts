@@ -147,11 +147,17 @@ describe('resolveDemoSeedTestEnv', () => {
 
   it('leaves the environment it was given, and process.env, untouched', () => {
     const env = { ...OPTED_IN };
-    const before = { ...process.env };
+    const hostBefore = process.env['POSTGRES_HOST'];
 
-    resolveDemoSeedTestEnv(workspace('POSTGRES_HOST=localhost\nDEMO_SEED_TEST_ENV_PROBE=1\n'), env);
+    resolveDemoSeedTestEnv(
+      workspace('POSTGRES_HOST=db.from-dotenv.invalid\nDEMO_SEED_TEST_ENV_PROBE=1\n'),
+      { ...env, POSTGRES_HOST: 'localhost' },
+    );
 
     expect(env).toEqual(OPTED_IN);
-    expect(process.env).toEqual(before);
+    // Only the two keys this call could have written, so the assertion does not depend on
+    // what else is in the environment of the process running the suite.
+    expect(process.env['POSTGRES_HOST']).toBe(hostBefore);
+    expect(process.env['DEMO_SEED_TEST_ENV_PROBE']).toBeUndefined();
   });
 });

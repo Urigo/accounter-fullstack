@@ -19,7 +19,8 @@
  * pins its session to the demo admin business. A deployed database is reached as a
  * non-superuser, so that query is filtered to the demo tenant: on a production database full of
  * other tenants' rows it returns zero, while TRUNCATE ignores row security and removes them
- * all. Only a superuser sees the rows, which is the local case that needs no protection.
+ * all. Only a superuser sees the rows. A check whose answer depends on who is asking is not
+ * one to put in front of a TRUNCATE, so local targets go by the name too.
  */
 import {
   describeDatabaseTarget,
@@ -30,10 +31,10 @@ import {
 } from '../packages/migrations/src/local-db-guard.js';
 
 /**
- * Names the one remote database the demo seed may reset although its name does not mark it as
- * a demo environment. The value must equal the database name exactly, so it confirms a single
- * database and nothing else: a value left behind in a shell profile, or copied to another
- * environment together with the rest of its settings, stops matching and stops working.
+ * Names the one database the demo seed may reset although its name does not mark it as a demo
+ * database. The value must equal the database name exactly, so it confirms a single database
+ * and nothing else: a value left behind in a shell profile, or copied to another environment
+ * together with the rest of its settings, stops matching and stops working.
  *
  * Deliberately not `ALLOW_REMOTE_DB=1`. That variable is a general "this command may leave the
  * machine" switch, the local-database guard prints it as the way past a refusal, and it is set
@@ -42,8 +43,16 @@ import {
 export const ALLOW_DEMO_SEED_DATABASE_ENV = 'ALLOW_DEMO_SEED_DATABASE';
 
 /**
- * A database name carrying one of these words is a demo environment: the seed may reset it on
- * a remote host with no further confirmation. This is what keeps a staging deploy working
+ * The database `docker/docker-compose.dev.yml` creates and `.env.template` points at. Its name
+ * says nothing either way, so it is accepted by name, and only on a local host: it is the one
+ * local database the documented dev flow seeds. A local copy of production under any other
+ * name (`accounter_legacy`, a restore someone is measuring against) is not.
+ */
+export const LOCAL_DEV_DATABASE = 'accounter';
+
+/**
+ * A database name carrying one of these words is a demo database: the seed may reset it, on a
+ * remote host too, with no further confirmation. This is what keeps a staging deploy working
  * without a new variable (`accounter_staging_db`, `accounter_staging`).
  */
 export const DEMO_DATABASE_WORDS = [
@@ -58,7 +67,7 @@ export const DEMO_DATABASE_WORDS = [
   'local',
 ] as const;
 
-/** A database name carrying one of these words is never reset: no host, no variable. */
+/** A database name carrying one of these words is never reset: on no host, with no variable. */
 export const PRODUCTION_DATABASE_WORDS = ['prod', 'production', 'prd', 'live'] as const;
 
 /**
@@ -90,7 +99,7 @@ export class DemoSeedRefusedError extends Error {
 }
 
 export type DemoSeedTargetVerdict =
-  | { allowed: true; because: 'local-host' | 'demo-name' | 'named-by-operator' }
+  | { allowed: true; because: 'demo-name' | 'local-dev-database' | 'named-by-operator' }
   | { allowed: false; because: 'production-name' | 'not-a-demo-name' | 'name-mismatch' };
 
 /**
@@ -109,12 +118,19 @@ function databaseName(target: DatabaseTarget): string {
 /**
  * Whether the demo seed may reset this target.
  *
- * 1. A production name is refused first, on any host. The host check cannot see through a
- *    tunnel or port-forward that presents a deployed database as `localhost`; the name can.
- * 2. A local host passes: the dev container and the CI service container, where the default
- *    database name (`accounter`) says nothing either way.
- * 3. A remote database passes when its name marks it as a demo environment.
- * 4. Any other remote database passes only when `ALLOW_DEMO_SEED_DATABASE` names it exactly.
+ * 1. A production name is refused first, on any host, and nothing overrides it. The host
+ *    check cannot see through a tunnel or port-forward that presents a deployed database as
+ *    `localhost`; the name can.
+ * 2. A name that marks a demo database passes, on any host: the staging deploy, the CI
+ *    service container (`accounter_test`).
+ * 3. The dev container's own database passes on a local host.
+ * 4. Anything else passes only when `ALLOW_DEMO_SEED_DATABASE` names it exactly. That
+ *    includes every other local database, so a local copy of production is not reset because
+ *    it happens to be reachable on `localhost`.
+ *
+ * "prod" glued to other letters (`accounterprod_test`, `preprod_staging`, `product_demo`) is
+ * not proof of production, so such a name is not refused outright under 1. It is not proof of
+ * a demo either, so it never passes under 2 or 3: it has to be confirmed under 4.
  */
 export function classifyDemoSeedTarget(
   target: DatabaseTarget,
@@ -126,11 +142,13 @@ export function classifyDemoSeedTarget(
   if (carriesWord(lowered, PRODUCTION_DATABASE_WORDS)) {
     return { allowed: false, because: 'production-name' };
   }
-  if (isLocalDatabaseHost(target.host)) {
-    return { allowed: true, because: 'local-host' };
-  }
-  if (carriesWord(lowered, DEMO_DATABASE_WORDS)) {
-    return { allowed: true, because: 'demo-name' };
+  if (!lowered.includes('prod')) {
+    if (carriesWord(lowered, DEMO_DATABASE_WORDS)) {
+      return { allowed: true, because: 'demo-name' };
+    }
+    if (name === LOCAL_DEV_DATABASE && isLocalDatabaseHost(target.host)) {
+      return { allowed: true, because: 'local-dev-database' };
+    }
   }
 
   const named = stripQuotesAndTrim(env[ALLOW_DEMO_SEED_DATABASE_ENV] ?? '');
@@ -191,8 +209,9 @@ function buildRefusal(
 
   const rule = [
     ...WHAT_THE_SEED_DOES,
-    'On a remote host it only runs when the database name carries one of these words:',
+    'It only runs when the database name carries one of these words and no "prod":',
     `  ${DEMO_DATABASE_WORDS.join(', ')}`,
+    `or, on a local host, when the database is the dev container's "${LOCAL_DEV_DATABASE}".`,
   ];
 
   if (because === 'name-mismatch') {
@@ -212,14 +231,13 @@ function buildRefusal(
   }
 
   return [
-    `Refusing to seed demo data into ${where}: nothing marks this remote database as a demo`,
-    'environment.',
+    `Refusing to seed demo data into ${where}: nothing marks "${shownName}" as a demo database.`,
     '',
     ...mismatch,
     ...rule,
     '',
-    'For a demo environment whose database is named differently, confirm the reset by naming',
-    'that database, for this command only:',
+    'For a demo database that is named differently, confirm the reset by naming that database,',
+    'for this command only:',
     '',
     `  ${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name> ALLOW_DEMO_SEED=1 yarn seed:staging-demo`,
     '',

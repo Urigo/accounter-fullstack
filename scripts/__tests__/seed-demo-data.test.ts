@@ -270,6 +270,9 @@ describe('scripts/seed-demo-data.ts', () => {
       await runSeedScript({ ...STAGING, ALLOW_DEMO_SEED: '1', ENFORCE_LOCAL_DB: '1' });
 
       expectRefusedBeforeConnecting();
+      // Printed like the other refusals, not as a crash.
+      expect(printed(errors)).toMatch(/^❌ Refusing to run the demo data seed against a non-local/);
+      expect(printed(errors)).not.toContain('Fatal seed error');
     });
   });
 
@@ -283,6 +286,24 @@ describe('scripts/seed-demo-data.ts', () => {
       expectSeeded();
       expect(warnings).not.toHaveBeenCalled();
     });
+
+    it('refuses any other local database, such as a local copy of production', async () => {
+      await runSeedScript({ ...LOCAL_DEV, POSTGRES_DB: 'accounter_legacy', ALLOW_DEMO_SEED: '1' });
+
+      expectRefusedBeforeConnecting();
+      expect(printed(errors)).toContain('nothing marks "accounter_legacy" as a demo database');
+    });
+
+    it('resets it once ALLOW_DEMO_SEED_DATABASE names it', async () => {
+      await runSeedScript({
+        ...LOCAL_DEV,
+        POSTGRES_DB: 'accounter_perf',
+        ALLOW_DEMO_SEED: '1',
+        ALLOW_DEMO_SEED_DATABASE: 'accounter_perf',
+      });
+
+      expectSeeded();
+    });
   });
 
   describe('a remote database whose name says nothing', () => {
@@ -292,7 +313,7 @@ describe('scripts/seed-demo-data.ts', () => {
       await runSeedScript({ ...UNNAMED, ALLOW_DEMO_SEED: '1' });
 
       expectRefusedBeforeConnecting();
-      expect(printed(errors)).toContain('nothing marks this remote database as a demo');
+      expect(printed(errors)).toContain('nothing marks "accounter" as a demo database');
     });
 
     it('is not unlocked by ALLOW_REMOTE_DB=1, the switch the older guards print', async () => {
@@ -336,6 +357,17 @@ describe('scripts/seed-demo-data.ts', () => {
       await runSeedScript({ ...LOCAL_DEV, ALLOW_DEMO_SEED: '1' });
 
       expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+      expect(truncates()).toEqual([]);
+      expect(steps.seedCountries).not.toHaveBeenCalled();
+    });
+
+    it('does not truncate a local copy of production reached under the dev database name', async () => {
+      pgState.serverDatabase = 'accounter_legacy';
+
+      await runSeedScript({ ...LOCAL_DEV, ALLOW_DEMO_SEED: '1' });
+
+      expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+      expect(client().connect).toHaveBeenCalledOnce();
       expect(truncates()).toEqual([]);
       expect(steps.seedCountries).not.toHaveBeenCalled();
     });

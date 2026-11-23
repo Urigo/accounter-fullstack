@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ALLOW_DEMO_SEED_DATABASE_ENV,
@@ -5,6 +7,7 @@ import {
   classifyDemoSeedTarget,
   DEMO_SEED_TABLES,
   DemoSeedRefusedError,
+  LOCAL_DEV_DATABASE,
   resetDemoSeedTables,
   type DemoSeedQueryable,
 } from '../demo-seed-guard.js';
@@ -101,7 +104,7 @@ describe('classifyDemoSeedTarget', () => {
       });
     });
 
-    it.each(['reproduce_bugs_test', 'product_demo', 'olive_test', 'delivery_staging'])(
+    it.each(['olive_test', 'delivery_staging'])(
       'does not read %j as production: a word only counts when no letter touches it',
       db => {
         expect(classifyDemoSeedTarget(remote(db), {})).toEqual({
@@ -112,12 +115,48 @@ describe('classifyDemoSeedTarget', () => {
     );
   });
 
-  describe('demo environments on a remote host', () => {
+  describe('names with "prod" glued to other letters', () => {
+    // Not proof of production, so not refused outright. Not proof of a demo either, however
+    // many demo words stand next to it: `AccounterProd_test` lowercases to a name whose only
+    // whole word is "test".
+    const names = [
+      'accounterprod_test',
+      'AccounterProd_test',
+      'proddb_staging',
+      'preprod_staging',
+      'nonprod_demo',
+      'product_demo',
+      'reproduce_bugs_test',
+    ];
+
+    it.each(names)('does not accept %j on its name, on a remote host', db => {
+      expect(classifyDemoSeedTarget(remote(db), {})).toEqual({
+        allowed: false,
+        because: 'not-a-demo-name',
+      });
+    });
+
+    it.each(names)('does not accept %j on its name, on localhost', db => {
+      expect(classifyDemoSeedTarget(local(db), {})).toEqual({
+        allowed: false,
+        because: 'not-a-demo-name',
+      });
+    });
+
+    it.each(names)('accepts %j once it is confirmed by its exact name', db => {
+      expect(classifyDemoSeedTarget(remote(db), { [ALLOW_DEMO_SEED_DATABASE_ENV]: db })).toEqual({
+        allowed: true,
+        because: 'named-by-operator',
+      });
+    });
+  });
+
+  describe('demo databases', () => {
     it('accepts the staging database with no variable beyond ALLOW_DEMO_SEED', () => {
       expect(classifyDemoSeedTarget(STAGING, {})).toEqual({ allowed: true, because: 'demo-name' });
     });
 
-    it.each([
+    const names = [
       'accounter_staging_db',
       // The name in packages/server/docs/demo-staging-guide.md.
       'accounter_staging',
@@ -132,8 +171,17 @@ describe('classifyDemoSeedTarget', () => {
       'sandbox1',
       'accounter_e2e',
       'accounter_local',
-    ])('accepts %j', db => {
+    ];
+
+    it.each(names)('accepts %j on a remote host', db => {
       expect(classifyDemoSeedTarget(remote(db), {})).toEqual({
+        allowed: true,
+        because: 'demo-name',
+      });
+    });
+
+    it.each(names)('accepts %j on localhost', db => {
+      expect(classifyDemoSeedTarget(local(db), {})).toEqual({
         allowed: true,
         because: 'demo-name',
       });
@@ -142,6 +190,7 @@ describe('classifyDemoSeedTarget', () => {
 
   describe('any other remote database', () => {
     const names = [
+      // The dev container's name is accepted on a local host only.
       'accounter',
       'postgres',
       'accounter_legacy',
@@ -204,25 +253,65 @@ describe('classifyDemoSeedTarget', () => {
     it('accepts the dev container, whose database name says nothing either way', () => {
       expect(classifyDemoSeedTarget(LOCAL_DEV, {})).toEqual({
         allowed: true,
-        because: 'local-host',
+        because: 'local-dev-database',
       });
     });
 
-    it('accepts the CI service container', () => {
-      expect(classifyDemoSeedTarget(CI, {})).toEqual({ allowed: true, because: 'local-host' });
+    it('accepts the CI service container on its name', () => {
+      expect(classifyDemoSeedTarget(CI, {})).toEqual({ allowed: true, because: 'demo-name' });
     });
 
     it.each(['localhost', '127.0.0.1', '::1', 'db', 'host.docker.internal', undefined])(
-      'accepts host %j',
+      'accepts the dev database on host %j',
       host => {
-        expect(classifyDemoSeedTarget({ ...LOCAL_DEV, host }, {}).allowed).toBe(true);
+        expect(classifyDemoSeedTarget({ ...LOCAL_DEV, host }, {})).toEqual({
+          allowed: true,
+          because: 'local-dev-database',
+        });
       },
     );
 
-    it('needs no confirmation and ignores a stale one', () => {
+    it('needs no confirmation for the dev database and ignores a stale one', () => {
       expect(
         classifyDemoSeedTarget(LOCAL_DEV, { [ALLOW_DEMO_SEED_DATABASE_ENV]: 'something_else' }),
-      ).toEqual({ allowed: true, because: 'local-host' });
+      ).toEqual({ allowed: true, because: 'local-dev-database' });
+    });
+
+    it('means the database the dev container and .env.template really use', () => {
+      // If the documented dev database is ever renamed, the guard has to follow, or the local
+      // seed flow in the README stops working.
+      const root = join(import.meta.dirname, '../..');
+      const template = readFileSync(join(root, '.env.template'), 'utf8');
+      const compose = readFileSync(join(root, 'docker/docker-compose.dev.yml'), 'utf8');
+
+      expect(/^POSTGRES_DB=(.+)$/m.exec(template)?.[1]).toBe(LOCAL_DEV_DATABASE);
+      expect(/^\s*POSTGRES_DB:\s*(\S+)\s*$/m.exec(compose)?.[1]).toBe(LOCAL_DEV_DATABASE);
+    });
+
+    // Being reachable on localhost does not make a database a demo: a local copy or restore
+    // of production is exactly what must not be reset by accident.
+    it.each([
+      'accounter_legacy',
+      'accounter_copy',
+      'accounter_payoneer',
+      'accounter2',
+      'Accounter',
+      'postgres',
+      undefined,
+      '',
+    ])('refuses any other local database (%j)', db => {
+      expect(classifyDemoSeedTarget(local(db), {})).toEqual({
+        allowed: false,
+        because: 'not-a-demo-name',
+      });
+    });
+
+    it('accepts another local database once it is confirmed by name', () => {
+      expect(
+        classifyDemoSeedTarget(local('accounter_perf'), {
+          [ALLOW_DEMO_SEED_DATABASE_ENV]: 'accounter_perf',
+        }),
+      ).toEqual({ allowed: true, because: 'named-by-operator' });
     });
   });
 });
@@ -230,7 +319,10 @@ describe('classifyDemoSeedTarget', () => {
 describe('assertDemoSeedTarget', () => {
   it('returns the verdict for an accepted target', () => {
     expect(assertDemoSeedTarget(STAGING, {})).toEqual({ allowed: true, because: 'demo-name' });
-    expect(assertDemoSeedTarget(LOCAL_DEV, {})).toEqual({ allowed: true, because: 'local-host' });
+    expect(assertDemoSeedTarget(LOCAL_DEV, {})).toEqual({
+      allowed: true,
+      because: 'local-dev-database',
+    });
   });
 
   it('names the production target and offers no way through', () => {
@@ -246,18 +338,27 @@ describe('assertDemoSeedTarget', () => {
     expect(message).not.toContain('ALLOW_REMOTE_DB');
   });
 
-  it('tells an unrecognized remote target which names pass and how to confirm another', () => {
-    const message = refusalMessage(() => assertDemoSeedTarget(remote('accounter_uat'), {}));
+  it.each([
+    ['remote', remote('accounter_uat'), 'accounter_uat'],
+    ['local', local('accounter_legacy'), 'accounter_legacy'],
+  ])(
+    'tells an unrecognized %s target which names pass and how to confirm another',
+    (_where, target, name) => {
+      const message = refusalMessage(() => assertDemoSeedTarget(target, {}));
 
-    expect(message).toContain('nothing marks this remote database as a demo');
-    expect(message).toContain('staging, stage, demo, test, testing, preview, sandbox, e2e, local');
-    expect(message).toContain(
-      `${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name> ALLOW_DEMO_SEED=1 yarn seed:staging-demo`,
-    );
-    // The name has to be typed by someone who knows which database it is, not pasted back.
-    expect(message).not.toContain(`${ALLOW_DEMO_SEED_DATABASE_ENV}=accounter_uat`);
-    expect(message).not.toContain('ALLOW_REMOTE_DB');
-  });
+      expect(message).toContain(`nothing marks "${name}" as a demo database`);
+      expect(message).toContain(
+        'staging, stage, demo, test, testing, preview, sandbox, e2e, local',
+      );
+      expect(message).toContain(`on a local host, when the database is the dev container's`);
+      expect(message).toContain(
+        `${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name> ALLOW_DEMO_SEED=1 yarn seed:staging-demo`,
+      );
+      // The name has to be typed by someone who knows which database it is, not pasted back.
+      expect(message).not.toContain(`${ALLOW_DEMO_SEED_DATABASE_ENV}=${name}`);
+      expect(message).not.toContain('ALLOW_REMOTE_DB');
+    },
+  );
 
   it('says which two names disagree when the confirmation does not match', () => {
     const message = refusalMessage(() =>
@@ -373,6 +474,18 @@ describe('resetDemoSeedTables', () => {
     const { client, statements } = fakeClient('accounter_prod_db');
 
     await expect(resetDemoSeedTables(client, LOCAL_DEV, {})).rejects.toThrow(/says production/);
+
+    expect(truncates(statements)).toEqual([]);
+  });
+
+  it('refuses a local copy of production reached under the dev database name', async () => {
+    // POSTGRES_DB says `accounter`, which passes the first check on localhost. The server says
+    // it is something else, and that something else is not a demo database.
+    const { client, statements } = fakeClient('accounter_legacy');
+
+    await expect(resetDemoSeedTables(client, LOCAL_DEV, {})).rejects.toThrow(
+      /nothing marks "accounter_legacy" as a demo database/,
+    );
 
     expect(truncates(statements)).toEqual([]);
   });
