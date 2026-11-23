@@ -39,7 +39,7 @@ Use-Case Registry → Seed Orchestrator → Validation Layer
 ### Prerequisites
 
 - Docker Compose Postgres running locally
-- Migrations applied: `yarn workspace @accounter/migrations migration:run`
+- Migrations applied: `yarn workspace @accounter-helper/migrations migration:run`
 - Environment variables configured (see `.env.example`)
 
 ### Safety guards
@@ -579,12 +579,12 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo 2>&1 | grep -i "admin"
 
 1. Check for seed errors (scroll up in terminal output)
 2. Verify all use-cases registered in `use-cases/index.ts`
-3. Re-run seed with clean DB:
+3. Re-run the seed. It clears the domain tables before it inserts, so there is nothing to reset
+   first; bringing the schema up to date is enough:
 
 ```bash
-# Reset DB (if needed)
-yarn workspace @accounter/migrations db:reset
-yarn workspace @accounter/migrations migration:run
+# Apply any migration the database is missing
+yarn workspace @accounter-helper/migrations migration:run
 
 # Re-seed
 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
@@ -671,7 +671,7 @@ grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env
 ```bash
 yarn install \
   && yarn build \
-  && yarn workspace @accounter/migrations migration:run \
+  && yarn workspace @accounter-helper/migrations migration:run \
   && ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo \
   && yarn validate:demo
 ```
@@ -680,7 +680,7 @@ yarn install \
 
 1. `yarn install` - Install dependencies
 2. `yarn build` - Compile TypeScript
-3. `yarn workspace @accounter/migrations migration:run` - Apply schema migrations
+3. `yarn workspace @accounter-helper/migrations migration:run` - Apply schema migrations
 4. `ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo` - Seed demo data (with safety flags;
    the staging database is remote, so the local-host guard needs the explicit opt-in)
 5. `yarn validate:demo` - Verify data integrity (fails deploy if validation errors)

@@ -62,10 +62,13 @@ export default defineConfig({
           // Anchored at the two directories that hold this checkout's tests. A pattern that
           // matches at any depth (`**/*.test.ts`) also matches a second copy of the repo anywhere
           // below the root: a git worktree, a vendored clone. `.claude/` is excluded above for
-          // every project; anchoring covers a copy that lives anywhere else.
+          // every project; anchoring covers a copy that lives elsewhere, outside these two
+          // directories.
           include: ['{packages,scripts}/**/*.{test,spec}.{ts,tsx}'],
-          // Each entry still starts with `**/`, so widening the include later cannot quietly
-          // bring another checkout's database-backed tests back in.
+          // Each entry still starts with `**/`. A copy placed inside `packages/` or `scripts/`
+          // does match the include above, and these keep its database-backed, client and demo
+          // seed tests out; only its plain unit tests get through. They also mean that widening
+          // the include later cannot quietly bring another checkout's database-backed tests back.
           exclude: [
             '**/packages/server/src/__tests__/**',
             // The demo seed test resets the database it is pointed at, and only the `demo-seed`

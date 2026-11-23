@@ -8,7 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
  * calls for a `globalSetup` module, and it was registered under `setupFiles`, where a file is
  * only imported. Nothing failed, the check just did not happen.
  *
- * These tests pin both halves: where the file is registered, and what `setup()` does.
+ * These tests pin both halves: where the file is registered, and what `setup()` does. That
+ * includes what it must not do: connect when the suite is going to be skipped anyway.
  * Nothing here connects: `pg` and the migration lookup are replaced, and `dotenv` is a no-op
  * so no `.env` on this machine is read.
  */
@@ -55,12 +56,15 @@ beforeEach(() => {
     'POSTGRES_SSL',
     'POSTGRES_SCHEMA',
     'ALLOW_REMOTE_DB',
+    'ALLOW_DEMO_SEED',
     FLAG,
   ]) {
     vi.stubEnv(name, undefined);
   }
   vi.stubEnv('POSTGRES_HOST', '127.0.0.1');
   vi.stubEnv('POSTGRES_DB', 'accounter_test');
+  // The check only runs when the suite will: with the opt-in the caller typed.
+  vi.stubEnv('ALLOW_DEMO_SEED', '1');
   warnings = vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
@@ -103,6 +107,11 @@ describe('demo-seed migration check', () => {
       pgState.pools[0],
       'accounter_schema',
     );
+    // The same target the local-database check looked at (POSTGRES_* from beforeEach).
+    expect(pgState.pools[0]!.config).toMatchObject({
+      host: '127.0.0.1',
+      database: 'accounter_test',
+    });
     expect(pgState.pools[0]!.end).toHaveBeenCalledOnce();
   });
 
@@ -131,6 +140,47 @@ describe('demo-seed migration check', () => {
 
     await expect(runSetup()).rejects.toThrow('boom');
 
+    expect(pgState.pools[0]!.end).toHaveBeenCalledOnce();
+  });
+
+  // Without the opt-in the suite is skipped, so there is nothing to check. Connecting anyway
+  // made a run with no database up fail in this setup, and a failed global setup stops every
+  // project of the run.
+  it.each([undefined, '', '0', 'true'])(
+    'opens nothing when ALLOW_DEMO_SEED is %j, since the suite is skipped then',
+    async value => {
+      vi.stubEnv('ALLOW_DEMO_SEED', value);
+
+      await runSetup();
+
+      expect(pgState.pools).toEqual([]);
+      expect(lookup.checkLatestMigration).not.toHaveBeenCalled();
+      expect(process.env[FLAG]).toBeUndefined();
+      expect(warnings).not.toHaveBeenCalled();
+    },
+  );
+
+  it('still refuses a non-local target without the opt-in', async () => {
+    vi.stubEnv('ALLOW_DEMO_SEED', undefined);
+    vi.stubEnv('POSTGRES_HOST', 'accounter.postgres.database.azure.invalid');
+
+    await expect(runSetup()).rejects.toThrow(/non-local database/);
+
+    expect(pgState.pools).toEqual([]);
+  });
+
+  it('sets the flag, and does not throw, when the database cannot be reached', async () => {
+    // What the lookup returns for a pool that cannot connect.
+    lookup.checkLatestMigration.mockResolvedValue({
+      isLatest: false,
+      latestMigrationName: 'x',
+      errorMessage: 'Failed to check migrations: connect ECONNREFUSED 127.0.0.1:5432',
+    });
+
+    await runSetup();
+
+    expect(process.env[FLAG]).toBe('1');
+    expect(warnings.mock.calls.map(call => call.join(' ')).join('\n')).toContain('ECONNREFUSED');
     expect(pgState.pools[0]!.end).toHaveBeenCalledOnce();
   });
 
