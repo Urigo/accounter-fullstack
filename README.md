@@ -229,6 +229,18 @@ mean to run it against a deployed database, add `ALLOW_REMOTE_DB=1` to that one 
 Never put them in a shell profile. In a `.env` file they are refused: tests and seeds stop with an
 error until the line is removed.
 
+### Claude Code sessions
+
+`.claude/settings.json` adds three things for agent sessions in this repo, so that an agent is never
+what points a command at a deployed database:
+
+- `ENFORCE_LOCAL_DB=1` is set in the session's environment.
+- `.env` files cannot be read. The templates can.
+- A command that sets `ALLOW_REMOTE_DB`, `ALLOW_DEMO_SEED` or `ALLOW_DEMO_SEED_DATABASE` waits for a
+  person to confirm it, in every permission mode (`.claude/hooks/ask-before-db-opt-in.mjs`).
+
+They load when a session starts, so a session that was already open keeps its earlier settings.
+
 ## Miscellaneous
 
 ### Multiple Bank Branches
