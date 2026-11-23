@@ -485,6 +485,13 @@ export class TenantAwareDBClient {
       });
     }
     if (retries < MAX_ABORTED_SESSION_RETRIES && isAbortedTransactionError(failure)) {
+      // The 25P02 stops here, so this is the only trace of it: the read runs again in full, and
+      // the statement that aborted the session is logged as its own request error.
+      log('warn', 'db-read-retried-after-aborted-session', {
+        attempt: retries + 1,
+        maxAttempts: MAX_ABORTED_SESSION_RETRIES,
+        ...this.logFields,
+      });
       return this.readOnSession<T>(text, params, retries + 1);
     }
     throw failure;

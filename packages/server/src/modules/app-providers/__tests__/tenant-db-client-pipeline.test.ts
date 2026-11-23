@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setLogWriter } from '../../../observability/log.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../db.provider.js';
@@ -66,7 +67,18 @@ function fail(text: string, error: unknown): void {
 
 const pgError = (code: string, message: string) => Object.assign(new Error(message), { code });
 
+/** Log records written during the test. */
+let logged: Array<Record<string, unknown>>;
+
+afterEach(() => {
+  setLogWriter();
+});
+
 beforeEach(() => {
+  logged = [];
+  setLogWriter(line => {
+    logged.push(JSON.parse(line) as Record<string, unknown>);
+  });
   pending = [];
   sent = [];
   connection = {
@@ -181,6 +193,10 @@ describe('TenantAwareDBClient read pipelining', () => {
     expect(sent.filter(text => text === 'BEGIN')).toHaveLength(2);
     answer('SELECT innocent', [{ ok: true }]);
     await expect(innocent).resolves.toMatchObject({ rows: [{ ok: true }] });
+    // The retry is logged, since its 25P02 never reaches the response.
+    expect(logged.map(record => [record.msg, record.attempt, record.requestId])).toEqual([
+      ['db-read-retried-after-aborted-session', 1, 'req'],
+    ]);
   });
 
   it('keeps retrying while other reads keep aborting its sessions, then gives up', async () => {
