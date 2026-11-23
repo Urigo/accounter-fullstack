@@ -7,7 +7,7 @@ import { resolveDemoSeedTestEnv } from './demo-seed-test-env.js';
 /**
  * `seed-and-validate.test.ts` starts the demo seed, which truncates the domain tables of the
  * database it is pointed at. These tests pin what that test is allowed to start it against:
- * a local database, with `ALLOW_DEMO_SEED=1` supplied by the caller, and nothing else.
+ * a local database and nothing else, with no opt-in taken from a `.env` file or added here.
  *
  * Nothing here opens a connection or starts a process. Every call passes its own `env` object
  * and its own temp directory, so neither the shell running the suite nor a `.env` on the
@@ -72,6 +72,23 @@ describe('resolveDemoSeedTestEnv', () => {
 
       expect(() => resolveDemoSeedTestEnv(workspace(), env)).toThrow(/non-local database/);
     });
+
+    it('judges PGHOST when POSTGRES_HOST is only whitespace, and says where the host came from', () => {
+      const env = { ...OPTED_IN, POSTGRES_HOST: '  ', PGHOST: REMOTE_HOST };
+
+      expect(() => resolveDemoSeedTestEnv(workspace(), env)).toThrow(/comes from PGHOST/);
+    });
+
+    it('takes ALLOW_REMOTE_DB out of what the children get', () => {
+      // The seed script accepts a remote host with it. Without it, the script's own guard has
+      // no way to let one through, whatever the caller exported for the rest of the run.
+      const env = { ...OPTED_IN, POSTGRES_HOST: 'localhost', ALLOW_REMOTE_DB: '1' };
+
+      expect(resolveDemoSeedTestEnv(workspace(), env)).toEqual({
+        ...OPTED_IN,
+        POSTGRES_HOST: 'localhost',
+      });
+    });
   });
 
   describe('the target is the one the seed script would resolve', () => {
@@ -113,35 +130,32 @@ describe('resolveDemoSeedTestEnv', () => {
     });
   });
 
-  describe('the opt-in must come from the caller', () => {
-    it('refuses without ALLOW_DEMO_SEED=1', () => {
-      const env = { POSTGRES_HOST: 'localhost' };
-
-      expect(() => resolveDemoSeedTestEnv(workspace(), env)).toThrow(
-        /needs ALLOW_DEMO_SEED=1 on the command/,
-      );
-    });
-
-    it.each(['0', 'true', 'yes', ''])('refuses ALLOW_DEMO_SEED=%j', value => {
-      const env = { POSTGRES_HOST: 'localhost', ALLOW_DEMO_SEED: value };
-
-      expect(() => resolveDemoSeedTestEnv(workspace(), env)).toThrow(/needs ALLOW_DEMO_SEED=1/);
-    });
-
-    it('never supplies the opt-in itself', () => {
+  describe('opt-ins come from the caller', () => {
+    it('never supplies ALLOW_DEMO_SEED itself', () => {
       // The returned environment is what the seed script gets. Anything that made this
-      // function add ALLOW_DEMO_SEED would let the test opt a database in by itself again.
-      const childEnv = resolveDemoSeedTestEnv(workspace(), { ...OPTED_IN, POSTGRES_HOST: 'db' });
+      // function add the opt-in would let the test opt a database in by itself again.
+      const childEnv = resolveDemoSeedTestEnv(workspace(), { POSTGRES_HOST: 'db' });
 
-      expect(childEnv['ALLOW_DEMO_SEED']).toBe('1');
-      expect(() => resolveDemoSeedTestEnv(workspace(), { POSTGRES_HOST: 'db' })).toThrow();
+      expect(childEnv).toEqual({ POSTGRES_HOST: 'db' });
     });
 
-    it('reports a remote target before a missing opt-in', () => {
-      // The wrong database is the news. Asking for the opt-in first would invite setting it.
-      expect(() => resolveDemoSeedTestEnv(workspace(), { POSTGRES_HOST: REMOTE_HOST })).toThrow(
-        /non-local database/,
-      );
+    it.each(['ALLOW_DEMO_SEED', 'ALLOW_REMOTE_DB', 'ALLOW_DEMO_SEED_DATABASE'])(
+      'refuses %s when the .env the children read sets it',
+      name => {
+        const root = workspace(`POSTGRES_HOST=localhost\n${name}=1\n`);
+
+        expect(() => resolveDemoSeedTestEnv(root, {})).toThrow(
+          new RegExp(`Refusing to run: ${name} is set in .*\\.env`),
+        );
+      },
+    );
+
+    it('refuses it there even when the caller set it too', () => {
+      const root = workspace('ALLOW_DEMO_SEED=1\n');
+
+      expect(() =>
+        resolveDemoSeedTestEnv(root, { ...OPTED_IN, POSTGRES_HOST: 'localhost' }),
+      ).toThrow(/ALLOW_DEMO_SEED is set in /);
     });
   });
 

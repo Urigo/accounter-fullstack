@@ -351,9 +351,9 @@ describe('assertDemoSeedTarget', () => {
         'staging, stage, demo, test, testing, preview, sandbox, e2e, local',
       );
       expect(message).toContain(`on a local host, when the database is the dev container's`);
-      expect(message).toContain(
-        `${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name> ALLOW_DEMO_SEED=1 yarn seed:staging-demo`,
-      );
+      // Added to the command that was refused, so the opt-ins it already carries stay on it.
+      expect(message).toContain('Add this to the command you just ran, for that one run only:');
+      expect(message).toContain(`\n  ${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name>\n`);
       // The name has to be typed by someone who knows which database it is, not pasted back.
       expect(message).not.toContain(`${ALLOW_DEMO_SEED_DATABASE_ENV}=${name}`);
       expect(message).not.toContain('ALLOW_REMOTE_DB');

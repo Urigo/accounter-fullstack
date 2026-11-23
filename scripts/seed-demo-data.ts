@@ -1,7 +1,9 @@
 import { config } from 'dotenv';
 import pg from 'pg';
 import {
-  warnIfRemoteDatabase,
+  assertLocalDatabase,
+  assertOptInsNotInEnvFile,
+  describeDatabaseTarget,
   type DatabaseTarget,
 } from '../packages/migrations/src/local-db-guard.js';
 import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
@@ -10,6 +12,7 @@ import type {
   Fixture,
   FixtureAccountTaxCategories,
 } from '../packages/server/src/__tests__/helpers/fixture-types.js';
+import { assertOptInsNotInTestEnvFiles } from '../packages/server/src/__tests__/helpers/test-db-config.js';
 import { makeUUID } from '../packages/server/src/demo-fixtures/helpers/deterministic-uuid.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedDemoUsers } from '../packages/server/src/demo-fixtures/helpers/seed-demo-users.js';
@@ -24,7 +27,7 @@ import {
   resetDemoSeedTables,
 } from './demo-seed-guard.js';
 
-config();
+const loadedEnv = config();
 
 /**
  * Custom error class for demo seeding failures
@@ -187,8 +190,29 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
   return fixture;
 }
 
+/**
+ * Run a guard that lives in another module. What it throws is a refusal, so hand it on as one:
+ * the handler at the bottom of this file prints a refusal once, as a message without a stack.
+ */
+function refusing(guard: () => void): void {
+  try {
+    guard();
+  } catch (error) {
+    throw new DemoSeedRefusedError(error instanceof Error ? error.message : String(error));
+  }
+}
+
 async function seedDemoData() {
   // 1. Guard checks. Each refusal is thrown and printed once, at the bottom of this file.
+  //
+  // First, before any gate below reads its opt-in: `config()` above has already copied .env
+  // into process.env, so an ALLOW_DEMO_SEED or ALLOW_REMOTE_DB left in that file would satisfy
+  // those gates for every run without anyone typing it.
+  refusing(() => assertOptInsNotInEnvFile(loadedEnv.parsed, '.env'));
+  // The same for the files test-db-config.ts loaded: it is imported (via fixture-loader) before
+  // the `config()` above runs, and it also loads ../../.env, which that call never parses.
+  refusing(() => assertOptInsNotInTestEnvFiles());
+
   if (process.env.NODE_ENV === 'production') {
     throw new DemoSeedRefusedError('Refusing to seed demo data in production environment');
   }
@@ -196,6 +220,27 @@ async function seedDemoData() {
   if (process.env.ALLOW_DEMO_SEED !== '1') {
     throw new DemoSeedRefusedError('ALLOW_DEMO_SEED=1 required to run demo seed');
   }
+
+  // Neither gate above says anything about *which* database POSTGRES_* points at, and both
+  // can be satisfied without anyone meaning to seed: vitest sets NODE_ENV=test, and the
+  // demo-seed E2E used to set ALLOW_DEMO_SEED=1 itself.
+  //
+  // So a non-local target is refused unless the command opts in with ALLOW_REMOTE_DB=1. The
+  // staging deploy, which seeds a deployed database on purpose, sets it in its build command
+  // (packages/server/docs/demo-staging-guide.md). A new staging or preview environment failing
+  // its first deploy here is the intended cost -- a deploy that fails is recoverable; a
+  // database that was truncated is not.
+  refusing(() =>
+    assertLocalDatabase(
+      {
+        host: process.env.POSTGRES_HOST,
+        port: process.env.POSTGRES_PORT,
+        db: process.env.POSTGRES_DB,
+        user: process.env.POSTGRES_USER,
+      },
+      'the demo data seed',
+    ),
+  );
 
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
@@ -217,27 +262,18 @@ async function seedDemoData() {
     user: client.user,
   };
 
-  // Neither gate above says which database POSTGRES_* points at. ALLOW_DEMO_SEED=1 means "run
-  // the seed", and it can be set by something other than a person who looked at the target:
-  // the demo seed test used to set it, whatever the root .env pointed at. NODE_ENV is `test`
-  // under vitest whatever the target is.
+  // The gates above settle whether the seed may run and whether it may leave this machine.
+  // None of them says which database it is about to empty: with both opt-ins on the command,
+  // as the staging deploy has them, every POSTGRES_* target gets this far, a production one
+  // included. And a local host is no better a clue, since a copy of production restored for
+  // measuring sits on localhost too.
   //
   // So refuse a database that is not a demo database, before any connection is opened. The rule
-  // (scripts/demo-seed-guard.ts) is on the database name. That keeps the staging deploy
-  // working with no new variable: it runs `ALLOW_DEMO_SEED=1 yarn seed:staging-demo` against a
-  // deployed database, and a name that says staging, demo, test or preview passes. Refusing
-  // every remote host unless ALLOW_REMOTE_DB=1 was set is what broke that deploy before.
+  // (scripts/demo-seed-guard.ts) is on the database name: a name that says production is
+  // refused whatever is set, a name that says staging, demo, test or preview passes, and any
+  // other database has to be confirmed by its exact name for this one command.
   const verdict = assertDemoSeedTarget(target, process.env);
-  console.log(`✅ Demo seed target accepted (${verdict.because})`);
-
-  // A remote target is still announced loudly. ENFORCE_LOCAL_DB=1 turns the announcement into
-  // a refusal, for a machine that never seeds a deployed database. Rethrown as a refusal so it
-  // is printed like the others, as a message without a stack trace.
-  try {
-    warnIfRemoteDatabase(target, 'the demo data seed');
-  } catch (error) {
-    throw new DemoSeedRefusedError(error instanceof Error ? error.message : String(error));
-  }
+  console.log(`✅ Demo seed target: ${describeDatabaseTarget(target)} (${verdict.because})`);
 
   try {
     await client.connect();

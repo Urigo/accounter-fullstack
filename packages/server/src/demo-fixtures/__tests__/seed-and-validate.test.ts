@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import { ALLOW_DEMO_SEED_ENV } from '../../../../migrations/src/local-db-guard.js';
 import { resolveDemoSeedTestEnv } from '../../__tests__/helpers/demo-seed-test-env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,14 +24,32 @@ const __dirname = dirname(__filename);
  * Note: This is a slow test (~10-30 seconds) and should be run separately
  * or marked as integration test in CI/CD pipelines.
  *
- * It belongs to the `demo-seed` vitest project only. A copy of this file inside a nested git
- * worktree used to be collected by the `unit` project during a plain `yarn test`, and the test
- * set ALLOW_DEMO_SEED=1 for the seed script itself, so the script truncated whatever database
- * the root `.env` pointed at. Two things in this file are there so it cannot do that, whatever
- * collects it: it refuses any target that is not local, and it no longer sets
- * ALLOW_DEMO_SEED. See `resolveDemoSeedTestEnv`.
+ * The seed TRUNCATEs every domain table, so this test must never grant itself permission to run
+ * it. It used to pass `ALLOW_DEMO_SEED: '1'` to the seed process unconditionally, which made a
+ * plain `yarn vitest` (every project) or an IDE test run enough to wipe whatever database the
+ * root .env pointed at -- production, on 2026-11-23. Now the caller's own `ALLOW_DEMO_SEED=1`
+ * is required: without it the suite is skipped.
+ *
+ * It belongs to the `demo-seed` vitest project only (`scripts/__tests__/vitest-collection.test.ts`
+ * holds that), and it checks its target itself before it starts anything: the database the
+ * seed would reach has to be local, and nothing overrides that. See `resolveDemoSeedTestEnv`.
  */
-describe('Seed and Validate Integration', () => {
+const demoSeedAllowed = process.env.ALLOW_DEMO_SEED === '1';
+
+// A skip is silent: if the CI job that runs this project ever stops setting ALLOW_DEMO_SEED,
+// the suite would quietly stop running and the job would stay green. Fail instead.
+//
+// Only an affirmative CI value counts: GitHub Actions sets `true`, some setups use `1`, and
+// `CI=false` / `CI=0` are common ways to switch CI behaviour off locally -- those should skip.
+const inCI = process.env.CI === 'true' || process.env.CI === '1';
+if (inCI && !demoSeedAllowed) {
+  throw new Error(
+    `The demo-seed E2E was selected in CI without ${ALLOW_DEMO_SEED_ENV}=1, so it would be ` +
+      'skipped. Set it on the CI step that runs `--project demo-seed`.',
+  );
+}
+
+describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
   // Increase timeout for this integration test (30 seconds)
   it(
     'seeds demo data and passes validation',
@@ -50,9 +69,14 @@ describe('Seed and Validate Integration', () => {
       );
       const registerEsmPath = resolve(workspaceRoot, 'scripts/register-esm.js');
 
-      // Before anything is started: throws unless the database the children would reach is
-      // local and ALLOW_DEMO_SEED=1 came from the caller. Both children get exactly the
-      // environment that was checked.
+      // The environment the seed and validate processes run with: the caller's, minus the
+      // remote-database opt-in. This test has no reason to reach a deployed database, so the
+      // seed's own guard -- the code that actually connects -- is left with no way to allow
+      // one, whatever the caller exported.
+      //
+      // Before that, and before anything is started, this throws unless the database the
+      // children would reach is local. Both children get exactly the environment that was
+      // checked.
       const childEnv = resolveDemoSeedTestEnv(workspaceRoot);
 
       // Step 1: Run seed script
@@ -62,6 +86,7 @@ describe('Seed and Validate Integration', () => {
           ['--import', registerEsmPath, seedScriptPath],
           {
             cwd: workspaceRoot,
+            // ALLOW_DEMO_SEED must come from the caller; ALLOW_REMOTE_DB is stripped (above).
             env: childEnv,
             stdio: 'inherit', // Show output for debugging
           },

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * stop the run and which are only a warning:
  *
  * - a non-local target stops it, whether POSTGRES_* came from the shell or from the root .env;
+ * - so does a per-command opt-in that sits in the root .env;
  * - a local database that is not running does not, so mocked unit tests run without one.
  *
  * Nothing here connects: the pool helpers are replaced, and `dotenv` is replaced by a stand-in
@@ -83,14 +84,14 @@ describe('vitest global setup', () => {
       vi.stubEnv('POSTGRES_DB', 'accounter_prod_db');
 
       await expect(runGlobalSetup()).rejects.toThrow(
-        `Refusing to run the vitest global setup against a non-local database: ${REMOTE_HOST}`,
+        `Refusing to run the test harness against a non-local database: postgres@${REMOTE_HOST}:5432/accounter_prod_db`,
       );
       expect(harness.connectTestDb).not.toHaveBeenCalled();
     });
 
     it('when only the root .env names it', async () => {
-      // Nothing in the shell, a deployed database in the root .env. The first
-      // check runs before anything has read that file, so it sees no host at all.
+      // Nothing in the shell, a deployed database in the root .env. Judged on the environment
+      // alone this target has no host at all, so the check has to come after that file is read.
       rootDotenv.values = { POSTGRES_HOST: REMOTE_HOST, POSTGRES_DB: 'accounter_prod_db' };
 
       await expect(runGlobalSetup()).rejects.toThrow(
@@ -105,6 +106,16 @@ describe('vitest global setup', () => {
       vi.stubEnv('ALLOW_REMOTE_DB', '1');
 
       await expect(runGlobalSetup()).resolves.toBeTypeOf('function');
+    });
+
+    it('and the root .env cannot be what opts it in', async () => {
+      // dotenv copies the file into the environment, where this would read as typed for the
+      // command. The whole run stops instead, a local target included.
+      rootDotenv.values = { POSTGRES_HOST: 'localhost', ALLOW_REMOTE_DB: '1' };
+
+      await expect(runGlobalSetup()).rejects.toThrow(/ALLOW_REMOTE_DB is set in a \.env file/);
+      expect(harness.connectTestDb).not.toHaveBeenCalled();
+      expect(harness.seedCountries).not.toHaveBeenCalled();
     });
   });
 

@@ -1,9 +1,12 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  ALLOW_DEMO_SEED_ENV,
   ALLOW_REMOTE_DB_ENV,
   ENFORCE_LOCAL_DB_ENV,
+  PER_COMMAND_OPT_INS,
   assertLocalDatabase,
   assertLocalDatabaseOnly,
+  assertOptInsNotInEnvFile,
   describeDatabaseTarget,
   isLocalDatabaseHost,
   isRemoteDatabaseAllowed,
@@ -172,44 +175,62 @@ describe('assertLocalDatabase', () => {
 });
 
 describe('assertLocalDatabaseOnly', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
+  // Every call passes its own `env`, so a PGHOST exported in the shell running the suite
+  // cannot change a result.
+  const messageFor = (target: object, env: NodeJS.ProcessEnv = {}): string => {
+    try {
+      assertLocalDatabaseOnly(target as never, 'the demo seed test', env);
+    } catch (error) {
+      return (error as Error).message;
+    }
+    return '';
+  };
 
   it('passes for a local target', () => {
-    expect(() => assertLocalDatabaseOnly(LOCAL, 'the demo seed test')).not.toThrow();
+    expect(() => assertLocalDatabaseOnly(LOCAL, 'the demo seed test', {})).not.toThrow();
   });
 
-  it('treats an absent host as local, like the rest of the guard', () => {
-    expect(() => assertLocalDatabaseOnly({ db: 'accounter' }, 'the demo seed test')).not.toThrow();
+  it('treats an absent host as local when PGHOST is unset too, like the rest of the guard', () => {
+    expect(() =>
+      assertLocalDatabaseOnly({ db: 'accounter' }, 'the demo seed test', {}),
+    ).not.toThrow();
   });
 
   it('throws for a non-local target and names it', () => {
-    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test')).toThrow(
+    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test', {})).toThrow(
       'Refusing to run the demo seed test against a non-local database: ' +
-        'accounter_prod_user@accounter2.postgres.database.azure.com:5432/accounter_prod_db',
+        `${REMOTE.user}@${REMOTE.host}:${REMOTE.port}/${REMOTE.db}`,
     );
   });
 
   it('is not switched off by ALLOW_REMOTE_DB=1, unlike assertLocalDatabase', () => {
-    // It takes no `env` argument, so the only way the variable could matter is through the
-    // process environment. Stub it there and prove it does not. Nothing in this file connects
-    // to anything: the guard is pure.
-    vi.stubEnv(ALLOW_REMOTE_DB_ENV, '1');
+    const optedIn = { [ALLOW_REMOTE_DB_ENV]: '1' };
 
-    expect(() => assertLocalDatabase(REMOTE, 'the test harness')).not.toThrow();
-    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test')).toThrow(
+    expect(() => assertLocalDatabase(REMOTE, 'the test harness', optedIn)).not.toThrow();
+    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test', optedIn)).toThrow(
       /non-local database/,
     );
   });
 
+  it('resolves a blank host through PGHOST, as assertLocalDatabase does', () => {
+    const pgHost = { PGHOST: 'prod.invalid' };
+
+    expect(messageFor({ db: 'accounter' }, pgHost)).toContain(
+      'against a non-local database: prod.invalid/accounter',
+    );
+    expect(messageFor({ host: '  ', db: 'accounter' }, pgHost)).toContain('comes from PGHOST');
+    // An explicit host wins over PGHOST, as it does in pg.
+    expect(messageFor(LOCAL, pgHost)).toBe('');
+    expect(messageFor({ db: 'accounter' }, { PGHOST: 'localhost' })).toBe('');
+    // And no opt-in gets a PGHOST target through either.
+    expect(messageFor({}, { ...pgHost, [ALLOW_REMOTE_DB_ENV]: '1' })).toContain(
+      'non-local database: prod.invalid',
+    );
+  });
+
   it('says there is no override instead of advertising one', () => {
-    let message = '';
-    try {
-      assertLocalDatabaseOnly(REMOTE, 'the demo seed test');
-    } catch (error) {
-      message = (error as Error).message;
-    }
+    const message = messageFor(REMOTE);
+
     expect(message).toContain(
       `${ALLOW_REMOTE_DB_ENV} does not apply here and there is no other override`,
     );
@@ -217,23 +238,16 @@ describe('assertLocalDatabaseOnly', () => {
   });
 
   it('points at .env without a command that would print the password', () => {
-    let message = '';
-    try {
-      assertLocalDatabaseOnly(REMOTE, 'the demo seed test');
-    } catch (error) {
-      message = (error as Error).message;
-    }
+    const message = messageFor(REMOTE);
+
     expect(message).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
     expect(message).not.toContain("grep '^POSTGRES' .env");
   });
 
   it('never leaks a password into the error message', () => {
-    let message = '';
-    try {
-      assertLocalDatabaseOnly({ ...REMOTE, password: 'super-secret' } as never, 'ctx');
-    } catch (error) {
-      message = (error as Error).message;
-    }
+    const message = messageFor({ ...REMOTE, password: 'super-secret' });
+
+    expect(message).toContain('non-local database');
     expect(message).not.toContain('super-secret');
   });
 });
@@ -273,5 +287,110 @@ describe('warnIfRemoteDatabase', () => {
       ),
     ).not.toThrow();
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * `pg` resolves a blank host as `config.host || process.env.PGHOST || 'localhost'`, so an unset
+ * POSTGRES_HOST is only local if PGHOST is unset too. The guard used to call it local
+ * regardless, and the seeds pass POSTGRES_HOST straight through to `pg.Client`.
+ */
+describe('PGHOST fallback', () => {
+  const PG_HOST = 'prod.invalid';
+  const withPgHost = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
+    PGHOST: PG_HOST,
+    ...extra,
+  });
+
+  it.each([
+    ['absent', undefined],
+    ['empty', ''],
+    ['blank', '  '],
+    ['only quotes', "''"],
+  ])('refuses an %s host when PGHOST is remote', (_label, host) => {
+    expect(() => assertLocalDatabase({ host, db: 'accounter' }, 'the seed', withPgHost())).toThrow(
+      /Refusing to run the seed against a non-local database: prod\.invalid\/accounter/,
+    );
+  });
+
+  it('says the host came from PGHOST', () => {
+    expect(() => assertLocalDatabase({}, 'the seed', withPgHost())).toThrow(/comes from PGHOST/);
+  });
+
+  it('lets an explicit host win over PGHOST, as pg does', () => {
+    expect(() => assertLocalDatabase(LOCAL, 'the seed', withPgHost())).not.toThrow();
+    expect(() => assertLocalDatabase(REMOTE, 'the seed', { PGHOST: 'localhost' })).toThrow(
+      /accounter2\.postgres\.database\.azure\.com/,
+    );
+  });
+
+  it('passes an absent host when PGHOST is local or blank', () => {
+    expect(() => assertLocalDatabase({}, 'the seed', { PGHOST: 'localhost' })).not.toThrow();
+    expect(() => assertLocalDatabase({}, 'the seed', { PGHOST: '' })).not.toThrow();
+    expect(() => assertLocalDatabase({}, 'the seed', {})).not.toThrow();
+  });
+
+  it('still honors ALLOW_REMOTE_DB=1', () => {
+    expect(() =>
+      assertLocalDatabase({}, 'the seed', withPgHost({ [ALLOW_REMOTE_DB_ENV]: '1' })),
+    ).not.toThrow();
+  });
+
+  it('applies to warnIfRemoteDatabase too', () => {
+    const logger = { warn: vi.fn() };
+    warnIfRemoteDatabase({ host: '' }, 'migration:run', withPgHost(), logger);
+    expect(logger.warn).toHaveBeenCalledOnce();
+    expect(logger.warn.mock.calls[0]?.[0]).toContain(`${PG_HOST} (from PGHOST)`);
+
+    expect(() =>
+      warnIfRemoteDatabase(
+        { host: '' },
+        'migration:run',
+        withPgHost({ [ENFORCE_LOCAL_DB_ENV]: '1' }),
+        logger,
+      ),
+    ).toThrow(/comes from PGHOST/);
+  });
+});
+
+describe('assertOptInsNotInEnvFile', () => {
+  it('passes when the file sets no opt-in', () => {
+    expect(() => assertOptInsNotInEnvFile(undefined, '.env')).not.toThrow();
+    expect(() => assertOptInsNotInEnvFile({}, '.env')).not.toThrow();
+    expect(() =>
+      assertOptInsNotInEnvFile({ POSTGRES_HOST: 'localhost', ENFORCE_LOCAL_DB: '1' }, '.env'),
+    ).not.toThrow();
+  });
+
+  it.each(PER_COMMAND_OPT_INS)('refuses %s set in the file', key => {
+    expect(() => assertOptInsNotInEnvFile({ [key]: '1' }, '.env')).toThrow(
+      new RegExp(`${key} is set in \\.env`),
+    );
+  });
+
+  it('refuses on presence, whatever the value', () => {
+    // A dormant `=0` is one edit away from switching a guard off for every command.
+    expect(() => assertOptInsNotInEnvFile({ [ALLOW_REMOTE_DB_ENV]: '0' }, '.env')).toThrow(
+      /ALLOW_REMOTE_DB is set/,
+    );
+  });
+
+  it('shows the database-name opt-in as it is written on a command', () => {
+    expect(() =>
+      assertOptInsNotInEnvFile({ ALLOW_DEMO_SEED_DATABASE: 'accounter_perf' }, '.env'),
+    ).toThrow(
+      /ALLOW_DEMO_SEED_DATABASE is set in \.env[\s\S]*ALLOW_DEMO_SEED_DATABASE=<database name> <your command>/,
+    );
+  });
+
+  it('names every offending key and how to pass it per command', () => {
+    expect(() =>
+      assertOptInsNotInEnvFile(
+        { [ALLOW_REMOTE_DB_ENV]: '1', [ALLOW_DEMO_SEED_ENV]: '1' },
+        'the root .env',
+      ),
+    ).toThrow(
+      /ALLOW_REMOTE_DB and ALLOW_DEMO_SEED are set in the root \.env[\s\S]*ALLOW_REMOTE_DB=1 <your command>[\s\S]*ALLOW_DEMO_SEED=1 <your command>/,
+    );
   });
 });

@@ -2,11 +2,13 @@
  * Decides which databases the demo seed may reset, and holds the reset itself.
  *
  * `scripts/seed-demo-data.ts` starts by truncating the domain tables. On a demo environment
- * that is the point of it; anywhere else it is data loss. `ALLOW_DEMO_SEED=1` alone cannot
- * carry that decision, because it says "run the seed", not "this database is a demo", and it
- * can be set by something that never looked at the target. The demo seed test used to set it
- * for the script, so a test run on a machine whose root `.env` pointed at a deployed database
- * was enough to truncate that database.
+ * that is the point of it; anywhere else it is data loss. The two opt-ins the script asks for
+ * do not carry that decision. `ALLOW_DEMO_SEED=1` says "run the seed" and `ALLOW_REMOTE_DB=1`
+ * says "this command may leave the machine"; neither says "this database is a demo". A staging
+ * deploy has both on its build command, so there every target passes them, and which database
+ * gets emptied is decided by the `POSTGRES_*` values of the environment the command runs in.
+ * On a local host only the first is needed, and a copy of production restored for measuring
+ * is as local as the dev container.
  *
  * The rule here is on the database *name*, and it is applied twice: to the configured name
  * before any connection is opened, and to the name the server reports right before the
@@ -23,6 +25,7 @@
  * one to put in front of a TRUNCATE, so local targets go by the name too.
  */
 import {
+  ALLOW_DEMO_SEED_DATABASE_ENV,
   describeDatabaseTarget,
   isLocalDatabaseHost,
   sanitizeForDisplay,
@@ -31,16 +34,20 @@ import {
 } from '../packages/migrations/src/local-db-guard.js';
 
 /**
- * Names the one database the demo seed may reset although its name does not mark it as a demo
- * database. The value must equal the database name exactly, so it confirms a single database
- * and nothing else: a value left behind in a shell profile, or copied to another environment
- * together with the rest of its settings, stops matching and stops working.
+ * `ALLOW_DEMO_SEED_DATABASE` names the one database the demo seed may reset although its name
+ * does not mark it as a demo database. The value must equal the database name exactly, so it
+ * confirms a single database and nothing else: a value left behind in a shell profile, or
+ * copied to another environment together with the rest of its settings, stops matching and
+ * stops working.
  *
- * Deliberately not `ALLOW_REMOTE_DB=1`. That variable is a general "this command may leave the
- * machine" switch, the local-database guard prints it as the way past a refusal, and it is set
- * for reasons that have nothing to do with wiping a database.
+ * It is a third variable on purpose, next to `ALLOW_REMOTE_DB=1`. That one is a general "this
+ * command may leave the machine" switch, the local-database guard prints it as the way past a
+ * refusal, and it is set for reasons that have nothing to do with wiping a database.
+ *
+ * The constant lives with the other per-command opt-ins, which is also what gets it refused
+ * when it is found in a `.env` file.
  */
-export const ALLOW_DEMO_SEED_DATABASE_ENV = 'ALLOW_DEMO_SEED_DATABASE';
+export { ALLOW_DEMO_SEED_DATABASE_ENV };
 
 /**
  * The database `docker/docker-compose.dev.yml` creates and `.env.template` points at. Its name
@@ -52,8 +59,9 @@ export const LOCAL_DEV_DATABASE = 'accounter';
 
 /**
  * A database name carrying one of these words is a demo database: the seed may reset it, on a
- * remote host too, with no further confirmation. This is what keeps a staging deploy working
- * without a new variable (`accounter_staging_db`, `accounter_staging`).
+ * remote host too, with no further confirmation. A staging deploy's database is named for what
+ * it is (`accounter_staging_db`, `accounter_staging`), so the deploy needs nothing beyond the
+ * two opt-ins its build command already carries.
  */
 export const DEMO_DATABASE_WORDS = [
   'staging',
@@ -116,7 +124,8 @@ function databaseName(target: DatabaseTarget): string {
 }
 
 /**
- * Whether the demo seed may reset this target.
+ * Whether the demo seed may reset this target. This is about which database it is; whether
+ * the host may be reached at all is `assertLocalDatabase`'s question, asked before this one.
  *
  * 1. A production name is refused first, on any host, and nothing overrides it. The host
  *    check cannot see through a tunnel or port-forward that presents a deployed database as
@@ -236,10 +245,10 @@ function buildRefusal(
     ...mismatch,
     ...rule,
     '',
-    'For a demo database that is named differently, confirm the reset by naming that database,',
-    'for this command only:',
+    'For a demo database that is named differently, confirm the reset by naming that database.',
+    'Add this to the command you just ran, for that one run only:',
     '',
-    `  ${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name> ALLOW_DEMO_SEED=1 yarn seed:staging-demo`,
+    `  ${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name>`,
     '',
     ...WHERE_THE_TARGET_CAME_FROM,
   ].join('\n');

@@ -11,12 +11,17 @@ import {
 
 /**
  * Runs the real `scripts/seed-demo-data.ts` against a fake pg client, to hold the wiring in
- * place: the target check comes before any connection, and the only TRUNCATE sits behind the
- * check of what the server says it is connected to.
+ * place: every gate comes before any connection, the host gate before the name rule, and the
+ * only TRUNCATE sits behind the check of what the server says it is connected to.
+ *
+ * `scripts/__tests__/seed-guards.test.ts` runs the same script as a real process, which is
+ * what proves the gates through its entry point. It cannot get past a connection, so the
+ * cases that need a server's answer are here.
  *
  * Nothing in this file can reach a database:
  * - `pg` is replaced, so `new pg.Client()` returns a recorder with no socket behind it;
- * - `dotenv` is replaced, so no `.env` on the machine running the suite is read;
+ * - `dotenv` is replaced, so no `.env` on the machine running the suite is read, and a test
+ *   decides what "the file" holds;
  * - the seeding steps are replaced, so nothing else runs SQL;
  * - and should the `pg` mock ever stop applying, remote hosts here use the reserved `.invalid`
  *   TLD and local ones use port 1, so a real driver would have nothing to connect to.
@@ -41,6 +46,9 @@ const pgState = vi.hoisted(() => ({
   /** What the fake server answers to `current_database()`. `null`: the configured name. */
   serverDatabase: null as string | null,
 }));
+
+/** What dotenv reports as the contents of the env file(s). Nothing is copied to process.env. */
+const envFile = vi.hoisted(() => ({ parsed: {} as Record<string, string> }));
 
 const steps = vi.hoisted(() => ({
   seedCountries: vi.fn(async () => {}),
@@ -86,7 +94,7 @@ vi.mock('pg', async importOriginal => {
   return { ...actual, default: { ...actual.default, Client }, Client };
 });
 
-vi.mock('dotenv', () => ({ config: vi.fn(() => ({ parsed: {} })) }));
+vi.mock('dotenv', () => ({ config: vi.fn(() => ({ parsed: envFile.parsed })) }));
 
 vi.mock('../../packages/server/scripts/seed-admin-context.js', () => ({
   seedAdminCore: steps.seedAdminCore,
@@ -128,7 +136,6 @@ const CLEARED = [
   'ALLOW_DEMO_SEED',
   'ALLOW_DEMO_SEED_DATABASE',
   'ALLOW_REMOTE_DB',
-  'ENFORCE_LOCAL_DB',
 ] as const;
 
 const PRODUCTION = {
@@ -151,9 +158,13 @@ const LOCAL_DEV = {
 };
 const CI = { ...LOCAL_DEV, POSTGRES_HOST: '127.0.0.1', POSTGRES_DB: 'accounter_test' };
 
+/** What the caller types to seed at all, and what a staging build command carries. */
+const SEED = { ALLOW_DEMO_SEED: '1' };
+const SEED_REMOTE = { ...SEED, ALLOW_REMOTE_DB: '1' };
+
 let exit: MockInstance;
 let errors: MockInstance;
-let warnings: MockInstance;
+let logs: MockInstance;
 
 /** Load the script with this environment and wait for its run to finish. */
 async function runSeedScript(env: Record<string, string>): Promise<void> {
@@ -177,11 +188,28 @@ function client(): FakeClient {
 
 const truncates = () => client().statements.filter(sql => /truncate/i.test(sql));
 
+/** Refused by the name rule: the client exists, since the rule reads its target from it. */
 function expectRefusedBeforeConnecting(): void {
   expect(exit).toHaveBeenCalledExactlyOnceWith(1);
   expect(client().connect).not.toHaveBeenCalled();
   expect(client().statements).toEqual([]);
   expect(steps.seedCountries).not.toHaveBeenCalled();
+}
+
+/** Refused by a gate that comes before the client is even built. */
+function expectRefusedBeforeAClientExists(): void {
+  expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+  expect(pgState.clients).toEqual([]);
+  expect(steps.seedCountries).not.toHaveBeenCalled();
+}
+
+/** One message, no stack trace, not labelled as a crash. */
+function expectPrintedAsARefusal(start: RegExp): void {
+  expect(errors).toHaveBeenCalledOnce();
+  expect(printed(errors)).toMatch(start);
+  expect(printed(errors)).not.toContain('Fatal seed error');
+  expect(printed(errors)).not.toContain('Stack:');
+  expect(printed(errors)).not.toMatch(/^\s+at /m);
 }
 
 function expectSeeded(): void {
@@ -196,6 +224,7 @@ function expectSeeded(): void {
 beforeEach(async () => {
   pgState.clients.length = 0;
   pgState.serverDatabase = null;
+  envFile.parsed = {};
   vi.clearAllMocks();
 
   // The script checks that seedAdminCore returns the id it pinned the session to.
@@ -205,8 +234,7 @@ beforeEach(async () => {
 
   exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
   errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-  warnings = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  vi.spyOn(console, 'log').mockImplementation(() => {});
+  logs = vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -215,45 +243,48 @@ afterEach(() => {
 });
 
 describe('scripts/seed-demo-data.ts', () => {
-  describe('ALLOW_DEMO_SEED=1 with POSTGRES_* on production', () => {
-    it('refuses without opening a connection', async () => {
-      await runSeedScript({ ...PRODUCTION, ALLOW_DEMO_SEED: '1' });
+  describe('POSTGRES_* on production', () => {
+    it('is refused by the host gate when only ALLOW_DEMO_SEED=1 is set', async () => {
+      await runSeedScript({ ...PRODUCTION, ...SEED });
+
+      expectRefusedBeforeAClientExists();
+      expectPrintedAsARefusal(
+        /^❌ Refusing to run the demo data seed against a non-local database/,
+      );
+    });
+
+    it('is refused by its name with both opt-ins, which is all a staging build command has', async () => {
+      await runSeedScript({ ...PRODUCTION, ...SEED_REMOTE });
 
       expectRefusedBeforeConnecting();
       expect(printed(errors)).toContain('the database name "accounter_prod_db" says production');
+      expectPrintedAsARefusal(/^❌ Refusing to seed demo data into /);
     });
 
     it('still refuses with every opt-in variable there is', async () => {
       await runSeedScript({
         ...PRODUCTION,
-        ALLOW_DEMO_SEED: '1',
-        ALLOW_REMOTE_DB: '1',
+        ...SEED_REMOTE,
         ALLOW_DEMO_SEED_DATABASE: 'accounter_prod_db',
       });
 
       expectRefusedBeforeConnecting();
     });
-
-    it('prints the refusal as a message, not as a crash with a stack trace', async () => {
-      await runSeedScript({ ...PRODUCTION, ALLOW_DEMO_SEED: '1' });
-
-      expect(printed(errors)).toMatch(/^❌ Refusing to seed demo data into /);
-      expect(printed(errors)).not.toContain('Fatal seed error');
-      expect(printed(errors)).not.toContain('Stack:');
-    });
   });
 
-  describe('the staging deploy: ALLOW_DEMO_SEED=1 yarn seed:staging-demo', () => {
+  describe('the staging deploy: ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo', () => {
     it('resets and seeds a remote staging database with no other variable', async () => {
-      await runSeedScript({ ...STAGING, ALLOW_DEMO_SEED: '1' });
+      await runSeedScript({ ...STAGING, ...SEED_REMOTE });
 
       expectSeeded();
-      // Still announced, so a build log shows which database was reset.
-      expect(printed(warnings)).toContain('the demo data seed is targeting a NON-LOCAL database');
+      // A build log shows which database was reset, and why it was accepted.
+      expect(printed(logs)).toContain(
+        `✅ Demo seed target: accounter_staging_user@${REMOTE_HOST}:5432/accounter_staging_db (demo-name)`,
+      );
     });
 
     it('checks the connected database after pinning the tenant and before the TRUNCATE', async () => {
-      await runSeedScript({ ...STAGING, ALLOW_DEMO_SEED: '1' });
+      await runSeedScript({ ...STAGING, ...SEED_REMOTE });
 
       expect(client().statements.map(sql => sql.replaceAll(/\s+/g, ' ').trim())).toEqual([
         `SELECT set_config('app.current_business_id', $1, false)`,
@@ -266,13 +297,13 @@ describe('scripts/seed-demo-data.ts', () => {
       ]);
     });
 
-    it('refuses when ENFORCE_LOCAL_DB=1 is set, as documented for developer machines', async () => {
-      await runSeedScript({ ...STAGING, ALLOW_DEMO_SEED: '1', ENFORCE_LOCAL_DB: '1' });
+    it('is refused without ALLOW_REMOTE_DB=1, however the database is named', async () => {
+      await runSeedScript({ ...STAGING, ...SEED });
 
-      expectRefusedBeforeConnecting();
-      // Printed like the other refusals, not as a crash.
-      expect(printed(errors)).toMatch(/^❌ Refusing to run the demo data seed against a non-local/);
-      expect(printed(errors)).not.toContain('Fatal seed error');
+      expectRefusedBeforeAClientExists();
+      expect(printed(errors)).toContain(
+        `non-local database: accounter_staging_user@${REMOTE_HOST}`,
+      );
     });
   });
 
@@ -280,15 +311,14 @@ describe('scripts/seed-demo-data.ts', () => {
     it.each([
       ['the dev container', LOCAL_DEV],
       ['the CI service container', CI],
-    ])('resets and seeds %s', async (_name, target) => {
-      await runSeedScript({ ...target, ALLOW_DEMO_SEED: '1' });
+    ])('resets and seeds %s with ALLOW_DEMO_SEED=1 alone', async (_name, target) => {
+      await runSeedScript({ ...target, ...SEED });
 
       expectSeeded();
-      expect(warnings).not.toHaveBeenCalled();
     });
 
     it('refuses any other local database, such as a local copy of production', async () => {
-      await runSeedScript({ ...LOCAL_DEV, POSTGRES_DB: 'accounter_legacy', ALLOW_DEMO_SEED: '1' });
+      await runSeedScript({ ...LOCAL_DEV, POSTGRES_DB: 'accounter_legacy', ...SEED });
 
       expectRefusedBeforeConnecting();
       expect(printed(errors)).toContain('nothing marks "accounter_legacy" as a demo database');
@@ -298,7 +328,7 @@ describe('scripts/seed-demo-data.ts', () => {
       await runSeedScript({
         ...LOCAL_DEV,
         POSTGRES_DB: 'accounter_perf',
-        ALLOW_DEMO_SEED: '1',
+        ...SEED,
         ALLOW_DEMO_SEED_DATABASE: 'accounter_perf',
       });
 
@@ -309,27 +339,23 @@ describe('scripts/seed-demo-data.ts', () => {
   describe('a remote database whose name says nothing', () => {
     const UNNAMED = { ...PRODUCTION, POSTGRES_DB: 'accounter', POSTGRES_USER: 'accounter_user' };
 
-    it('is refused without opening a connection', async () => {
-      await runSeedScript({ ...UNNAMED, ALLOW_DEMO_SEED: '1' });
+    it('is refused although both opt-ins are set', async () => {
+      await runSeedScript({ ...UNNAMED, ...SEED_REMOTE });
 
       expectRefusedBeforeConnecting();
       expect(printed(errors)).toContain('nothing marks "accounter" as a demo database');
     });
 
-    it('is not unlocked by ALLOW_REMOTE_DB=1, the switch the older guards print', async () => {
-      await runSeedScript({ ...UNNAMED, ALLOW_DEMO_SEED: '1', ALLOW_REMOTE_DB: '1' });
-
-      expectRefusedBeforeConnecting();
-    });
-
     it('is reset once ALLOW_DEMO_SEED_DATABASE names it', async () => {
-      await runSeedScript({
-        ...UNNAMED,
-        ALLOW_DEMO_SEED: '1',
-        ALLOW_DEMO_SEED_DATABASE: 'accounter',
-      });
+      await runSeedScript({ ...UNNAMED, ...SEED_REMOTE, ALLOW_DEMO_SEED_DATABASE: 'accounter' });
 
       expectSeeded();
+    });
+
+    it('is not reached on the name alone: ALLOW_DEMO_SEED_DATABASE does not replace ALLOW_REMOTE_DB', async () => {
+      await runSeedScript({ ...UNNAMED, ...SEED, ALLOW_DEMO_SEED_DATABASE: 'accounter' });
+
+      expectRefusedBeforeAClientExists();
     });
   });
 
@@ -337,7 +363,7 @@ describe('scripts/seed-demo-data.ts', () => {
     it('does not truncate production reached under a staging name', async () => {
       pgState.serverDatabase = 'accounter_prod_db';
 
-      await runSeedScript({ ...STAGING, ALLOW_DEMO_SEED: '1' });
+      await runSeedScript({ ...STAGING, ...SEED_REMOTE });
 
       expect(exit).toHaveBeenCalledExactlyOnceWith(1);
       expect(client().connect).toHaveBeenCalledOnce();
@@ -354,7 +380,7 @@ describe('scripts/seed-demo-data.ts', () => {
     it('does not truncate production reached through a tunnel on localhost', async () => {
       pgState.serverDatabase = 'accounter_prod_db';
 
-      await runSeedScript({ ...LOCAL_DEV, ALLOW_DEMO_SEED: '1' });
+      await runSeedScript({ ...LOCAL_DEV, ...SEED });
 
       expect(exit).toHaveBeenCalledExactlyOnceWith(1);
       expect(truncates()).toEqual([]);
@@ -364,7 +390,7 @@ describe('scripts/seed-demo-data.ts', () => {
     it('does not truncate a local copy of production reached under the dev database name', async () => {
       pgState.serverDatabase = 'accounter_legacy';
 
-      await runSeedScript({ ...LOCAL_DEV, ALLOW_DEMO_SEED: '1' });
+      await runSeedScript({ ...LOCAL_DEV, ...SEED });
 
       expect(exit).toHaveBeenCalledExactlyOnceWith(1);
       expect(client().connect).toHaveBeenCalledOnce();
@@ -374,17 +400,18 @@ describe('scripts/seed-demo-data.ts', () => {
   });
 
   describe('the target the driver would really use', () => {
-    it('judges PGHOST when POSTGRES_HOST is unset, because node-postgres falls back to it', async () => {
+    it('judges the host PGHOST supplies: the dev database name is only accepted on a local host', async () => {
       await runSeedScript({
         POSTGRES_PORT: '5432',
         POSTGRES_DB: 'accounter',
         POSTGRES_USER: 'accounter_user',
         PGHOST: REMOTE_HOST,
-        ALLOW_DEMO_SEED: '1',
+        ...SEED_REMOTE,
       });
 
       expect(client().host).toBe(REMOTE_HOST);
       expectRefusedBeforeConnecting();
+      expect(printed(errors)).toContain('nothing marks "accounter" as a demo database');
     });
 
     it('judges PGDATABASE when POSTGRES_DB is unset', async () => {
@@ -392,7 +419,7 @@ describe('scripts/seed-demo-data.ts', () => {
         POSTGRES_HOST: REMOTE_HOST,
         POSTGRES_USER: 'accounter_user',
         PGDATABASE: 'accounter_prod_db',
-        ALLOW_DEMO_SEED: '1',
+        ...SEED_REMOTE,
       });
 
       expectRefusedBeforeConnecting();
@@ -400,21 +427,31 @@ describe('scripts/seed-demo-data.ts', () => {
     });
   });
 
-  describe('the gates that were already there', () => {
+  describe('the gates that come first', () => {
     it('does nothing without ALLOW_DEMO_SEED=1, not even build a client', async () => {
       await runSeedScript({ ...LOCAL_DEV });
 
-      expect(exit).toHaveBeenCalledExactlyOnceWith(1);
-      expect(pgState.clients).toEqual([]);
+      expectRefusedBeforeAClientExists();
       expect(printed(errors)).toBe('❌ ALLOW_DEMO_SEED=1 required to run demo seed');
     });
 
     it('does nothing with NODE_ENV=production', async () => {
-      await runSeedScript({ ...LOCAL_DEV, ALLOW_DEMO_SEED: '1', NODE_ENV: 'production' });
+      await runSeedScript({ ...LOCAL_DEV, ...SEED, NODE_ENV: 'production' });
 
-      expect(exit).toHaveBeenCalledExactlyOnceWith(1);
-      expect(pgState.clients).toEqual([]);
+      expectRefusedBeforeAClientExists();
       expect(printed(errors)).toBe('❌ Refusing to seed demo data in production environment');
     });
+
+    it.each(['ALLOW_DEMO_SEED', 'ALLOW_REMOTE_DB', 'ALLOW_DEMO_SEED_DATABASE'])(
+      'refuses %s found in the env file, before any other gate and as a plain message',
+      async name => {
+        envFile.parsed = { [name]: name === 'ALLOW_DEMO_SEED_DATABASE' ? 'accounter' : '1' };
+
+        await runSeedScript({ ...LOCAL_DEV, ...SEED });
+
+        expectRefusedBeforeAClientExists();
+        expectPrintedAsARefusal(new RegExp(`^❌ Refusing to run: ${name} is set in \\.env`));
+      },
+    );
   });
 });
