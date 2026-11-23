@@ -5,6 +5,7 @@ import {
   assertLocalDatabaseOnly,
   assertOptInsNotInEnvFile,
 } from '../../../../migrations/src/local-db-guard.js';
+import { TEST_DATABASE_NAME } from './test-db-config.js';
 
 /**
  * Environment for the two processes `demo-fixtures/__tests__/seed-and-validate.test.ts` starts
@@ -19,6 +20,8 @@ import {
  *   children get, so the script's own guard is left with no way to accept one either.
  * - The target judged is the one the children would resolve, the `.env` in their cwd included.
  * - No opt-in is taken from that `.env`.
+ * - The children get the harness's own database (`TEST_DATABASE_NAME`), whatever `POSTGRES_DB`
+ *   names. That variable is the developer's dev database, and the seed empties what it reaches.
  *
  * The check does not lean on the script refusing. The script's guard answers to the staging
  * deploy as well, and it has been relaxed for a deploy before; this one has a single caller
@@ -49,6 +52,10 @@ export function resolveDemoSeedTestEnv(
   // An opt-in is typed for one command. One that sits in the file is refused, as the script
   // refuses it, instead of being handed to the children as if the caller had set it.
   assertOptInsNotInEnvFile(loaded.parsed, envFile);
+
+  // The database is not taken from the environment or the file. Set before the check below,
+  // so a refusal names the target the children would really have reached.
+  childEnv['POSTGRES_DB'] = TEST_DATABASE_NAME;
 
   // node-postgres falls back to PGHOST, then to localhost, when no host is configured.
   const host = childEnv['POSTGRES_HOST'] || childEnv['PGHOST'] || 'localhost';

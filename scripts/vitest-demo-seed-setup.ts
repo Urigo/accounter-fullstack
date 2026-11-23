@@ -3,6 +3,7 @@ import { ALLOW_DEMO_SEED_ENV } from '../packages/migrations/src/local-db-guard.j
 import { checkLatestMigration } from '../packages/server/src/__tests__/helpers/migration-verification.js';
 import {
   assertTestDatabaseIsLocal,
+  TEST_DATABASE_NAME,
   testDbConfig,
   testDbSchema,
 } from '../packages/server/src/__tests__/helpers/test-db-config.js';
@@ -13,7 +14,10 @@ import {
  * The demo seed assumes the schema is at the latest migration. When it is not, the seed fails
  * somewhere in the middle with a constraint or column error that says nothing about the cause.
  * This checks first and leaves a flag for `seed-and-validate.test.ts`, which then fails with
- * the command to run instead of starting the seed.
+ * a pointer to the cause instead of starting the seed.
+ *
+ * The setup that runs before this one creates the test database and migrates it, so a stale
+ * schema here means that step did not get through, and its own warning says why.
  *
  * The flag is an environment variable because this runs in the main vitest process and the
  * test runs in a worker, which inherits the environment.
@@ -42,7 +46,11 @@ export async function setup() {
     if (!result.isLatest) {
       console.warn(`WARNING: ${result.errorMessage}`);
       console.warn(
-        `  Run migrations before demo-seed tests: yarn workspace @accounter-helper/migrations migration:run`,
+        `  The test setup migrates "${TEST_DATABASE_NAME}" before this check runs, so it did not`,
+      );
+      console.warn(`  get there: see the [test-setup] lines above. To migrate it by hand:`);
+      console.warn(
+        `    POSTGRES_DB=${TEST_DATABASE_NAME} yarn workspace @accounter-helper/migrations migration:run`,
       );
       console.warn(`  Demo-seed tests will fail.`);
 

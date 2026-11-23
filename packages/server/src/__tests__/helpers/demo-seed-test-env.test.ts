@@ -7,7 +7,8 @@ import { resolveDemoSeedTestEnv } from './demo-seed-test-env.js';
 /**
  * `seed-and-validate.test.ts` starts the demo seed, which truncates the domain tables of the
  * database it is pointed at. These tests pin what that test is allowed to start it against:
- * a local database and nothing else, with no opt-in taken from a `.env` file or added here.
+ * the harness's own database on a local server and nothing else, with no opt-in taken from a
+ * `.env` file or added here.
  *
  * Nothing here opens a connection or starts a process. Every call passes its own `env` object
  * and its own temp directory, so neither the shell running the suite nor a `.env` on the
@@ -87,7 +88,31 @@ describe('resolveDemoSeedTestEnv', () => {
       expect(resolveDemoSeedTestEnv(workspace(), env)).toEqual({
         ...OPTED_IN,
         POSTGRES_HOST: 'localhost',
+        POSTGRES_DB: 'accounter_test',
       });
+    });
+  });
+
+  describe("the database is the harness's own", () => {
+    it('moves the children off the database POSTGRES_DB names', () => {
+      // POSTGRES_DB is the developer's dev database. The seed empties what it reaches.
+      const env = { ...OPTED_IN, POSTGRES_HOST: 'localhost', POSTGRES_DB: 'accounter' };
+
+      expect(resolveDemoSeedTestEnv(workspace(), env)['POSTGRES_DB']).toBe('accounter_test');
+    });
+
+    it('does the same when only the .env file names a database', () => {
+      const root = workspace('POSTGRES_HOST=localhost\nPOSTGRES_DB=accounter_legacy\n');
+
+      expect(resolveDemoSeedTestEnv(root, OPTED_IN)['POSTGRES_DB']).toBe('accounter_test');
+    });
+
+    it('names that database when it refuses, since it is what would have been reached', () => {
+      const env = { ...OPTED_IN, POSTGRES_HOST: REMOTE_HOST, POSTGRES_DB: 'accounter_prod_db' };
+
+      expect(() => resolveDemoSeedTestEnv(workspace(), env)).toThrow(
+        `non-local database: ${REMOTE_HOST}/accounter_test`,
+      );
     });
   });
 
@@ -98,7 +123,7 @@ describe('resolveDemoSeedTestEnv', () => {
       const root = workspace(`POSTGRES_HOST=${REMOTE_HOST}\nPOSTGRES_DB=accounter_prod_db\n`);
 
       expect(() => resolveDemoSeedTestEnv(root, OPTED_IN)).toThrow(
-        `non-local database: ${REMOTE_HOST}/accounter_prod_db`,
+        `non-local database: ${REMOTE_HOST}/accounter_test`,
       );
     });
 
@@ -109,7 +134,7 @@ describe('resolveDemoSeedTestEnv', () => {
       expect(resolveDemoSeedTestEnv(root, env)).toEqual(env);
     });
 
-    it('hands the child the values .env supplied, so its own dotenv load changes nothing', () => {
+    it('hands the child the server .env supplied, so its own dotenv load changes nothing', () => {
       const root = workspace(
         'POSTGRES_HOST=localhost\nPOSTGRES_PORT=5433\nPOSTGRES_DB=accounter\n',
       );
@@ -118,7 +143,7 @@ describe('resolveDemoSeedTestEnv', () => {
         ...OPTED_IN,
         POSTGRES_HOST: 'localhost',
         POSTGRES_PORT: '5433',
-        POSTGRES_DB: 'accounter',
+        POSTGRES_DB: 'accounter_test',
       });
     });
 
@@ -126,6 +151,7 @@ describe('resolveDemoSeedTestEnv', () => {
       expect(resolveDemoSeedTestEnv(workspace(), OPTED_IN)).toEqual({
         ...OPTED_IN,
         POSTGRES_HOST: 'localhost',
+        POSTGRES_DB: 'accounter_test',
       });
     });
   });
@@ -136,7 +162,7 @@ describe('resolveDemoSeedTestEnv', () => {
       // function add the opt-in would let the test opt a database in by itself again.
       const childEnv = resolveDemoSeedTestEnv(workspace(), { POSTGRES_HOST: 'db' });
 
-      expect(childEnv).toEqual({ POSTGRES_HOST: 'db' });
+      expect(childEnv).toEqual({ POSTGRES_HOST: 'db', POSTGRES_DB: 'accounter_test' });
     });
 
     it.each(['ALLOW_DEMO_SEED', 'ALLOW_REMOTE_DB', 'ALLOW_DEMO_SEED_DATABASE'])(

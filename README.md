@@ -32,8 +32,9 @@ variables.
 
 > **Warning:** the root `.env` is for a **local** database only. Never put production credentials,
 > or those of any other deployed database, in it. Codegen, migrations, seeds and every DB-backed
-> test read this file, so `yarn test`, `yarn generate` and `migration:run` all run against whatever
-> it points at, and some of them write or reset data. See [Database safety](#database-safety).
+> test read this file, so `yarn test`, `yarn generate` and `migration:run` all run against the
+> server it points at, and some of them write or reset data. See
+> [Database safety](#database-safety).
 
 4. Run setup:
 
@@ -139,8 +140,8 @@ DB table — not through the app.
 The test suite is organized into three projects for efficiency:
 
 - **Unit tests** (`yarn test`): Fast, isolated tests with no external dependencies
-- **Integration tests** (`yarn test:integration`): DB-backed tests requiring PostgreSQL and
-  migrations
+- **Integration tests** (`yarn test:integration`): DB-backed tests. They need a local PostgreSQL and
+  bring their own database
 - **Demo seed E2E** (`yarn test:demo-seed`): Full seed-and-validate pipeline (slow, ~10-30s)
 
 ### Running Tests
@@ -149,10 +150,10 @@ The test suite is organized into three projects for efficiency:
 # Fast unit tests only (default, no DB required)
 yarn test
 
-# Unit + integration tests (requires DB + migrations)
+# Unit + integration tests (requires a local Postgres)
 yarn test:integration
 
-# Demo seed E2E (requires a local DB + migrations + ALLOW_DEMO_SEED=1)
+# Demo seed E2E (requires a local Postgres + ALLOW_DEMO_SEED=1)
 ALLOW_DEMO_SEED=1 yarn test:demo-seed
 ```
 
@@ -160,13 +161,20 @@ ALLOW_DEMO_SEED=1 yarn test:demo-seed
 
 Integration and demo-seed tests require:
 
-1. **PostgreSQL running**: Start with `docker compose -f docker/docker-compose.dev.yml up -d db`
-2. **Migrations applied**: Run `yarn workspace @accounter-helper/migrations migration:run`
-3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` for the command; without it the demo-seed test is
-   skipped. The test resets the database it is pointed at, so it never sets the variable itself and
-   refuses any database that is not local.
+1. **PostgreSQL running locally**: Start with
+   `docker compose -f docker/docker-compose.dev.yml up -d db`
+2. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` for the command; without it the demo-seed test is
+   skipped. The test resets the test database, so it never sets the variable itself and refuses any
+   server that is not local.
 
-If migrations are stale, demo-seed tests fail gracefully with instructions to run migrations.
+There is nothing to create or migrate by hand. The tests have a database of their own,
+`accounter_test`, on the server that `POSTGRES_HOST` and `POSTGRES_PORT` name. The test setup
+creates it there when it is missing and brings it to the latest migration before any test runs.
+Tests never use the database `POSTGRES_DB` names: a test run does not change your dev data, and the
+demo seed test resets `accounter_test`, not your dev database.
+
+If the test database cannot be brought to the latest migration, the setup prints why, and the
+demo-seed test fails with that pointer instead of starting the seed.
 
 No vitest project collects anything under `.claude/`. Claude Code keeps git worktrees (complete
 copies of the repo) in `.claude/worktrees/`, and their test files would otherwise run against this
@@ -197,6 +205,9 @@ The tooling also checks its target, as a second line of defence. The checks are 
 
 "Non-local" goes by the host `pg` would connect to: `POSTGRES_HOST`, or `PGHOST` when that is unset
 or blank.
+
+DB-backed tests take only the server and the credentials from `POSTGRES_*`. The database they use is
+always their own, `accounter_test` (see [Testing](#testing)), whatever `POSTGRES_DB` names.
 
 `yarn seed:staging-demo` truncates the domain tables before it inserts, so being allowed to reach a
 host is not enough for it. It also decides by the name of the database it is about to reset

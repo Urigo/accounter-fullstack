@@ -176,8 +176,8 @@ DB-backed tests including:
 
 **Prerequisites:**
 
-- PostgreSQL running
-- Migrations applied (see below)
+- PostgreSQL running on a local host. The tests use their own database on it, which the test setup
+  creates and migrates (see [The test database](#the-test-database))
 
 ### 3. Demo Seed E2E (`yarn test:demo-seed`)
 
@@ -192,12 +192,13 @@ Full seed-and-validate pipeline test that:
 - PostgreSQL running on a local host. The test always refuses a remote one: it checks its target
   before it starts the seed, and it strips `ALLOW_REMOTE_DB` from the seed's environment, so there
   is no opt-in
-- Migrations applied
 - `ALLOW_DEMO_SEED=1` environment variable; without it the test is skipped. The test passes it
   through to the seed script and never sets it itself
 
-**Graceful Failure**: If migrations are stale, the test fails with a clear error message directing
-you to run migrations, rather than hanging or producing cryptic errors.
+It seeds and resets the test database, `accounter_test`, never the database `POSTGRES_DB` names.
+
+**Graceful Failure**: If the test database could not be brought to the latest migration, the test
+fails with a pointer to the setup's output, rather than hanging or producing cryptic errors.
 
 ### Running Tests
 
@@ -221,19 +222,29 @@ This package includes a Vitest-friendly PostgreSQL test harness with:
 - Admin context seeding (`seedAdminCore`) for domain fixtures
 - Diagnostics when `DEBUG=accounter:test` (pool metrics + lifecycle logs)
 
-### Prerequisite: Latest DB Migrations
+### The test database
 
-Tests assume the database schema is at the latest migration. Tests DO NOT run migrations
-automatically (to avoid corrupting populated databases or violating FKs).
+The tests have a database of their own, `accounter_test`, on the server that `POSTGRES_HOST` and
+`POSTGRES_PORT` name. They never use the database `POSTGRES_DB` names. That one is your dev
+database, and tests commit migrations and reference data, while the demo seed test resets what it
+reaches.
 
-Bring your DB to the latest migration using the migrations workspace:
+There is nothing to prepare. Before any test runs, the vitest global setup
+(`scripts/vitest-global-setup.ts`):
 
-- Fresh DB and migrate up: `yarn workspace @accounter-helper/migrations db:init`
+1. creates `accounter_test` when a local server does not have it yet
+   (`src/__tests__/helpers/ensure-test-database.ts`);
+2. brings it to the latest migration;
+3. writes the countries reference data.
 
-- Migrate existing DB up: `yarn workspace @accounter-helper/migrations migration:run`
+The database is only ever created on a local server. When Postgres is not running, the setup prints
+a warning with the reason and the tests that need no database still run.
 
-If the smoke test fails with "is at latest migration (schema ready)", your DB is behind. Run the
-commands above, then re-run tests.
+To start over, drop `accounter_test` (for example `dropdb -h localhost -U postgres accounter_test`);
+the next run creates it again.
+
+If the smoke test fails with "is at latest migration (schema ready)", the setup could not migrate
+the test database. Its reason is in the `[test-setup]` lines at the top of the run.
 
 ### Running tests with diagnostics
 

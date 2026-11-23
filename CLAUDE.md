@@ -124,6 +124,9 @@ yarn seed:admin-context # Seed admin context for server
   command that sets one waits for a person to confirm it, and is refused where nobody can be asked.
 - Do not run `yarn seed:staging-demo` unless the user asked for that command. It truncates the
   domain tables of the database it reaches.
+- DB-backed tests use their own database, `accounter_test`, on the server `POSTGRES_HOST` names. The
+  test setup creates and migrates it; there is nothing to prepare and no reason to point tests at
+  another database.
 
 # Git & PR Conventions
 

@@ -58,7 +58,9 @@ describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
       // migration is not in the database (or could not be looked up).
       if (process.env.SKIP_DEMO_SEED_STALE_MIGRATIONS === '1') {
         throw new Error(
-          'Demo-seed test failed: migrations are stale. Run: yarn workspace @accounter-helper/migrations migration:run',
+          'Demo-seed test failed: the test database is not at the latest migration. The test ' +
+            'setup migrates it, so see the [test-setup] output above. By hand: ' +
+            'POSTGRES_DB=accounter_test yarn workspace @accounter-helper/migrations migration:run',
         );
       }
 
