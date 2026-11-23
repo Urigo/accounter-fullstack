@@ -1,18 +1,28 @@
 import { Pool } from 'pg';
 import { checkLatestMigration } from '../packages/server/src/__tests__/helpers/migration-verification.js';
+import {
+  assertTestDatabaseIsLocal,
+  testDbConfig,
+  testDbSchema,
+} from '../packages/server/src/__tests__/helpers/test-db-config.js';
 
-const testDbSchema = process.env.POSTGRES_SCHEMA || 'accounter_schema';
-
+/**
+ * Global setup of the `demo-seed` vitest project, run after `vitest-global-setup.ts`.
+ *
+ * The demo seed assumes the schema is at the latest migration. When it is not, the seed fails
+ * somewhere in the middle with a constraint or column error that says nothing about the cause.
+ * This checks first and leaves a flag for `seed-and-validate.test.ts`, which then fails with
+ * the command to run instead of starting the seed.
+ *
+ * The flag is an environment variable because this runs in the main vitest process and the
+ * test runs in a worker, which inherits the environment.
+ */
 export async function setup() {
-  // Check if migrations are current before running demo-seed tests
-  const pool = new Pool({
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: Number(process.env.POSTGRES_PORT) || 5432,
-    user: process.env.POSTGRES_USER || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-    database: process.env.POSTGRES_DB || 'accounter_test',
-    ssl: process.env.POSTGRES_SSL === '1' && { rejectUnauthorized: false },
-  });
+  // This opens its own pool, so it checks its own target rather than relying on the setup
+  // that ran before it.
+  assertTestDatabaseIsLocal();
+
+  const pool = new Pool(testDbConfig);
 
   try {
     const result = await checkLatestMigration(pool, testDbSchema);
@@ -20,7 +30,7 @@ export async function setup() {
     if (!result.isLatest) {
       console.warn(`WARNING: ${result.errorMessage}`);
       console.warn(
-        `  Run migrations before demo-seed tests: yarn workspace @accounter/migrations migration:run`,
+        `  Run migrations before demo-seed tests: yarn workspace @accounter-helper/migrations migration:run`,
       );
       console.warn(`  Demo-seed tests will fail.`);
 

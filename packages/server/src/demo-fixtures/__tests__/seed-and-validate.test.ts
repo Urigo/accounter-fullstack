@@ -54,10 +54,11 @@ describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
   it(
     'seeds demo data and passes validation',
     async () => {
-      // Check for stale migrations before running the test
+      // Set by scripts/vitest-demo-seed-setup.ts, the project's global setup, when the latest
+      // migration is not in the database (or could not be looked up).
       if (process.env.SKIP_DEMO_SEED_STALE_MIGRATIONS === '1') {
         throw new Error(
-          'Demo-seed test failed: migrations are stale. Run: yarn workspace @accounter/migrations migration:run',
+          'Demo-seed test failed: migrations are stale. Run: yarn workspace @accounter-helper/migrations migration:run',
         );
       }
 

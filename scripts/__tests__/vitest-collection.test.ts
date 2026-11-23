@@ -9,12 +9,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 /**
  * Which test files each vitest project collects, asked of vitest itself.
  *
- * The `unit` project includes every `*.test.ts` at any depth, and used to exclude the
+ * The `unit` project used to include every `*.test.ts` at any depth, and to exclude the
  * database-backed and demo seed directories with patterns anchored at the repo root. Those
  * patterns did not cover the second copy of the repo that a git worktree puts under
  * `.claude/worktrees/<name>/`, so a plain `yarn test` ran that copy's
  * `demo-fixtures/__tests__/seed-and-validate.test.ts` as a unit test, and that test resets the
- * database it is pointed at.
+ * database it is pointed at. Its include is now anchored at `packages/` and `scripts/`, so a
+ * second checkout anywhere in the tree contributes nothing.
  *
  * Each case below runs `vitest list --filesOnly --json`, the command that prints what a project
  * would run. With `--filesOnly` it only globs: no test file is loaded, the global setup does
@@ -77,7 +78,14 @@ async function collect(root: string, config: string): Promise<Collected> {
 const CHECKOUT_FILES = {
   unit: [
     'packages/migrations/src/__tests__/local-db-guard.test.ts',
+    // Plain unit tests that happen to live next to the demo seed test.
+    'packages/server/src/demo-fixtures/__tests__/use-case-registry.test.ts',
+    'packages/server/src/demo-fixtures/validators/ledger-validators.test.ts',
     'packages/server/src/modules/charges/helpers/common.helper.test.ts',
+    'packages/server/src/shared/helpers/misc.spec.ts',
+    // One of each extension the include covers.
+    'packages/scraper-app/src/client/app.test.tsx',
+    'packages/scraper-app/src/client/widget.spec.tsx',
     'scripts/__tests__/env-templates.test.ts',
   ],
   client: ['packages/client/src/helpers/form.test.ts', 'packages/client/src/lib/table.test.tsx'],
@@ -87,13 +95,6 @@ const CHECKOUT_FILES = {
   ],
   'demo-seed': ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
 } satisfies Collected;
-
-/** The files a second checkout must never contribute, wherever it sits. */
-const DATABASE_BACKED_FILES = [
-  ...CHECKOUT_FILES.client,
-  ...CHECKOUT_FILES.integration,
-  ...CHECKOUT_FILES['demo-seed'],
-];
 
 const WORKTREE = '.claude/worktrees/some-branch';
 const OTHER_NESTED_CHECKOUT = 'vendor/accounter-fullstack';
@@ -112,8 +113,10 @@ beforeAll(async () => {
     ...Object.values(CHECKOUT_FILES)
       .flat()
       .map(file => `${WORKTREE}/${file}`),
-    // A second checkout somewhere else: only the files that must not be picked up from it.
-    ...DATABASE_BACKED_FILES.map(file => `${OTHER_NESTED_CHECKOUT}/${file}`),
+    // A second checkout somewhere else in the tree, just as complete.
+    ...Object.values(CHECKOUT_FILES)
+      .flat()
+      .map(file => `${OTHER_NESTED_CHECKOUT}/${file}`),
   ];
   for (const file of files) {
     mkdirSync(dirname(join(fixtureRoot, file)), { recursive: true });
@@ -140,7 +143,11 @@ describe('vitest test collection', () => {
     it('gives each project its own files and nothing from either nested checkout', () => {
       // Exact, so it fails both ways: on a file that leaks in from a nested checkout, and on a
       // project that silently stops collecting its own.
-      expect(inFixture).toEqual(CHECKOUT_FILES);
+      const expected = Object.fromEntries(
+        Object.entries(CHECKOUT_FILES).map(([project, files]) => [project, [...files].sort()]),
+      );
+
+      expect(inFixture).toEqual(expected);
     });
 
     it('collects nothing under .claude/ in any project', () => {
@@ -179,6 +186,17 @@ describe('vitest test collection', () => {
         `the unit project collects ${leaked.length} file(s) from a nested checkout under .claude/, ` +
           `so \`yarn test\` runs another branch's tests against this checkout's database`,
       ).toEqual([]);
+    });
+
+    it('runs the unit tests that live beside the demo seed test', () => {
+      // They sat under a directory the unit project excluded wholesale, so nothing ran them.
+      expect(inThisCheckout['unit']).toEqual(
+        expect.arrayContaining([
+          'packages/server/src/demo-fixtures/__tests__/deterministic-uuid.test.ts',
+          'packages/server/src/demo-fixtures/__tests__/use-case-registry.test.ts',
+          'packages/server/src/demo-fixtures/validators/ledger-validators.test.ts',
+        ]),
+      );
     });
 
     it('has no demo seed test in the unit project', () => {
