@@ -20,8 +20,8 @@ export default async function globalSetup() {
   // checking `process.env.POSTGRES_HOST` here saw `undefined`, classified it as local and
   // passed, while every connection made afterwards (the harness, and the demo seed's child
   // process) read the real host from .env. Throwing here aborts the whole run, every project
-  // included, which is the point:
-  // the guard further down only surfaced as a warning inside the try/catch below.
+  // included, which is the point: the guard further down only surfaced as a warning inside the
+  // try/catch below.
   const { assertTestDatabaseIsLocal } =
     await import('../packages/server/src/__tests__/helpers/test-db-config.js');
   assertTestDatabaseIsLocal();
