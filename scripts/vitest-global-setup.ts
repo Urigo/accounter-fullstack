@@ -25,6 +25,18 @@ export default async function globalSetup() {
     'the vitest global setup',
   );
 
+  // The check above only sees variables that were already in the environment. A target that
+  // exists only in the root .env is not there yet: the harness config reads that file when it
+  // is first imported. Import it and check again, still outside the try/catch further down.
+  // That block downgrades a failure to a warning so that mocked unit tests can run when the
+  // local database is not up, and without this second check it downgraded a deployed target
+  // too: connectTestDb refused it, the refusal was logged as "Failed to ensure countries
+  // reference data", and the run went on with the deployed credentials now in the environment
+  // every test worker inherits.
+  const { assertTestDatabaseIsLocal } =
+    await import('../packages/server/src/__tests__/helpers/test-db-config.js');
+  assertTestDatabaseIsLocal();
+
   // Create isolated env file for test runs (seedAdminCore writes here)
   try {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'accounter-test-env-'));
