@@ -1,7 +1,6 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
 // Log a caught error by its message, never the Error itself. Printing an Error formats its stack,
@@ -15,15 +14,17 @@ export default async function globalSetup() {
   // Before anything else: this setup writes (seedCountries below) and runs for *every*
   // vitest project, `--project unit` included. It reads the root .env, so "I only ran unit
   // tests" is not a reason to assume the target is local.
-  assertLocalDatabase(
-    {
-      host: process.env.POSTGRES_HOST,
-      port: process.env.POSTGRES_PORT,
-      db: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-    },
-    'the vitest global setup',
-  );
+  //
+  // Check the config the harness will actually connect with, not raw `process.env`. Nothing
+  // has loaded the root .env at this point -- importing `test-db-config` is what does -- so
+  // checking `process.env.POSTGRES_HOST` here saw `undefined`, classified it as local and
+  // passed, while every connection made afterwards (the harness, and the demo seed's child
+  // process) read the real host from .env. Throwing here aborts the whole run, every project
+  // included, which is the point: the guard further down only surfaced as a warning inside the
+  // try/catch below.
+  const { assertTestDatabaseIsLocal } =
+    await import('../packages/server/src/__tests__/helpers/test-db-config.js');
+  assertTestDatabaseIsLocal();
 
   // Create isolated env file for test runs (seedAdminCore writes here)
   try {
