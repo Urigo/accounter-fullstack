@@ -90,7 +90,7 @@ export function WelcomePage(): ReactElement {
       // setup, not of this flow, and a cache exchange would silently reintroduce
       // the bounce. Invalidating explicitly keeps the flow correct either way.
       refreshViewer();
-      navigate(ROUTES.HOME, { replace: true });
+      navigate(ROUTES.APP_HOME, { replace: true });
     }
   };
 

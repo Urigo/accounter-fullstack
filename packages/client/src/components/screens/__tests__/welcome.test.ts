@@ -217,7 +217,7 @@ describe('WelcomePage', () => {
     expect(claimInvitationMock).toHaveBeenCalledWith('inv-1');
     // The stale NO_WORKSPACE answer must not outlive the navigation.
     expect(refreshViewerMock).toHaveBeenCalled();
-    expect(router.state.location.pathname).toBe(ROUTES.HOME);
+    expect(router.state.location.pathname).toBe(ROUTES.APP_HOME);
     await cleanup();
   });
 

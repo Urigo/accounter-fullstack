@@ -1,4 +1,4 @@
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { CombinedError, Provider as UrqlProvider, type Client, type OperationResult } from 'urql';
 import { fromValue, merge, never } from 'wonka';
 import { Auth0Context, initialContext, type Auth0ContextInterface } from '@auth0/auth0-react';
@@ -28,8 +28,8 @@ type ViewerState = {
 
 /**
  * A urql client that answers the `viewer` query with a fixed result. Nested
- * inside the global Provider from `.storybook/preview.tsx`, so it wins for the
- * component under test without needing `yarn mock:server` running.
+ * inside the global Provider from `.storybook/preview.tsx`, which explicitly
+ * yields to a story's own client, so these states need no `yarn mock:server`.
  */
 function makeViewerClient(
   viewer: ViewerState | null,
@@ -73,6 +73,14 @@ const invitation = {
   expiresAt: '2030-01-01T00:00:00.000Z',
 };
 
+/**
+ * The screen under its own urql client and a signed-in Auth0 context.
+ *
+ * No `MemoryRouter` here: `.storybook/preview.tsx` provides the only Router —
+ * react-router throws when one is nested inside another — so the entry point
+ * comes from `parameters.router.initialEntries` on the meta below. The `Routes`
+ * are what make the redirecting states legible rather than blank.
+ */
 function renderWelcome(
   viewer: ViewerState | null,
   options?: { loading?: boolean; error?: CombinedError },
@@ -80,14 +88,15 @@ function renderWelcome(
   return (
     <UrqlProvider value={makeViewerClient(viewer, options)}>
       <Auth0Context.Provider value={authenticated}>
-        <MemoryRouter initialEntries={[ROUTES.WELCOME]}>
-          <Routes>
-            <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
-            {/* An ACTIVE viewer is redirected away, so give the target a home. */}
-            <Route path={ROUTES.HOME} element={<div className="p-8">Redirected to the app</div>} />
-            <Route path={ROUTES.LOGIN} element={<div className="p-8">Redirected to login</div>} />
-          </Routes>
-        </MemoryRouter>
+        <Routes>
+          <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
+          {/* An ACTIVE viewer is redirected away, so give the target a home. */}
+          <Route
+            path={ROUTES.APP_HOME}
+            element={<div className="p-8">Redirected to the app</div>}
+          />
+          <Route path={ROUTES.LOGIN} element={<div className="p-8">Redirected to login</div>} />
+        </Routes>
       </Auth0Context.Provider>
     </UrqlProvider>
   );
@@ -98,6 +107,7 @@ const meta = {
   component: WelcomePage,
   parameters: {
     layout: 'fullscreen',
+    router: { initialEntries: [ROUTES.WELCOME] },
   },
 } satisfies Meta<typeof WelcomePage>;
 

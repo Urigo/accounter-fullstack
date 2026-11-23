@@ -493,7 +493,12 @@ describe('AcceptInvitationsProvider', () => {
       // The token lookup must not be involved — tokens are hashed and unavailable here.
       expect(getInvitationForAcceptanceRun).not.toHaveBeenCalled();
       expect(dbClient.query).toHaveBeenNthCalledWith(2, 'COMMIT');
-      expect(updateInvitationAcceptanceRun).toHaveBeenCalledWith({ id: 'inv-1' }, dbClient);
+      // The invitation is re-pointed at the claiming user, exactly as the token
+      // path does it — the shared tail owns that write.
+      expect(updateInvitationAcceptanceRun).toHaveBeenCalledWith(
+        { id: 'inv-1', userId: 'existing-user' },
+        dbClient,
+      );
     });
 
     it('refuses an unverified email outright', async () => {

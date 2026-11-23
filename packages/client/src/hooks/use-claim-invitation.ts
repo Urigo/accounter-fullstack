@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation, type CombinedError } from 'urql';
+import type { CombinedError } from 'urql';
 import { ClaimInvitationDocument, type ClaimInvitationMutation } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -26,36 +26,25 @@ type UseClaimInvitation = {
 const NOTIFICATION_ID = 'claimInvitation';
 
 export const useClaimInvitation = (): UseClaimInvitation => {
-  const [{ fetching, error }, mutate] = useMutation(ClaimInvitationDocument);
+  const { fetching, error, execute } = useApiMutation({
+    document: ClaimInvitationDocument,
+    // Claiming links a membership and unblocks (or deletes) an Auth0 placeholder
+    // user, so a double-click is worth stopping. Unlike `acceptInvitation`, whose
+    // repeat reports TOKEN_ALREADY_USED, a second claim finds the invitation
+    // already accepted and answers with the deliberately vague "not available for
+    // your account" — alarming wording for someone who just succeeded.
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.invitationId}`,
+    loadingMessage: 'Joining business',
+    errorMessage: 'Error joining business',
+    select: data => data.claimInvitation,
+    successToast: { description: 'Invitation accepted successfully' },
+    errorToast: { duration: 10_000 },
+  });
+
   const claimInvitation = useCallback(
-    async (invitationId: string) => {
-      const message = 'Error joining business';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Joining business', {
-        id: notificationId,
-      });
-      try {
-        const result = await mutate({ invitationId });
-        const data = handleCommonErrors(result, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Invitation accepted successfully',
-          });
-          return data.claimInvitation;
-        }
-      } catch (e) {
-        console.error(message, e);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 10_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
+    (invitationId: string) => execute({ invitationId }),
+    [execute],
   );
 
   return { fetching, error, claimInvitation };
