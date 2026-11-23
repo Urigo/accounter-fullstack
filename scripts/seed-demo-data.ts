@@ -1,6 +1,9 @@
 import { config } from 'dotenv';
 import pg from 'pg';
-import { warnIfRemoteDatabase } from '../packages/migrations/src/local-db-guard.js';
+import {
+  warnIfRemoteDatabase,
+  type DatabaseTarget,
+} from '../packages/migrations/src/local-db-guard.js';
 import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
 import type {
@@ -15,6 +18,11 @@ import { seedVATDefault } from '../packages/server/src/demo-fixtures/helpers/see
 import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js';
 import type { FixtureSpec } from '../packages/server/src/fixtures/fixture-spec.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
+import {
+  assertDemoSeedTarget,
+  DemoSeedRefusedError,
+  resetDemoSeedTables,
+} from './demo-seed-guard.js';
 
 config();
 
@@ -180,36 +188,14 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
 }
 
 async function seedDemoData() {
-  // 1. Guard checks
+  // 1. Guard checks. Each refusal is thrown and printed once, at the bottom of this file.
   if (process.env.NODE_ENV === 'production') {
-    console.error('❌ Refusing to seed demo data in production environment');
-    process.exit(1);
+    throw new DemoSeedRefusedError('Refusing to seed demo data in production environment');
   }
 
   if (process.env.ALLOW_DEMO_SEED !== '1') {
-    console.error('❌ ALLOW_DEMO_SEED=1 required to run demo seed');
-    process.exit(1);
+    throw new DemoSeedRefusedError('ALLOW_DEMO_SEED=1 required to run demo seed');
   }
-
-  // NODE_ENV above says nothing about which host POSTGRES_* points at -- and the root .env
-  // sets NODE_ENV=production while often pointing at the dev container, so the two are
-  // independent. Report the actual target too.
-  //
-  // Warn rather than refuse: this script runs inside the staging deploy's build command
-  // (`ALLOW_DEMO_SEED=1 yarn seed:staging-demo`) against a deployed database, so a deployed
-  // target is its intended use, not a mistake. Requiring an opt-in variable here would mean
-  // every new staging or preview environment fails its first deploy on a safety check --
-  // which is exactly what happened when this refused. The real protection against seeding
-  // the wrong database is the ALLOW_DEMO_SEED gate above plus a visible target in the log.
-  warnIfRemoteDatabase(
-    {
-      host: process.env.POSTGRES_HOST,
-      port: process.env.POSTGRES_PORT,
-      db: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-    },
-    'the demo data seed',
-  );
 
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
@@ -219,6 +205,34 @@ async function seedDemoData() {
     database: process.env.POSTGRES_DB,
     ssl: process.env.POSTGRES_SSL === '1',
   });
+
+  // Constructing the client opens nothing. The target is read back from it rather than from
+  // POSTGRES_* on purpose: node-postgres fills an unset host or database from PGHOST /
+  // PGDATABASE and its own defaults, and the checks below have to judge the database this
+  // client will actually reach.
+  const target: DatabaseTarget = {
+    host: client.host,
+    port: client.port,
+    db: client.database,
+    user: client.user,
+  };
+
+  // Neither gate above says which database POSTGRES_* points at. ALLOW_DEMO_SEED=1 means "run
+  // the seed", and it can be set by something other than a person who looked at the target:
+  // the demo seed test used to set it, whatever the root .env pointed at. NODE_ENV is `test`
+  // under vitest whatever the target is.
+  //
+  // So refuse a database that is not a demo database, before any connection is opened. The rule
+  // (scripts/demo-seed-guard.ts) is on the database name. That keeps the staging deploy
+  // working with no new variable: it runs `ALLOW_DEMO_SEED=1 yarn seed:staging-demo` against a
+  // deployed database, and a name that says staging, demo, test or preview passes. Refusing
+  // every remote host unless ALLOW_REMOTE_DB=1 was set is what broke that deploy before.
+  const verdict = assertDemoSeedTarget(target, process.env);
+  console.log(`✅ Demo seed target accepted (${verdict.because})`);
+
+  // A remote target is still announced loudly. ENFORCE_LOCAL_DB=1 turns the announcement into
+  // a refusal, for a machine that never seeds a deployed database.
+  warnIfRemoteDatabase(target, 'the demo data seed');
 
   try {
     await client.connect();
@@ -250,24 +264,13 @@ async function seedDemoData() {
     // wiped rather than merely un-reseeded.
     await client.query(`SELECT accounter_schema.get_current_business_id()`);
 
-    // 2. Destructive reset (domain tables only; preserve schema/migrations/countries)
+    // 2. Destructive reset (domain tables only; preserve schema/migrations/countries).
+    //
+    // The TRUNCATE itself is in resetDemoSeedTables, which first asks the server which database
+    // this connection is on and applies the same rule to that name. Do not issue a TRUNCATE
+    // from this file: that function is the only path to one.
     console.log('🧹 Clearing existing demo data...');
-    await client.query(`
-      TRUNCATE TABLE accounter_schema.ledger_records,
-                     accounter_schema.documents,
-                     accounter_schema.transactions,
-                     accounter_schema.charges,
-                     accounter_schema.financial_accounts_tax_categories,
-                     accounter_schema.financial_accounts,
-                     accounter_schema.invitations,
-                     accounter_schema.business_users,
-                     accounter_schema.tags,
-                     accounter_schema.tax_categories,
-                     accounter_schema.businesses,
-                     accounter_schema.user_context,
-                     accounter_schema.financial_entities
-      RESTART IDENTITY CASCADE;
-    `);
+    await resetDemoSeedTables(client, target, process.env);
     console.log('✅ Domain tables cleared');
 
     // 3. Seed foundation data
@@ -357,6 +360,11 @@ async function seedDemoData() {
 
     console.log('✅ Demo data seed complete');
   } catch (error) {
+    if (error instanceof DemoSeedRefusedError) {
+      // The reset refused the connected database. Nothing was changed and nothing failed, so
+      // let it reach the handler below as the refusal it is instead of as a wrapped crash.
+      throw error;
+    }
     console.error('❌ Seed failed:');
     if (error instanceof DemoSeedError) {
       console.error('Message:', error.message);
@@ -373,17 +381,26 @@ async function seedDemoData() {
   }
 }
 
-seedDemoData().catch(error => {
-  console.error('❌ Fatal seed error');
-  console.error('Error object:', error);
-  console.error('Error type:', typeof error);
-  if (error instanceof DemoSeedError) {
-    console.error('Stack:', error.stack);
-  } else if (error instanceof Error) {
-    console.error('Message:', error.message);
-    console.error('Stack:', error.stack);
+/**
+ * The run. It starts when this file is loaded, as it always has; the promise is exported only
+ * so `scripts/__tests__/seed-demo-data.test.ts` can wait for it to finish.
+ */
+export const demoSeedRun = seedDemoData().catch(error => {
+  if (error instanceof DemoSeedRefusedError) {
+    // A refusal is an answer, not a crash: print the message and leave out the stack trace.
+    console.error(`❌ ${error.message}`);
   } else {
-    console.error('Unknown error:', error);
+    console.error('❌ Fatal seed error');
+    console.error('Error object:', error);
+    console.error('Error type:', typeof error);
+    if (error instanceof DemoSeedError) {
+      console.error('Stack:', error.stack);
+    } else if (error instanceof Error) {
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+    } else {
+      console.error('Unknown error:', error);
+    }
   }
   process.exit(1);
 });
