@@ -348,7 +348,7 @@ export const RULES = deepFreeze([
     source: 'derived',
     scope: '1000',
     description:
-      'declarations.hasCapitalGainsAppendix is false while capital-gains appendices exist (833 is derived from them as yes).',
+      'declarations.hasCapitalGainsAppendix is false while capital-gains appendices exist, transmitted or not (833 is derived from them as yes).',
     specRef: { page: 7 },
   },
   {

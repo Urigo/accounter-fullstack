@@ -1343,33 +1343,33 @@ a code value: `field.negative`, `field.integer`, `field.length`, at
 
 ### 10.3 Record 1000 — conditional and cross-field rules
 
-| Rule ID                                     | Sev | Source  | Condition (violation)                                                                                | Ref      |
-| ------------------------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------- | -------- |
-| `main.familyCompany.fileNumber`             | E   | spec    | family company (836) without the taxpayer file number (837)                                          | p.7      |
-| `main.familyCompany.code080`                | E   | spec    | family company (836) without code 080 (0 allowed)                                                    | p.15     |
-| `main.houseCompany.code084`                 | E   | spec    | house company (846) without code 084 (0 allowed)                                                     | p.15     |
-| `main.investmentLaw.flag`                   | E   | spec    | code 101 or 102 filled but 849 not marked                                                            | p.8      |
-| `main.beneficiaryEnterprise.noticeDate`     | E   | spec    | 851 marked without 852 (guaranteed by the input type; checked for JS callers and parsed files)       | p.8      |
-| `main.specialYear.balanceSheetDate`         | E   | spec    | 863 marked without 864 (same as above)                                                               | p.8      |
-| `main.kibbutz.code226`                      | E   | spec\*  | `isKibbutz` but code 226 not filled                                                                  | p.9, 18  |
-| `main.kibbutz.code226Other`                 | W   | derived | code 226 = 9 ("other cooperative, not kibbutz") while `isKibbutz`                                    | p.18     |
-| `main.buildingIncome.code259`               | E   | spec    | `hasBuildingIncome` (884 = 1) without code 259                                                       | p.9      |
-| `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                       | p.11     |
-| `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                          | p.11     |
-| `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                | p.11     |
-| `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                     | p.11     |
-| `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                     | p.17     |
-| `main.rd.total`                             | W   | derived | 1030 records present and the sum of their amounts ≠ code 165 (absent is 0), in whole shekels         | p.17     |
-| `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                | p.7      |
-| `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                      | p.10–11  |
-| `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                       | p.10–11  |
-| `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount` | p.10     |
-| `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                  | p.12, 19 |
-| `main.bankAccount.format`                   | E   | spec    | bank not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits                    | p.19     |
-| `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                        | p.12     |
-| `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                     | p.12     |
-| `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                      | p.10     |
-| `main.attachments.code010`                  | W   | derived | withholding certificates count > 0 but code 010 absent                                               | p.10     |
+| Rule ID                                     | Sev | Source  | Condition (violation)                                                                                        | Ref      |
+| ------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------------------ | -------- |
+| `main.familyCompany.fileNumber`             | E   | spec    | family company (836) without the taxpayer file number (837)                                                  | p.7      |
+| `main.familyCompany.code080`                | E   | spec    | family company (836) without code 080 (0 allowed)                                                            | p.15     |
+| `main.houseCompany.code084`                 | E   | spec    | house company (846) without code 084 (0 allowed)                                                             | p.15     |
+| `main.investmentLaw.flag`                   | E   | spec    | code 101 or 102 filled but 849 not marked                                                                    | p.8      |
+| `main.beneficiaryEnterprise.noticeDate`     | E   | spec    | 851 marked without 852 (guaranteed by the input type; checked for JS callers and parsed files)               | p.8      |
+| `main.specialYear.balanceSheetDate`         | E   | spec    | 863 marked without 864 (same as above)                                                                       | p.8      |
+| `main.kibbutz.code226`                      | E   | spec\*  | `isKibbutz` but code 226 not filled                                                                          | p.9, 18  |
+| `main.kibbutz.code226Other`                 | W   | derived | code 226 = 9 ("other cooperative, not kibbutz") while `isKibbutz`                                            | p.18     |
+| `main.buildingIncome.code259`               | E   | spec    | `hasBuildingIncome` (884 = 1) without code 259                                                               | p.9      |
+| `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                               | p.11     |
+| `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                                  | p.11     |
+| `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                        | p.11     |
+| `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                             | p.11     |
+| `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                             | p.17     |
+| `main.rd.total`                             | W   | derived | 1030 records present and the sum of their amounts ≠ code 165 (absent is 0), in whole shekels                 | p.17     |
+| `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while `capitalGains.length > 0` or `untransmittedCount > 0` | p.7      |
+| `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                              | p.10–11  |
+| `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                               | p.10–11  |
+| `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount`         | p.10     |
+| `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                          | p.12, 19 |
+| `main.bankAccount.format`                   | E   | spec    | bank not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits                            | p.19     |
+| `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                                | p.12     |
+| `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                             | p.12     |
+| `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                              | p.10     |
+| `main.attachments.code010`                  | W   | derived | withholding certificates count > 0 but code 010 absent                                                       | p.10     |
 
 \* The spec text for 877 is "required in the case of a kibbutz and when field 226 is filled" (§15
 A-13).

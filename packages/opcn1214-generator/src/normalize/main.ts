@@ -16,6 +16,7 @@ import {
   deriveCode297,
   deriveHasCapitalGainsAppendix,
   deriveHasForeignAppendix,
+  hasUntransmittedAppendices,
   malformedBankAccountMembers,
   MAX_APPENDIX_COUNT,
   validUntransmittedCount,
@@ -96,17 +97,22 @@ function checkReportablePositionCount(positions: readonly number[] | undefined, 
   );
 }
 
+/** The key of 1000@962, the number of capital-gains appendices not transmitted. */
+const UNTRANSMITTED_COUNT = 'capitalGainsSummary.untransmittedCount';
+
 /** The key of 1000@833, which is derived but is also an input property (SPEC §7.3). */
 const HAS_CAPITAL_GAINS_APPENDIX = 'declarations.hasCapitalGainsAppendix';
 
 /**
  * main.capitalGains.flag: `hasCapitalGainsAppendix` false while capital-gains appendices exist
- * (p.7). 833 is derived as yes, so the explicit false exists only in the input and is reported as a
- * notice (IMPLEMENTATION_PLAN.md §1.2).
+ * (p.7), transmitted (30xx records) or not (`capitalGainsSummary.untransmittedCount` > 0, 1000@962).
+ * 833 is derived as yes from either (SPEC §7.4), so the explicit false exists only in the input and
+ * is reported as a notice (IMPLEMENTATION_PLAN.md §1.2).
  */
 function checkCapitalGainsFlag(input: Report1214Input, def: RecordDef, notices: Issue[]) {
   const count = input.capitalGains?.length ?? 0;
-  if (input.declarations.hasCapitalGainsAppendix !== false || count === 0) {
+  const untransmitted = hasUntransmittedAppendices(input.capitalGainsSummary);
+  if (input.declarations.hasCapitalGainsAppendix !== false || (count === 0 && !untransmitted)) {
     return;
   }
   const field = def.fields.find(candidate => candidate.key === HAS_CAPITAL_GAINS_APPENDIX);
@@ -115,7 +121,7 @@ function checkCapitalGainsFlag(input: Report1214Input, def: RecordDef, notices: 
   }
   notices.push(
     makeIssue('main.capitalGains.flag', {
-      message: `${HAS_CAPITAL_GAINS_APPENDIX} is false, but the report has ${count} capital-gains appendices (1000@833 is derived from them as yes).`,
+      message: `${HAS_CAPITAL_GAINS_APPENDIX} is false, but the report has ${count} capital-gains appendices and ${UNTRANSMITTED_COUNT} ${input.capitalGainsSummary?.untransmittedCount ?? 0} (1000@833 is derived from them as yes).`,
       path: HAS_CAPITAL_GAINS_APPENDIX,
       recordType: '1000',
       recordIndex: 0,
@@ -126,9 +132,6 @@ function checkCapitalGainsFlag(input: Report1214Input, def: RecordDef, notices: 
     }),
   );
 }
-
-/** The key of 1000@962, the number of capital-gains appendices not transmitted. */
-const UNTRANSMITTED_COUNT = 'capitalGainsSummary.untransmittedCount';
 
 /**
  * field.length of code 028 (SPEC §7.4): the capital-gains forms attached, the appendices plus the

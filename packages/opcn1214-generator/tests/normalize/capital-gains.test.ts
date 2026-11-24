@@ -308,6 +308,24 @@ describe('1000@833, code 028 and 9999@145 from the appendices (SPEC §7.4)', () 
     expect(report.records[0]?.values['declarations.hasCapitalGainsAppendix']).toBe(true);
   });
 
+  it('raises main.capitalGains.flag for false with only untransmitted appendices, naming both counts', () => {
+    const report = reportOf(
+      minimalInput({
+        declarations: { hasCapitalGainsAppendix: false },
+        capitalGainsSummary: { untransmittedCount: 3, reasons: { lossOrNoGain: true } },
+      }),
+    );
+    expect(report.notices).toEqual([
+      expect.objectContaining({
+        ruleId: 'main.capitalGains.flag',
+        path: 'declarations.hasCapitalGainsAppendix',
+        value: false,
+        message: expect.stringMatching(/0 capital-gains appendices.*untransmittedCount 3/),
+      }),
+    ]);
+    expect(report.records[0]?.values['declarations.hasCapitalGainsAppendix']).toBe(true);
+  });
+
   it('raises no notice for false without appendices, or true with appendices', () => {
     const noticesOf = (overrides: Parameters<typeof minimalInput>[0]) =>
       reportOf(minimalInput(overrides)).notices;
