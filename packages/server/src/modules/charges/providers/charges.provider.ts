@@ -11,6 +11,7 @@ import type {
   IDeleteChargesByIdsQuery,
   IGenerateChargeParams,
   IGenerateChargeQuery,
+  IGetChargeIdsPageByFactsQuery,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFiltersResult,
@@ -882,6 +883,66 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   LIMIT $limit OFFSET $offset;
   `;
 
+/**
+ * One page of the charges list, picked from `charge_list_facts`: the stored values the list sorts
+ * and filters by. It returns ids only. `getChargesByFilters` then derives the full rows for those
+ * ids, so its aggregates run for one page instead of for every charge of the business.
+ *
+ * Every predicate and the ORDER BY mirror the tail of `getChargesByFilters`, with the stored
+ * column in place of the derived one. A change to either has to be made in both, and to
+ * `refresh_charge_list_facts` when it needs a value that is not stored yet.
+ *
+ * Free-text search is not covered: a list with a search term takes the single-query path.
+ */
+const getChargeIdsPageByFacts = sql<IGetChargeIdsPageByFactsQuery>`
+  SELECT
+    f.charge_id AS id,
+    COUNT(*) OVER () AS total_count
+  FROM accounter_schema.charge_list_facts f
+  INNER JOIN accounter_schema.charges c ON c.id = f.charge_id
+  LEFT JOIN accounter_schema.businesses b ON b.id = f.main_business_id
+  WHERE ($isIDs = 0 OR c.id IN $$IDs)
+  AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
+  AND ($isBusinessIds = 0 OR f.business_ids && $businessIds)
+  AND ($isExcludedBusinessIds = 0 OR NOT COALESCE(f.business_ids && $excludedBusinessIds, FALSE))
+  AND ($fromDate ::TEXT IS NULL OR f.main_min_date >= $fromDate ::DATE)
+  AND ($fromAnyDate ::TEXT IS NULL OR f.any_max_date >= $fromAnyDate ::DATE)
+  AND ($toDate ::TEXT IS NULL OR f.main_max_date <= $toDate ::DATE)
+  AND ($toAnyDate ::TEXT IS NULL OR f.any_min_date <= $toAnyDate ::DATE)
+  AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND f.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND f.transactions_event_amount <= 0))
+  AND ($type::accounter_schema.charge_type IS NULL OR c.type = $type)
+  AND ($withoutInvoice = FALSE OR f.invoices_count = 0)
+  AND ($withoutReceipt = FALSE OR (f.receipts_count = 0 AND (COALESCE(b.no_invoices_required, false) IS FALSE)))
+  AND ($withoutDocuments = FALSE OR f.documents_count = 0)
+  AND ($withoutTransactions = FALSE OR f.transactions_count = 0)
+  AND ($withOpenDocuments = FALSE OR f.has_open_documents IS TRUE)
+  AND ($withoutLedger = FALSE OR f.ledger_count = 0)
+  AND ($isAccountantStatuses = 0 OR c.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
+  AND ($isTags = 0 OR EXISTS (
+    SELECT 1 FROM accounter_schema.charge_tags ct
+    WHERE ct.charge_id = c.id AND ct.tag_id = ANY ($tags::uuid[])))
+  AND ($isExcludedTags = 0 OR NOT EXISTS (
+    SELECT 1 FROM accounter_schema.charge_tags ct
+    WHERE ct.charge_id = c.id AND ct.tag_id = ANY ($excludedTags::uuid[])))
+  AND ($withoutTags = FALSE OR NOT EXISTS (
+    SELECT 1 FROM accounter_schema.charge_tags ct WHERE ct.charge_id = c.id))
+  AND ($isBusinessTripIds = 0 OR EXISTS (
+    SELECT 1 FROM accounter_schema.business_trip_charges btc
+    WHERE btc.charge_id = c.id AND btc.business_trip_id = ANY ($businessTripIds::uuid[])))
+  AND ($isAccountIds = 0 OR f.account_ids && $accountIds::uuid[])
+  AND ($isExcludedAccountIds = 0 OR NOT COALESCE(f.account_ids && $excludedAccountIds::uuid[], FALSE))
+  AND ($withMissingCounterparty = FALSE OR f.missing_counterparty IS TRUE)
+  ORDER BY
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (f.sort_date, f.sort_date_tiebreak, f.charge_id) END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date' THEN (f.sort_date, f.sort_date_tiebreak, f.charge_id) END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN (f.event_amount, f.charge_id) END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_amount' THEN (f.event_amount, f.charge_id) END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(f.event_amount) END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount' THEN ABS(f.event_amount) END DESC,
+  f.charge_id
+  LIMIT $limit OFFSET $offset;
+  `;
+
 const getSimilarCharges = sql<IGetSimilarChargesQuery>`
       WITH owner_charges AS (
         SELECT c.*
@@ -1417,12 +1478,48 @@ export class ChargesProvider {
       limit: params.limit ?? null,
       offset: params.offset ?? null,
     };
-    return getChargesByFilters.run(fullParams, this.db).then(charges => {
+    // A page of the list is picked from the stored facts, and only that page is enriched. A
+    // search term needs the text of every transaction and document, which the facts do not hold.
+    const isPage = fullParams.limit != null;
+    const isSearch = freeText !== null || excludedFreeText !== null;
+    const charges =
+      isPage && !isSearch
+        ? this.getChargesPageByFacts(fullParams)
+        : (getChargesByFilters.run(fullParams, this.db) as Promise<IGetChargesByFiltersResult[]>);
+
+    return charges.then(rows => {
       // The enriched rows are supersets of the plain charge rows — prime the
       // by-id loader so field-resolver helpers don't re-fetch the same charges.
-      charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
-      return charges;
-    }) as Promise<IGetChargesByFiltersResult[]>;
+      rows.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+      return rows;
+    });
+  }
+
+  /**
+   * The same rows as the single query gives for `params`, in two steps: the page's ids and the
+   * total from `charge_list_facts`, then the full rows for those ids alone.
+   */
+  private async getChargesPageByFacts(
+    params: IGetChargesByFiltersParams,
+  ): Promise<IGetChargesByFiltersResult[]> {
+    const page = await getChargeIdsPageByFacts.run(params, this.db);
+    if (page.length === 0) {
+      return [];
+    }
+    const rows = (await getChargesByFilters.run(
+      {
+        ...params,
+        // The ids are already the answer to every filter. Sort order still applies.
+        isIDs: 1,
+        IDs: page.map(row => row.id),
+        limit: null,
+        offset: null,
+      },
+      this.db,
+    )) as IGetChargesByFiltersResult[];
+    // The second query counts the page; the list's total is the first one's.
+    const totalCount = page[0]!.total_count;
+    return rows.map(row => ({ ...row, total_count: totalCount }));
   }
 
   public async getSimilarCharges(params: IGetSimilarChargesParams) {
