@@ -36,6 +36,10 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
         record.activation_date,
         year,
       );
+      // nothing to add, e.g. a record in a category that is not depreciated (0%)
+      if (yearlyDepreciationAmount === 0) {
+        return;
+      }
 
       switch (record.type) {
         case 'RESEARCH_AND_DEVELOPMENT':

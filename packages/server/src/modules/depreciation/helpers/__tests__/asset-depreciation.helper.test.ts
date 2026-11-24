@@ -1173,7 +1173,7 @@ describe('depreciationEndDate (C4)', () => {
     [100, '2021-01-01', '2021-12-31'],
     [50, '2020-02-29', '2022-02-27'],
     [25, '2020-02-29', '2024-02-28'],
-    // fractional N (provisional): floor(N) calendar years + round(frac × 365) days − 1 day
+    // fractional N: floor(N) calendar years + round(frac × 365) days − 1 day
     [33, '2023-08-20', '2026-08-30'],
     [33.33, '2021-01-01', '2023-12-31'],
     [40, '2024-07-01', '2026-12-30'],

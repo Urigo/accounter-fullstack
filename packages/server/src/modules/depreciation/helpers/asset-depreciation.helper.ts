@@ -19,8 +19,7 @@ function daysInYear(year: number): number {
  *   example 12.5% from 2023-08-20 ends on 2031-08-19.
  * - Fractional N (6%, 7%, 15%, 33%, 33.33%, 40%): activation + floor(N) calendar years +
  *   round(frac(N) × 365) days − 1 day. For example 33% (N = 3.0303…) from 2023-08-20 ends on
- *   2026-08-30. **This is a provisional rule**, pending confirmation; a change to it would only
- *   affect fractional N.
+ *   2026-08-30.
  * - A rate of 0 (a category that is not depreciated, such as trademarks), or any rate that is not
  *   a positive number: `null`, there is no end date.
  *
