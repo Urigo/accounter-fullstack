@@ -362,7 +362,7 @@ __metadata:
     date-fns: "npm:4.4.0"
     dotenv: "npm:18.0.10"
     graphql: "npm:16.15.0"
-    graphql-modules: "npm:3.1.3"
+    graphql-modules: "npm:4.0.0"
     graphql-scalars: "npm:2.0.1"
     graphql-yoga: "npm:5.24.6"
     iconv-lite: "npm:0.7.3"
@@ -2689,6 +2689,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-hive/signal@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@graphql-hive/signal@npm:3.0.0"
+  checksum: 10c0/e1c97ea878e5d16da2c4eec1e925b81767529d450f95bd5fbe28d08f7f496b3e001410335d15d0fb540d04a0c774aace856ef1788be1b4d9f752476a62ffb8af
+  languageName: node
+  linkType: hard
+
 "@graphql-hive/yoga@npm:0.50.2":
   version: 0.50.2
   resolution: "@graphql-hive/yoga@npm:0.50.2"
@@ -3223,6 +3230,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-tools/batch-execute@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "@graphql-tools/batch-execute@npm:11.0.0"
+  dependencies:
+    "@graphql-hive/signal": "npm:^3.0.0"
+    "@graphql-tools/utils": "npm:^13.2.2"
+    "@whatwg-node/promise-helpers": "npm:^2.0.2"
+    dataloader: "npm:^2.2.3"
+    tslib: "npm:^2.9.1"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/2b096120d2c3dc6533916f7a9fb077e181bbf1c96b48ff740b554ee5b927e1ec180a41c21e53cafce16753d9d3a5463fdb14c6e9575cf315003b2d7bf6c830e4
+  languageName: node
+  linkType: hard
+
 "@graphql-tools/code-file-loader@npm:^8.0.0, @graphql-tools/code-file-loader@npm:^8.1.37, @graphql-tools/code-file-loader@npm:^8.1.41":
   version: 8.1.43
   resolution: "@graphql-tools/code-file-loader@npm:8.1.43"
@@ -3267,6 +3289,23 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/e41bf6ce52fbbc6360321004691498a5c5ddd52ea7b1927074b510496ea76f90a241d371b7b6bbe42297dbb2ad64faa42a3e903d9c335a58beb727080170429a
+  languageName: node
+  linkType: hard
+
+"@graphql-tools/delegate@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "@graphql-tools/delegate@npm:13.0.0"
+  dependencies:
+    "@graphql-tools/batch-execute": "npm:^11.0.0"
+    "@graphql-tools/executor": "npm:^4.1.8"
+    "@graphql-tools/schema": "npm:^11.0.9"
+    "@graphql-tools/utils": "npm:^13.2.2"
+    "@whatwg-node/promise-helpers": "npm:^2.0.2"
+    dataloader: "npm:^2.2.3"
+    tslib: "npm:^2.9.1"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/2e1c9e0f091181633b8b1702e69de8a587d3faaa5b8c0567a3f04d82eced2870c3b2efbe9922901bf151d90ed2fa63d8a2bef5904d09453179d37cb77f77ce71
   languageName: node
   linkType: hard
 
@@ -3372,6 +3411,22 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/88c10ed75a6d67dd4b941a6ca24b893d2a281a202abc34fc445f6b0baccd232ccdbffcc4dd240f2734f62a20ce2f8d8cf9299c15bafddfdbce2ce67be3a4b856
+  languageName: node
+  linkType: hard
+
+"@graphql-tools/executor@npm:^4.1.8":
+  version: 4.1.8
+  resolution: "@graphql-tools/executor@npm:4.1.8"
+  dependencies:
+    "@graphql-tools/utils": "npm:^13.2.2"
+    "@graphql-typed-document-node/core": "npm:^3.2.0"
+    "@repeaterjs/repeater": "npm:^3.1.0"
+    "@whatwg-node/disposablestack": "npm:^0.1.0"
+    "@whatwg-node/promise-helpers": "npm:^2.0.1"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/ff579f460f7a75a33d1e62057ba2e75d136d6944deadc57cb5cb5ea09c07bf03fc7813d1cf7bd0e595c6328b2e50c92f750cac97eb3db10e0fe6ffedba13be6e
   languageName: node
   linkType: hard
 
@@ -3684,7 +3739,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/schema@npm:^10.0.0, @graphql-tools/schema@npm:^10.1.1, @graphql-tools/schema@npm:^10.1.3, @graphql-tools/schema@npm:^10.1.5":
+"@graphql-tools/schema@npm:^10.1.1, @graphql-tools/schema@npm:^10.1.3, @graphql-tools/schema@npm:^10.1.5":
   version: 10.1.5
   resolution: "@graphql-tools/schema@npm:10.1.5"
   dependencies:
@@ -3827,7 +3882,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/wrap@npm:^11.0.0, @graphql-tools/wrap@npm:^11.1.1, @graphql-tools/wrap@npm:^11.2.1, @graphql-tools/wrap@npm:^11.2.7":
+"@graphql-tools/wrap@npm:^11.1.1, @graphql-tools/wrap@npm:^11.2.1, @graphql-tools/wrap@npm:^11.2.7":
   version: 11.2.7
   resolution: "@graphql-tools/wrap@npm:11.2.7"
   dependencies:
@@ -3839,6 +3894,21 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/d5d3db16a8cc69fbd3d125b8eac0409e2600876d73eb5d4446be1f4cdc6cd0875f7529a81e440ca2a4d1652897f81c3aa0036efac8437f70838a0a014580e4fb
+  languageName: node
+  linkType: hard
+
+"@graphql-tools/wrap@npm:^12.0.0":
+  version: 12.0.0
+  resolution: "@graphql-tools/wrap@npm:12.0.0"
+  dependencies:
+    "@graphql-tools/delegate": "npm:^13.0.0"
+    "@graphql-tools/schema": "npm:^11.0.9"
+    "@graphql-tools/utils": "npm:^13.2.2"
+    "@whatwg-node/promise-helpers": "npm:^2.0.2"
+    tslib: "npm:^2.9.1"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/a49ed5e244fa090b667ba7991aa164399ba68e24936645bef8f50c2e104a62907ca487d2435af337404cb6d77f586970c01972ca8c7e065e3662f84294ecf3e6
   languageName: node
   linkType: hard
 
@@ -16563,17 +16633,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-modules@npm:3.1.3":
-  version: 3.1.3
-  resolution: "graphql-modules@npm:3.1.3"
+"graphql-modules@npm:4.0.0":
+  version: 4.0.0
+  resolution: "graphql-modules@npm:4.0.0"
   dependencies:
-    "@graphql-tools/schema": "npm:^10.0.0"
-    "@graphql-tools/wrap": "npm:^11.0.0"
+    "@graphql-tools/schema": "npm:^11.0.9"
+    "@graphql-tools/wrap": "npm:^12.0.0"
     "@graphql-typed-document-node/core": "npm:^3.1.0"
-    ramda: "npm:^0.32.0"
   peerDependencies:
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/facca51bc22dae6029cf94d6a95bc85a455298f9a457b7a93bf5e5267cf65d6466207ea9802090e26d73d8081069a52d18ebcbcc2c651192e3bd92707898f681
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/69416c1e1aee02005aa2005ff62fb9490ecb8e554e567acd414cf649ae99bfb927cf091184d76054bd97740b10d049b446cba75f97c6bf256384253e9200e438
   languageName: node
   linkType: hard
 
@@ -22088,13 +22157,6 @@ __metadata:
   version: 1.0.0
   resolution: "railroad-diagrams@npm:1.0.0"
   checksum: 10c0/81bf8f86870a69fb9ed243102db9ad6416d09c4cb83964490d44717690e07dd982f671503236a1f8af28f4cb79d5d7a87613930f10ac08defa845ceb6764e364
-  languageName: node
-  linkType: hard
-
-"ramda@npm:^0.32.0":
-  version: 0.32.0
-  resolution: "ramda@npm:0.32.0"
-  checksum: 10c0/6ad24338813cbf91932f7f160e33af9159a540580a43386b974365a8c98b8aa63e2a9d98affa9b2ac4b6628ff34705ddf9ced8f2987c04e3562f58f202c41cf9
   languageName: node
   linkType: hard
 
