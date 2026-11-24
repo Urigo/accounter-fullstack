@@ -267,6 +267,19 @@ describe('1000@833, code 028 and 9999@145 from the appendices (SPEC §7.4)', () 
     expect(mainOf(minimalInput()).codes.has('028')).toBe(false);
   });
 
+  it('omits code 028 above 99, which the field.length notice reports at untransmittedCount', () => {
+    const report = reportOf(
+      minimalInput({
+        capitalGains: section6Appendices(3),
+        capitalGainsSummary: { untransmittedCount: 97, reasons: { lossOrNoGain: true } },
+      }),
+    );
+    expect(report.records[0]?.codes.has('028')).toBe(false);
+    expect(report.notices.map(notice => [notice.ruleId, notice.path, notice.value])).toEqual([
+      ['field.length', 'capitalGainsSummary.untransmittedCount', 100],
+    ]);
+  });
+
   it('9999@145 counts the capital-gains appendices', () => {
     expect(at(linesOf(minimalInput({ capitalGains: section6Appendices(3) })).at(-1), 145, 2)).toBe(
       '03',

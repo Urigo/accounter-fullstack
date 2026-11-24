@@ -86,7 +86,10 @@ export interface Report1214Input {
   capitalGainsSummary?: {
     /** 960: all appendices, transmitted and not. */
     totalAppendicesCount?: number;
-    /** 962 (→ 833 = yes when > 0, SPEC §7.4). */
+    /**
+     * 962 (→ 833 = yes when > 0, SPEC §7.4). Code 028 is `capitalGains.length` plus this count, at
+     * most 99 (`field.length` here otherwise).
+     */
     untransmittedCount?: number;
     /** 964–968: why appendices were not transmitted. */
     reasons?: {

@@ -94,27 +94,44 @@ export function deriveCode008(
 }
 
 /** The largest count code 028 and 1000@962 hold: both are 2 digits wide. */
-const MAX_APPENDIX_COUNT = 99;
+export const MAX_APPENDIX_COUNT = 99;
 
 /**
- * Code 028, the number of capital-gains forms attached, transmitted and not (SPEC §7.4, p.14): the
- * capital-gains appendices plus `capitalGainsSummary.untransmittedCount`, omitted when 0. The
- * untransmitted count counts only when it is valid (an integer up to 99); an invalid count is
- * reported once, by the field rules of 1000@962, not again through 028.
+ * `capitalGainsSummary.untransmittedCount` when it is a valid count greater than 0 (an integer up
+ * to 99), else 0. An invalid count is reported once, by the field rules of 1000@962.
+ */
+export function validUntransmittedCount(summary: Report1214Input['capitalGainsSummary']): number {
+  const count = summary?.untransmittedCount;
+  return typeof count === 'number' &&
+    Number.isInteger(count) &&
+    count > 0 &&
+    count <= MAX_APPENDIX_COUNT
+    ? count
+    : 0;
+}
+
+/**
+ * The number of capital-gains forms attached, transmitted and not (SPEC §7.4, p.14): the
+ * capital-gains appendices plus the valid untransmitted count (validUntransmittedCount). It may
+ * exceed MAX_APPENDIX_COUNT; deriveCode028 then omits 028.
+ */
+export function capitalGainsFormCount(
+  input: Pick<Report1214Input, 'capitalGains' | 'capitalGainsSummary'>,
+): number {
+  return (input.capitalGains?.length ?? 0) + validUntransmittedCount(input.capitalGainsSummary);
+}
+
+/**
+ * Code 028, the number of capital-gains forms attached (capitalGainsFormCount), omitted when 0.
+ * An invalid untransmitted count adds 0 (1000@962 reports it, not 028 again). A count above 99 does
+ * not fit the 2 digits of 028: it is omitted and reported once, as `field.length` at
+ * `capitalGainsSummary.untransmittedCount` (the normalizer of record 1000).
  */
 export function deriveCode028(
   input: Pick<Report1214Input, 'capitalGains' | 'capitalGainsSummary'>,
 ): number | undefined {
-  const untransmitted = input.capitalGainsSummary?.untransmittedCount;
-  const valid =
-    typeof untransmitted === 'number' &&
-    Number.isInteger(untransmitted) &&
-    untransmitted > 0 &&
-    untransmitted <= MAX_APPENDIX_COUNT
-      ? untransmitted
-      : 0;
-  const count = (input.capitalGains?.length ?? 0) + valid;
-  return count > 0 ? count : undefined;
+  const count = capitalGainsFormCount(input);
+  return count > 0 && count <= MAX_APPENDIX_COUNT ? count : undefined;
 }
 
 /** Whether `capitalGainsSummary.untransmittedCount` is greater than 0 (→ 833 = yes, SPEC §7.4). */

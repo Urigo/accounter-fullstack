@@ -8,6 +8,7 @@ import type { ValidateOptions } from '../model/options.js';
 import { makeIssue, type Issue } from '../validate/issue.js';
 import {
   BANK_ACCOUNT_FORMAT,
+  capitalGainsFormCount,
   deriveBankCodes,
   deriveCode008,
   deriveCode028,
@@ -16,6 +17,8 @@ import {
   deriveHasCapitalGainsAppendix,
   deriveHasForeignAppendix,
   malformedBankAccountMembers,
+  MAX_APPENDIX_COUNT,
+  validUntransmittedCount,
   type BankAccount,
 } from './derive.js';
 import { CONSOLIDATED_REPORT_CODES, enumCode, FORM_6111_OBLIGATION_CODES } from './enums.js';
@@ -120,6 +123,41 @@ function checkCapitalGainsFlag(input: Report1214Input, def: RecordDef, notices: 
       value: false,
       expected: 'true or absent',
       specRef: { page: 7 },
+    }),
+  );
+}
+
+/** The key of 1000@962, the number of capital-gains appendices not transmitted. */
+const UNTRANSMITTED_COUNT = 'capitalGainsSummary.untransmittedCount';
+
+/**
+ * field.length of code 028 (SPEC §7.4): the capital-gains forms attached, the appendices plus the
+ * untransmitted count, are more than its 2 digits hold. Reported once, at the untransmitted count
+ * (the value to lower); deriveCode028 omits 028, so the code itself raises nothing. Without an
+ * untransmitted count, only more than 99 appendices overflow, and struct.capitalGains.max already
+ * reports those.
+ */
+function checkCode028Overflow(input: Report1214Input, def: RecordDef, notices: Issue[]) {
+  const count = capitalGainsFormCount(input);
+  const untransmitted = validUntransmittedCount(input.capitalGainsSummary);
+  if (count <= MAX_APPENDIX_COUNT || untransmitted === 0) {
+    return;
+  }
+  const field = def.fields.find(candidate => candidate.key === UNTRANSMITTED_COUNT);
+  if (!field) {
+    throw new Opcn1214InternalError(`Record 1000 has no field "${UNTRANSMITTED_COUNT}"`);
+  }
+  notices.push(
+    makeIssue('field.length', {
+      message: `${UNTRANSMITTED_COUNT} (${untransmitted}) plus ${count - untransmitted} capital-gains appendices is ${count} forms; code 028 (forms attached, transmitted and not) holds at most ${MAX_APPENDIX_COUNT}.`,
+      path: UNTRANSMITTED_COUNT,
+      recordType: '1000',
+      recordIndex: 0,
+      code: '028',
+      field: { position: field.position, length: field.length, nameHe: field.nameHe },
+      value: count,
+      expected: `at most ${MAX_APPENDIX_COUNT}`,
+      specRef: { page: 14 },
     }),
   );
 }
@@ -258,6 +296,7 @@ export function normalizeMain(
 
   checkReportablePositionCount(declarations.reportablePositions, notices);
   checkCapitalGainsFlag(input, def, notices);
+  checkCode028Overflow(input, def, notices);
   const bank = bankCodes(input.bankAccount, notices);
   const derivedCodes: Readonly<Record<DerivedMainCode, number | undefined>> = {
     '008': deriveCode008(declarations),
