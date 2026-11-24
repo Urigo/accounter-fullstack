@@ -117,13 +117,13 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
 
           const amount = Math.round(Number(record.amount));
 
+          // the end of depreciation follows from the category rate and the activation date
           const { yearlyDepreciationAmount, yearlyDepreciationRate, pastDepreciationAmount } =
             calculateDepreciation(
               Number(depreciationCategory.category.percentage),
               amount,
               record.activation_date,
               year,
-              record.expiration_date ?? undefined,
             );
 
           const activationYear = getTimelessDateYear(record.activation_date);

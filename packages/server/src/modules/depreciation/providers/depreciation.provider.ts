@@ -2,15 +2,16 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { depreciationEndDate } from '../helpers/asset-depreciation.helper.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
   IDeleteDepreciationRecordByChargeIdQuery,
   IDeleteDepreciationRecordParams,
   IDeleteDepreciationRecordQuery,
   IGetDepreciationRecordsByChargeIdsQuery,
-  IGetDepreciationRecordsByDatesParams,
   IGetDepreciationRecordsByDatesQuery,
   IGetDepreciationRecordsByIdsQuery,
   IInsertDepreciationRecordParams,
@@ -20,30 +21,21 @@ import type {
 } from '../types.js';
 
 const getDepreciationRecordsByChargeIds = sql<IGetDepreciationRecordsByChargeIdsQuery>`
-  SELECT d.*, (d.activation_date + (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date as expiration_date
+  SELECT d.*
   FROM accounter_schema.depreciation d
-  LEFT JOIN accounter_schema.depreciation_categories dc
-            ON d.category = dc.id
   WHERE d.charge_id IN $$chargeIds;`;
 
 const getDepreciationRecordsByIds = sql<IGetDepreciationRecordsByIdsQuery>`
-  SELECT d.*, (d.activation_date + (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date as expiration_date
+  SELECT d.*
   FROM accounter_schema.depreciation d
-  LEFT JOIN accounter_schema.depreciation_categories dc
-            ON d.category = dc.id
   WHERE d.id IN $$depreciationRecordIds;`;
 
 const getDepreciationRecordsByDates = sql<IGetDepreciationRecordsByDatesQuery>`
-  WITH depreciation AS (SELECT d.*,
-                              (activation_date +
-                              (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date AS expiration_date
-                      FROM accounter_schema.depreciation d
-                                LEFT JOIN accounter_schema.depreciation_categories dc
-                                          ON d.category = dc.id
-                      WHERE activation_date <= $toDate)
-  SELECT *
-  FROM depreciation
-  WHERE expiration_date >= $fromDate;`;
+  SELECT d.*, dc.percentage AS category_percentage
+  FROM accounter_schema.depreciation d
+  LEFT JOIN accounter_schema.depreciation_categories dc
+            ON d.category = dc.id
+  WHERE d.activation_date <= $toDate;`;
 
 const updateDepreciationRecord = sql<IUpdateDepreciationRecordQuery>`
   UPDATE accounter_schema.depreciation
@@ -134,13 +126,28 @@ export class DepreciationProvider {
     this.batchDepreciationRecordsByChargeIds(ids),
   );
 
-  public getDepreciationRecordsByDates(params: IGetDepreciationRecordsByDatesParams) {
-    return getDepreciationRecordsByDates.run(params, this.db).then(records => {
-      records.map(record => {
-        this.getDepreciationRecordByIdLoader.prime(record.id, record);
-      });
-      return records;
+  /**
+   * The records that depreciate during the given period: activated by its end, and not done
+   * depreciating before its start. The end of depreciation is `depreciationEndDate` (computed from
+   * the category rate and the activation date); records in a category that is not depreciated (0%)
+   * have none, and are always returned.
+   */
+  public async getDepreciationRecordsByDates({
+    fromDate,
+    toDate,
+  }: {
+    fromDate: TimelessDateString;
+    toDate: TimelessDateString;
+  }) {
+    const rows = await getDepreciationRecordsByDates.run({ toDate }, this.db);
+    const records = rows.flatMap(({ category_percentage, ...record }) => {
+      const endDate = depreciationEndDate(Number(category_percentage), record.activation_date);
+      return endDate === null || endDate >= fromDate ? [record] : [];
     });
+    for (const record of records) {
+      this.getDepreciationRecordByIdLoader.prime(record.id, record);
+    }
+    return records;
   }
 
   public updateDepreciationRecord(params: IUpdateDepreciationRecordParams) {
