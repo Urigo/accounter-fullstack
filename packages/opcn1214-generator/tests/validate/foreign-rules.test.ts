@@ -184,7 +184,7 @@ describe('foreign appendix rules (SPEC §10.5)', () => {
       expect(on439).toEqual([]);
     });
 
-    it('foreign.breakdown.country.duplicate: each repetition, as a warning', () => {
+    it('foreign.breakdown.country.duplicate: each repetition, as an error citing p.30', () => {
       const appendix = foreignAppendixWithBreakdown('420', {
         countries: [
           { country: '840', income: 1 },
@@ -195,7 +195,8 @@ describe('foreign appendix rules (SPEC §10.5)', () => {
       });
       expect(issuesOf(appendix, 'foreign.breakdown.country.duplicate')).toEqual([
         expect.objectContaining({
-          severity: 'warning',
+          severity: 'error',
+          specRef: { page: 30 },
           path: 'foreignAppendix.countryBreakdown["420"].countries[2].country',
           value: '840',
         }),

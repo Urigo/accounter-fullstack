@@ -248,13 +248,17 @@ function breakdownCountryUnknownOnlyFor439(report: NormalizedReport): Issue[] {
   );
 }
 
-/** foreign.breakdown.country.duplicate: a country listed again in the same breakdown. */
+/**
+ * foreign.breakdown.country.duplicate: a country listed again in the same breakdown; p.30 allows up
+ * to 10 *different* countries per code.
+ */
 function breakdownCountryDuplicate(report: NormalizedReport): Issue[] {
   return countryIssues(report, (country, record, index) =>
     record.countries.slice(0, index).some(earlier => earlier.country === country)
       ? {
           ruleId: 'foreign.breakdown.country.duplicate',
           message: `Country ${country} appears more than once in the breakdown of code ${breakdownCode(record)}.`,
+          page: 30,
         }
       : undefined,
   );

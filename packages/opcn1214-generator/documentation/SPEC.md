@@ -883,15 +883,18 @@ export interface ForeignAppendix {
   taxRefundDeclaration: boolean // 247 (required yes/no)
   taxRefundDeclarationAmount?: number
   amounts: Partial<Record<ForeignAppendixCode, number>>
-  countryBreakdown?: Partial<
-    Record<
-      CountryBreakdownCode,
-      {
-        deductionsOffsetsAndExemptions?: number // 2200@140
-        countries: Array<{ country: CountryCode; income: number }> // 1–10
-      }
-    >
-  >
+  countryBreakdown?: Partial<Record<CountryBreakdownCode, CountryBreakdown>>
+}
+
+export interface CountryBreakdown {
+  // 2200
+  deductionsOffsetsAndExemptions?: number // 2200@140
+  countries: CountryIncome[] // 1–10, each country at most once
+}
+
+export interface CountryIncome {
+  country: CountryCode // zero-padded to 3 digits when written; '-88' only for code 439
+  income: number // whole shekels
 }
 
 export type CapitalGainsAppendix =
@@ -1396,7 +1399,7 @@ and `values` columns.)
 | `foreign.breakdown.countries.max`             | E   | spec    | more than 10 countries for one code                                                                                      | p.30        |
 | `foreign.breakdown.country.unknown`           | E   | spec    | country code not in `countries.csv`                                                                                      | p.32, 63–71 |
 | `foreign.breakdown.country.unknownOnlyFor439` | E   | spec    | `-88` used for a code other than 439                                                                                     | p.32        |
-| `foreign.breakdown.country.duplicate`         | W   | derived | the same country twice within one breakdown                                                                              | —           |
+| `foreign.breakdown.country.duplicate`         | E   | spec    | the same country twice within one breakdown (p.30: up to 10 _different_ countries)                                       | p.30        |
 
 ### 10.6 Capital-gains appendices
 

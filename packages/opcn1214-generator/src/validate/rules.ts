@@ -489,10 +489,11 @@ export const RULES = deepFreeze([
   },
   {
     id: 'foreign.breakdown.country.duplicate',
-    severity: 'warning',
-    source: 'derived',
+    severity: 'error',
+    source: 'spec',
     scope: '2200',
     description: 'The same country twice within one country breakdown.',
+    specRef: { page: 30 },
   },
   {
     id: 'parse.empty',
