@@ -30,6 +30,11 @@ shared values once, in the root `.env`: the package templates list them commente
 value in a package `.env` overrides the root one for that package only. Each template documents its
 variables.
 
+> **Warning:** the root `.env` is for a **local** database only. Never put production credentials,
+> or those of any other deployed database, in it. Codegen, migrations, seeds and every DB-backed
+> test read this file, so `yarn test`, `yarn generate` and `migration:run` all run against whatever
+> it points at, and some of them write or reset data. See [Database safety](#database-safety).
+
 4. Run setup:
 
 If you want to create new local database, run:
@@ -44,8 +49,8 @@ yarn local:setup
 > directory — delete `docker/.accounter-dev/postgresql/db` and re-run `yarn local:setup`. It is
 > dev-only data.
 
-In case you already have a database, you can set the database variables in your `.env` file, then
-run:
+In case you already have a local database, you can set the database variables in your `.env` file,
+then run:
 
 ```sh
 yarn setup
@@ -147,7 +152,7 @@ yarn test
 # Unit + integration tests (requires DB + migrations)
 yarn test:integration
 
-# Demo seed E2E (requires DB + migrations + ALLOW_DEMO_SEED=1)
+# Demo seed E2E (requires a local DB + migrations + ALLOW_DEMO_SEED=1)
 ALLOW_DEMO_SEED=1 yarn test:demo-seed
 ```
 
@@ -158,12 +163,70 @@ Integration and demo-seed tests require:
 1. **PostgreSQL running**: Start with `docker compose -f docker/docker-compose.dev.yml up -d db`
 2. **Migrations applied**: Run `yarn workspace @accounter-helper/migrations migration:run`
 3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` for the command; without it the demo-seed test is
-   skipped. The demo seed truncates every domain table, so it refuses a non-local database.
+   skipped. The test resets the database it is pointed at, so it never sets the variable itself and
+   refuses any database that is not local.
 
 If migrations are stale, demo-seed tests fail gracefully with instructions to run migrations.
 
+No vitest project collects anything under `.claude/`. Claude Code keeps git worktrees (complete
+copies of the repo) in `.claude/worktrees/`, and their test files would otherwise run against this
+checkout's database. A second checkout anywhere else inside the repo folder never contributes its
+database-backed, client or demo seed tests, but its plain unit tests are still collected, so keep
+other checkouts outside the repo folder. `scripts/__tests__/vitest-collection.test.ts` fails if any
+of this stops being true.
+
 See [`packages/server/README.md`](packages/server/README.md) for detailed test harness
 documentation.
+
+## Database safety
+
+The root `.env` must only ever point at a local database. Keep the credentials of a deployed
+database in a separately named file (for example `.env.production`, which is git-ignored) and pass
+them to one command on purpose.
+
+The tooling also checks its target, as a second line of defence. The checks are not uniform:
+
+| Command                                                          | Against a non-local database                                                                       |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| DB-backed tests, the vitest global setup, `yarn seed:production` | Refused, unless `ALLOW_REMOTE_DB=1` is set for that one command.                                   |
+| `yarn test:demo-seed`                                            | Refused. Nothing overrides it.                                                                     |
+| `yarn seed:staging-demo`                                         | Refused, unless `ALLOW_REMOTE_DB=1` is set for that one command and it is a demo database (below). |
+| `migration:run`                                                  | Warns and proceeds, because deploys run it. Refused with `ENFORCE_LOCAL_DB=1`.                     |
+| `yarn generate`                                                  | Not checked. It only reads.                                                                        |
+
+"Non-local" goes by the host `pg` would connect to: `POSTGRES_HOST`, or `PGHOST` when that is unset
+or blank.
+
+`yarn seed:staging-demo` truncates the domain tables before it inserts, so being allowed to reach a
+host is not enough for it. It also decides by the name of the database it is about to reset
+(`scripts/demo-seed-guard.ts`), on a local host as well as a remote one:
+
+- A database whose name carries `prod`, `production`, `prd` or `live` is refused, and nothing
+  overrides that.
+- A database whose name carries `staging`, `stage`, `demo`, `test`, `testing`, `preview`, `sandbox`,
+  `e2e` or `local` is accepted. That is how a staging deploy runs it, with
+  `ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1` in its build command.
+- On a local host, the dev container's own database, `accounter`, is accepted.
+- Any other database has to be confirmed by name, for that one command:
+  `ALLOW_DEMO_SEED_DATABASE=<exact database name>`. That includes a local copy of production under
+  another name, and a name with `prod` glued to other letters (`preprod_staging`).
+
+### `ENFORCE_LOCAL_DB=1`
+
+Set this on every developer machine, in your shell profile so it also covers checkouts and git
+worktrees that have no `.env` of their own:
+
+```sh
+echo 'export ENFORCE_LOCAL_DB=1' >> ~/.zshrc
+```
+
+With it, `migration:run`, the one command that otherwise only warns about a non-local database,
+refuses it instead. Deploys leave it unset, which is why refusing is not the default. When you do
+mean to run it against a deployed database, add `ALLOW_REMOTE_DB=1` to that one command.
+
+`ALLOW_REMOTE_DB=1`, `ALLOW_DEMO_SEED=1` and `ALLOW_DEMO_SEED_DATABASE` are per-command opt-ins.
+Never put them in a shell profile. In a `.env` file they are refused: tests and seeds stop with an
+error until the line is removed.
 
 ## Miscellaneous
 

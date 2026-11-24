@@ -189,10 +189,12 @@ Full seed-and-validate pipeline test that:
 
 **Prerequisites:**
 
-- PostgreSQL running on a local host. The test always refuses a remote one: it strips
-  `ALLOW_REMOTE_DB` from the seed's environment, so there is no opt-in
+- PostgreSQL running on a local host. The test always refuses a remote one: it checks its target
+  before it starts the seed, and it strips `ALLOW_REMOTE_DB` from the seed's environment, so there
+  is no opt-in
 - Migrations applied
-- `ALLOW_DEMO_SEED=1` environment variable; without it the test is skipped
+- `ALLOW_DEMO_SEED=1` environment variable; without it the test is skipped. The test passes it
+  through to the seed script and never sets it itself
 
 **Graceful Failure**: If migrations are stale, the test fails with a clear error message directing
 you to run migrations, rather than hanging or producing cryptic errors.
@@ -285,7 +287,9 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 
 - **Deterministic UUIDs**: Stable entity IDs via UUID v5 generation
 - **Modular Registry**: Self-contained use-case fixtures with metadata
-- **Production Safeguards**: Hard refusal to run in production environments
+- **Production Safeguards**: The seed truncates the domain tables, so it refuses a non-local host
+  without an explicit opt-in, a database whose name says production whatever is set, and any other
+  database that is not a demo database (see [Database safety](../../README.md#database-safety))
 - **Comprehensive Validation**: Ledger balance checks, entity reconciliation
 
 ### Documentation

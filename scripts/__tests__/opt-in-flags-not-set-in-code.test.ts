@@ -3,15 +3,25 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import * as guard from '../../packages/migrations/src/local-db-guard.js';
 
 /**
- * No code may *set* ALLOW_DEMO_SEED or ALLOW_REMOTE_DB.
+ * No code may *set* a per-command opt-in: ALLOW_DEMO_SEED, ALLOW_REMOTE_DB or
+ * ALLOW_DEMO_SEED_DATABASE.
  *
- * Both are per-command opt-ins: they mean "the person running this command chose to". On
+ * They are per-command opt-ins: they mean "the person running this command chose to". On
  * 2026-11-23 the demo-seed E2E granted itself ALLOW_DEMO_SEED when spawning the seed, so a plain
  * test run was enough to TRUNCATE whatever database .env pointed at -- production. This pins
  * that shape out of the codebase: reading, comparing and deleting the flags is fine; putting
  * them into an env object or assigning them is not, outside the allowlist below.
+ *
+ * ALLOW_DEMO_SEED_DATABASE is not a switch, but it has the same shape:
+ * `env: { ...process.env, ALLOW_DEMO_SEED_DATABASE: process.env.POSTGRES_DB }` confirms whatever
+ * database is configured, which turns the demo seed's name rule off for every name that does
+ * not say production.
+ *
+ * The names come from `PER_COMMAND_OPT_INS`, so an opt-in that is added there is covered here
+ * without anyone having to remember this file.
  *
  * Not an ESLint rule because `eslint.config.mjs` ignores `**\/__tests__/`, which is exactly
  * where the offending code lived.
@@ -19,9 +29,12 @@ import { describe, expect, it } from 'vitest';
 
 const repoRoot = join(import.meta.dirname, '../..');
 
-const FLAGS = new Set(['ALLOW_DEMO_SEED', 'ALLOW_REMOTE_DB']);
-/** The constants `local-db-guard.ts` exports for those names, e.g. `[ALLOW_REMOTE_DB_ENV]: '1'`. */
-const FLAG_CONSTANTS = new Set(['ALLOW_DEMO_SEED_ENV', 'ALLOW_REMOTE_DB_ENV']);
+const FLAGS = new Set<string>(guard.PER_COMMAND_OPT_INS);
+/**
+ * The constants `local-db-guard.ts` exports for those names, e.g. `[ALLOW_REMOTE_DB_ENV]: '1'`.
+ * Each is the name with `_ENV` appended; a test below holds the module to that.
+ */
+const FLAG_CONSTANTS = new Set(guard.PER_COMMAND_OPT_INS.map(name => `${name}_ENV`));
 
 /** Files that may set a flag, each with why. Keep it short. */
 const ALLOWED = new Map([
@@ -34,8 +47,24 @@ const ALLOWED = new Map([
     'tests the ALLOW_REMOTE_DB opt-in itself and restores process.env after each test',
   ],
   [
+    'packages/server/src/__tests__/helpers/demo-seed-test-env.test.ts',
+    'unit tests of the demo-seed E2E env check; flags go into plain objects passed as `env`',
+  ],
+  [
+    'scripts/__tests__/demo-seed-guard.test.ts',
+    'unit tests of the database-name rule; flags go into plain objects passed as `env`',
+  ],
+  [
+    'scripts/__tests__/seed-demo-data.test.ts',
+    'runs the seed in-process with `pg` replaced by a recorder; env is stubbed per test and restored',
+  ],
+  [
     'scripts/__tests__/seed-guards.test.ts',
     'spawns the seeds with a from-scratch env, a temp cwd and unresolvable hosts',
+  ],
+  [
+    'scripts/__tests__/vitest-global-setup.test.ts',
+    'plays the root .env through a dotenv stand-in with the pool helpers replaced; env is restored',
   ],
 ]);
 
@@ -98,7 +127,8 @@ function candidateFiles(): string[] {
         '--untracked',
         '-l',
         '-E',
-        'ALLOW_(DEMO_SEED|REMOTE_DB)',
+        // Also matches the `_ENV` constants, which contain the names.
+        guard.PER_COMMAND_OPT_INS.join('|'),
         '--',
         '*.ts',
         '*.tsx',
@@ -123,7 +153,7 @@ const settingsIn = (file: string) =>
   findFlagSettings(file, readFileSync(join(repoRoot, file), 'utf8'));
 
 describe('per-command opt-in flags are never set in code', () => {
-  it('no file outside the allowlist sets ALLOW_DEMO_SEED or ALLOW_REMOTE_DB', () => {
+  it('no file outside the allowlist sets a per-command opt-in', () => {
     const offenders = candidateFiles()
       .filter(file => !ALLOWED.has(file))
       .flatMap(settingsIn);
@@ -142,6 +172,20 @@ describe('per-command opt-in flags are never set in code', () => {
   });
 });
 
+describe('the opt-ins this check knows', () => {
+  it('are the per-command opt-ins of the guard, the database confirmation included', () => {
+    expect([...FLAGS]).toEqual(
+      expect.arrayContaining(['ALLOW_REMOTE_DB', 'ALLOW_DEMO_SEED', 'ALLOW_DEMO_SEED_DATABASE']),
+    );
+  });
+
+  // FLAG_CONSTANTS is derived from the names. This is what makes that derivation true.
+  it.each([...FLAGS])('%s is exported by the guard as <name>_ENV', name => {
+    expect((guard as Record<string, unknown>)[`${name}_ENV`]).toBe(name);
+    expect(FLAG_CONSTANTS.has(`${name}_ENV`)).toBe(true);
+  });
+});
+
 describe('findFlagSettings', () => {
   const find = (code: string) => findFlagSettings('x.ts', code);
 
@@ -157,6 +201,11 @@ describe('findFlagSettings', () => {
     "process.env[ALLOW_REMOTE_DB_ENV] = '1';",
     "process.env.ALLOW_REMOTE_DB ??= '1';",
     "Object.assign(process.env, { ALLOW_DEMO_SEED: '1' });",
+    // The same shape with the database confirmation: it names whatever is configured.
+    "spawn('node', [], { env: { ...process.env, ALLOW_DEMO_SEED_DATABASE: process.env.POSTGRES_DB } });",
+    "const env = { [ALLOW_DEMO_SEED_DATABASE_ENV]: 'accounter' };",
+    "process.env.ALLOW_DEMO_SEED_DATABASE = 'accounter';",
+    'process.env[ALLOW_DEMO_SEED_DATABASE_ENV] ??= database;',
   ])('flags %s', code => {
     expect(find(code)).toHaveLength(1);
   });
@@ -169,6 +218,9 @@ describe('findFlagSettings', () => {
     '// run with ALLOW_DEMO_SEED=1 yarn seed:staging-demo',
     "console.error('ALLOW_DEMO_SEED=1 required');",
     'const message = `${ALLOW_REMOTE_DB_ENV}=1 <your command>`;',
+    "const named = env[ALLOW_DEMO_SEED_DATABASE_ENV] ?? '';",
+    "export const ALLOW_DEMO_SEED_DATABASE_ENV = 'ALLOW_DEMO_SEED_DATABASE';",
+    'const hint = `${ALLOW_DEMO_SEED_DATABASE_ENV}=<database name>`;',
   ])('does not flag %s', code => {
     expect(find(code)).toEqual([]);
   });

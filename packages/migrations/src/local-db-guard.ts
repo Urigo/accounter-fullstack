@@ -30,10 +30,25 @@ export const ALLOW_REMOTE_DB_ENV = 'ALLOW_REMOTE_DB';
 export const ALLOW_DEMO_SEED_ENV = 'ALLOW_DEMO_SEED';
 
 /**
+ * Confirms, by its exact name, the one database the demo seed may reset although its name does
+ * not mark it as a demo database. The rule it belongs to is in `scripts/demo-seed-guard.ts`.
+ */
+export const ALLOW_DEMO_SEED_DATABASE_ENV = 'ALLOW_DEMO_SEED_DATABASE';
+
+/**
  * Opt-ins that must come from the command that needs them, never from a `.env` file.
  * See `assertOptInsNotInEnvFile`.
  */
-export const PER_COMMAND_OPT_INS = [ALLOW_REMOTE_DB_ENV, ALLOW_DEMO_SEED_ENV] as const;
+export const PER_COMMAND_OPT_INS = [
+  ALLOW_REMOTE_DB_ENV,
+  ALLOW_DEMO_SEED_ENV,
+  ALLOW_DEMO_SEED_DATABASE_ENV,
+] as const;
+
+/** How an opt-in is written on a command line, for the refusal in `assertOptInsNotInEnvFile`. */
+function onACommand(optIn: (typeof PER_COMMAND_OPT_INS)[number]): string {
+  return optIn === ALLOW_DEMO_SEED_DATABASE_ENV ? `${optIn}=<database name>` : `${optIn}=1`;
+}
 
 /** Upgrade the migration CLI's warning to a hard failure. See `assertLocalDatabase`. */
 export const ENFORCE_LOCAL_DB_ENV = 'ENFORCE_LOCAL_DB';
@@ -59,8 +74,10 @@ const LOCAL_HOSTNAMES = new Set([
  * Strip what a hand-edited `.env` tends to leave behind: dotenv already removes matching
  * quotes, but a value typed by hand can still carry surrounding whitespace or stray quotes.
  * Shared by classification and display so the two never disagree about what was read.
+ * Exported for the same reason: `scripts/demo-seed-guard.ts` classifies a database *name* and
+ * has to judge the value this module displays.
  */
-function stripQuotesAndTrim(value: string): string {
+export function stripQuotesAndTrim(value: string): string {
   return value
     .trim()
     .replace(/^['"]|['"]$/g, '')
@@ -82,7 +99,7 @@ const MAX_DISPLAY_LENGTH = 120;
  * verbatim into an error, and an ANSI escape sequence there would corrupt the terminal of
  * whoever is reading it — the one place we can be sure a human is looking.
  */
-function sanitizeForDisplay(value: string | number): string {
+export function sanitizeForDisplay(value: string | number): string {
   const text = stripQuotesAndTrim(String(value)).replace(
     // eslint-disable-next-line no-control-regex -- stripping control characters is the point
     /[\u0000-\u001F\u007F-\u009F]/g,
@@ -173,12 +190,18 @@ function resolveTarget(target: DatabaseTarget, env: NodeJS.ProcessEnv): Resolved
   return { target, hostFromPgHost: false };
 }
 
-function buildMessage({ target, hostFromPgHost }: ResolvedTarget, context: string): string {
+/** The lines that say where a host came from when it was not `POSTGRES_HOST`. */
+function pgHostNote({ hostFromPgHost }: ResolvedTarget): string[] {
+  return hostFromPgHost
+    ? ['', 'POSTGRES_HOST is unset, so that host comes from PGHOST in your shell (echo $PGHOST).']
+    : [];
+}
+
+function buildMessage(resolved: ResolvedTarget, context: string): string {
+  const { target } = resolved;
   return [
     `Refusing to run ${context} against a non-local database: ${describeDatabaseTarget(target)}`,
-    ...(hostFromPgHost
-      ? ['', 'POSTGRES_HOST is unset, so that host comes from PGHOST in your shell (echo $PGHOST).']
-      : []),
+    ...pgHostNote(resolved),
     '',
     'The repo root .env is shared by codegen, migrations, seeds and all DB-backed tests, so a',
     'command that looks local is only as local as that file currently is. Check it now:',
@@ -213,6 +236,52 @@ export function assertLocalDatabase(
     return;
   }
   throw new Error(buildMessage(resolved, context));
+}
+
+/**
+ * Throw unless the target is local. There is no opt-in.
+ *
+ * `assertLocalDatabase` can be switched off for one command with `ALLOW_REMOTE_DB=1`. That is
+ * right for a suite someone deliberately points at a remote scratch database, and wrong for a
+ * caller that destroys data: the variable is a general "this command may leave the machine"
+ * switch, the refusal above prints it as the way through, and whoever sets it to get an
+ * unrelated suite past the guard has not agreed to a reset.
+ *
+ * Use this where the caller wipes what it connects to and a deployed database is never the
+ * target. Today that is the demo seed test, which starts a script that truncates the domain
+ * tables.
+ */
+export function assertLocalDatabaseOnly(
+  target: DatabaseTarget,
+  context: string,
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  // The same host `pg` would use, PGHOST fallback included. `env` is read for that and for
+  // nothing else: no variable in it lets a remote target through.
+  const resolved = resolveTarget(target, env);
+  if (isLocalDatabaseHost(resolved.target.host)) {
+    return;
+  }
+  throw new Error(
+    [
+      `Refusing to run ${context} against a non-local database: ${describeDatabaseTarget(resolved.target)}`,
+      ...pgHostNote(resolved),
+      '',
+      `It resets the database it connects to, so it only runs against a local Postgres.`,
+      `${ALLOW_REMOTE_DB_ENV} does not apply here and there is no other override.`,
+      '',
+      'Point the command at a local database by overriding the target for this command only:',
+      '',
+      '  POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=accounter \\',
+      '    POSTGRES_USER=postgres POSTGRES_SSL=0 <your command>',
+      '',
+      'If the target above is a surprise, the repo root .env is where it came from. That file',
+      'is shared by codegen, migrations, seeds and all DB-backed tests and must only ever hold',
+      'local credentials. Check it without printing the password:',
+      '',
+      "  grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env",
+    ].join('\n'),
+  );
 }
 
 /**
@@ -291,7 +360,7 @@ export function assertOptInsNotInEnvFile(
       'which silently turns off the guards that stop tests and seeds from touching a deployed',
       'database. Remove them from the file and pass them to the one command that needs them:',
       '',
-      ...found.map(key => `  ${key}=1 <your command>`),
+      ...found.map(key => `  ${onACommand(key)} <your command>`),
     ].join('\n'),
   );
 }
