@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeFilters, encodeFilters } from '@/router/routes.js';
+import { decodeFilters, encodeFilters, normalizeFilter } from '@/router/routes.js';
 import {
   AccountantStatus,
   ChargeFilterType,
@@ -70,16 +70,88 @@ describe('chargeFilterFormSchema', () => {
 });
 
 describe('filterToFormValues', () => {
-  it('ignores nulls rather than letting them clobber a default', () => {
-    // JSON-parsed URL payloads carry explicit nulls; a plain spread would wipe the
-    // default owner and date range.
+  it('seeds a fresh filter with the defaults', () => {
+    expect(filterToFormValues({}, defaults)).toEqual(defaults);
+    // Unset values are no filter either.
+    expect(filterToFormValues({ byOwners: null, fromAnyDate: null }, defaults)).toEqual(defaults);
+  });
+
+  it('seeds a fresh filter without a date range where the screen has none', () => {
+    const unbounded = buildDefaultFormValues({
+      adminBusinessId: 'owner-1',
+      withDefaultDateRange: false,
+    });
+    const values = filterToFormValues({}, unbounded);
+    expect(values.fromAnyDate).toBeUndefined();
+    expect(values.toAnyDate).toBeUndefined();
+    expect(values.byOwners).toEqual(['owner-1']);
+  });
+
+  it('does not add the default date range or owner back to an applied filter', () => {
+    // The user cleared the dates and the owner, then applied: only the sort order is left.
+    const values = filterToFormValues(
+      { freeText: 'coffee', sortBy: { field: ChargeSortByField.Date, asc: false } },
+      defaults,
+    );
+    expect(values.fromAnyDate).toBeUndefined();
+    expect(values.toAnyDate).toBeUndefined();
+    expect(values.byOwners).toBeUndefined();
+    expect(values).toEqual({ ...buildEmptyFormValues(), freeText: 'coffee' });
+  });
+
+  it('opens a cleared filter ("Clear all", then Apply) cleared', () => {
+    const applied = normalizeFilter(formValuesToFilter(buildEmptyFormValues()));
+    expect(applied).not.toEqual({});
+    expect(filterToFormValues(applied, defaults)).toEqual(buildEmptyFormValues());
+  });
+
+  it('keeps an applied date range and owner', () => {
+    const values = filterToFormValues(
+      {
+        byOwners: ['owner-2'],
+        fromAnyDate: '2024-01-01',
+        toAnyDate: '2024-12-31',
+        sortBy: { field: ChargeSortByField.Amount, asc: true },
+      },
+      defaults,
+    );
+    expect(values).toEqual({
+      ...buildEmptyFormValues(),
+      byOwners: ['owner-2'],
+      fromAnyDate: '2024-01-01',
+      toAnyDate: '2024-12-31',
+      sortBy: { field: ChargeSortByField.Amount, asc: true },
+    });
+  });
+
+  it('keeps a cleared date range and owner through the URL (reload, shared link)', () => {
+    const OWNER = '0a7c6c3e-1111-4f1a-9a55-1b2c3d4e5f60';
+    const applied = normalizeFilter(
+      formValuesToFilter({
+        ...buildDefaultFormValues({ adminBusinessId: OWNER, withDefaultDateRange: true }),
+        fromAnyDate: undefined,
+        toAnyDate: undefined,
+        byOwners: [],
+        withoutInvoice: true,
+      }),
+    );
+    const reloaded = decodeFilters(encodeFilters(applied), chargeFilterUrlSchema);
+
+    const values = filterToFormValues(
+      reloaded,
+      buildDefaultFormValues({ adminBusinessId: OWNER, withDefaultDateRange: true }),
+    );
+    expect(values).toEqual({ ...buildEmptyFormValues(), withoutInvoice: true });
+  });
+
+  it('ignores nulls rather than failing validation on them', () => {
+    // A filter can carry explicit nulls (the generated type allows them); the form schema's
+    // `.optional()` fields would reject them and drop the whole filter.
     const values = filterToFormValues(
       { byOwners: null, fromAnyDate: null, freeText: 'coffee' },
       defaults,
     );
-    expect(values.byOwners).toEqual(['owner-1']);
-    expect(values.fromAnyDate).toBe(defaults.fromAnyDate);
-    expect(values.freeText).toBe('coffee');
+    expect(values).toEqual({ ...buildEmptyFormValues(), freeText: 'coffee' });
   });
 
   it('falls back to the defaults when the stored filter is structurally invalid', () => {
