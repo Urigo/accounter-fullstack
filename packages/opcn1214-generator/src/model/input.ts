@@ -104,7 +104,11 @@ export interface Report1214Input {
     israeliPurchaseAmount?: number;
     /** 1078. */
     foreignPurchaseAmount?: number;
-    /** 1090 (yes/no). */
+    /**
+     * 1090 (yes/no): amortization is claimed for the purchase, amount in 1091. p.12 gives 1090 the
+     * same label as 1065 ("marking – purchase of a qualifying company"); this reading is inferred
+     * from 1091 (SPEC §15 A-34).
+     */
     amortizationClaimed?: boolean;
     /** 1091: may be 0, which is written (SPEC §15 A-21). */
     amortizationAmount?: number;

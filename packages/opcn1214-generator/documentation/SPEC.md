@@ -757,7 +757,7 @@ export interface Report1214Input {
     purchased?: boolean
     israeliPurchaseAmount?: number
     foreignPurchaseAmount?: number
-    amortizationClaimed?: boolean
+    amortizationClaimed?: boolean // 1090, inferred reading (§15 A-34)
     amortizationAmount?: number // may be 0
   }
   bankAccount?: {
@@ -1615,6 +1615,7 @@ phase noted, and this table updated with the outcome.
 | A-21 | 1091 amortization amount                                       | Type alphanumeric; "0 may be entered"                                                                                              | Digits with alphanumeric padding (`amountX`); 0 is written as `0`                                          | P1        |
 | A-22 | Code order in sections                                         | Not stated                                                                                                                         | Ascending code order                                                                                       | P1        |
 | A-23 | Data provenance, 3051 header                                   | The PDF table on p.39 lost the position column during extraction                                                                   | Positions 137/139/142/192/193/194/224 taken from the PDF text layer and verified to chain with the lengths | —         |
+| A-34 | 1000@1090 qualifying-company mark                              | p.12 gives 1090 the same name and notes as 1065 ("סימון – רכישה של \"חברה מזכה\"", 1-כן 2-לא)                                      | Inferred from 1091 (the amount): `amortizationClaimed`, amortization is claimed for the purchase           | —         |
 
 ---
 

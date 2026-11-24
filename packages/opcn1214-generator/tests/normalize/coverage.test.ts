@@ -37,19 +37,4 @@ describe('normalizer coverage (SPEC §13.3)', () => {
     const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
     expect(unmappedHeaderKeys(MAIN, report.records)).toEqual([]);
   });
-
-  it('every 1000 header key between positions 563 and 1064 outside the D2 groups is produced', () => {
-    const report = normalizeReport(fullDeclarationsInput(), LAYOUT, { today: () => '2025-03-31' });
-    const inRange = MAIN.fields.filter(
-      field =>
-        field.position >= 563 &&
-        field.position <= 1064 &&
-        !field.key.startsWith('otherTaxableIncome.') &&
-        !field.key.startsWith('attachments.') &&
-        !field.key.startsWith('capitalGainsSummary.'),
-    );
-    const unmapped = new Set(unmappedHeaderKeys(MAIN, report.records));
-    expect(inRange.filter(field => field.kind !== 'filler').length).toBeGreaterThan(40);
-    expect(inRange.filter(field => unmapped.has(field.key)).map(field => field.key)).toEqual([]);
-  });
 });
