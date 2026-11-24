@@ -128,7 +128,8 @@ type User = {
 /**
  * Runs the user context query again through the client rather than by re-executing the providers'
  * `useQuery`: that would flip its `fetching`, and the providers swap the whole app for a loader
- * while it is set.
+ * while it is set. The providers' `useQuery` gets the answer as well, like every reader of the
+ * same request on this client, so `session` follows.
  */
 function useRefreshUserContext(
   setDefaults: (defaults: UserContextQuery['userContext']) => void,
@@ -142,6 +143,55 @@ function useRefreshUserContext(
       setDefaults(result.data.userContext);
     }
   }, [client, setDefaults]);
+}
+
+type Defaults = UserContextQuery['userContext'];
+
+/**
+ * The user context a provider hands to the app: `user`, with what the provider's latest read of
+ * the user context (`data`, `fetching`) said.
+ *
+ * It is kept in step with the read while rendering, not by effects after it. The app comes back
+ * in the very render that takes the loader away, and screens seed their filters from the user
+ * context as they mount: an effect or two later they would already have started without it, or
+ * on the one before.
+ *
+ * A read behind the loader (`fetching`) replaces the answer before it, which was for another
+ * business scope or another identity, so that one is dropped as the loader appears. A re-read in
+ * the background (`refreshUserContext`) does not set `fetching`, and a failed one brings no data:
+ * both leave the context as it is.
+ */
+function useUserContextState(
+  user: User | null,
+  data: UserContextQuery | undefined,
+  fetching: boolean,
+): {
+  userContext: UserInfo | null;
+  setUserContext: (userContext: UserInfo | null) => void;
+  setDefaults: (defaults: Defaults) => void;
+} {
+  const [defaults, setDefaults] = useState<Defaults>(null);
+  const [read, setRead] = useState({ data, fetching });
+  if (read.data !== data || read.fetching !== fetching) {
+    setRead({ data, fetching });
+    if (fetching) {
+      setDefaults(null);
+    } else if (data) {
+      setDefaults(data.userContext);
+    }
+  }
+
+  const [userContext, setUserContext] = useState<UserInfo | null>(null);
+  const [builtFrom, setBuiltFrom] = useState<{ user: User | null; defaults: Defaults }>({
+    user: null,
+    defaults: null,
+  });
+  if (builtFrom.user !== user || builtFrom.defaults !== defaults) {
+    setBuiltFrom({ user, defaults });
+    setUserContext(user && defaults ? { ...user, context: toUserInfoContext(defaults) } : null);
+  }
+
+  return { userContext, setUserContext, setDefaults };
 }
 
 export const UserContext = createContext<ContextType>({
@@ -161,17 +211,20 @@ export function UserProvider({ children }: { children?: ReactNode }): ReactNode 
 
 function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   const { isAuthenticated, user: auth0User } = useAuth0();
-  const [userContext, setUserContext] = useState<UserInfo | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
-  const refreshUserContext = useRefreshUserContext(setDefaults);
 
-  const [{ data, fetching, error }, fetchUserContext] = useQuery({
+  // Read for as long as someone is signed in, rather than fetched by hand once they are: urql then
+  // reads it again by itself when it gets a new client, with `fetching` set from that very render.
+  // `setBusinessScope` swaps the client, and the server answers per business scope: the read
+  // scope, and the single-business fields that exist only when the scope is one business.
+  const [{ data, fetching, error }, readAgain] = useQuery({
     query: UserContextDocument,
     variables: {},
-    pause: true,
+    pause: !user,
   });
   const session = useMemo(() => toSessionState(data, error, fetching), [data, error, fetching]);
+  const { userContext, setUserContext, setDefaults } = useUserContextState(user, data, fetching);
+  const refreshUserContext = useRefreshUserContext(setDefaults);
 
   // update active user
   useEffect(() => {
@@ -184,32 +237,15 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
 
     if (!equal(currentUser, user)) {
       setUser(currentUser);
-      if (currentUser) {
-        fetchUserContext();
+      if (user && currentUser) {
+        // Another identity, signed in without a reload (re-authentication in place). It is the
+        // same client and the same request, so urql would answer with what it has, marked stale,
+        // and the app would stay up on the previous identity's screens. Read by hand, it starts
+        // over behind the loader.
+        readAgain({ requestPolicy: 'network-only' });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchUserContext is stable for this hook
-  }, [user, isAuthenticated, auth0User]);
-
-  // on user defaults fetched, update user defaults
-  useEffect(() => {
-    if (data && !fetching) {
-      setDefaults(data.userContext);
-    }
-  }, [data, fetching]);
-
-  // on user or defaults changed, update user context
-  useEffect(() => {
-    if (!user || !defaults) {
-      setUserContext(null);
-      return;
-    }
-
-    setUserContext({
-      ...user,
-      context: toUserInfoContext(defaults),
-    });
-  }, [defaults, user]);
+  }, [user, isAuthenticated, auth0User, readAgain]);
 
   if (fetching) {
     return <AccounterLoader />;
@@ -222,35 +258,22 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   );
 }
 
-function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode {
-  const [userContext, setUserContext] = useState<UserInfo | null>(null);
-  const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
-  const refreshUserContext = useRefreshUserContext(setDefaults);
+/** Who dev auth signs in as. One object, so the user context is not rebuilt on every render. */
+const DEV_USER: User = { username: 'dev-user' };
 
+function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode {
   const [{ data, fetching, error }] = useQuery({
     query: UserContextDocument,
     variables: {},
     pause: false,
   });
   const session = useMemo(() => toSessionState(data, error, fetching), [data, error, fetching]);
-
-  useEffect(() => {
-    if (data && !fetching) {
-      setDefaults(data.userContext);
-    }
-  }, [data, fetching]);
-
-  useEffect(() => {
-    if (!defaults) {
-      setUserContext(null);
-      return;
-    }
-
-    setUserContext({
-      username: 'dev-user',
-      context: toUserInfoContext(defaults),
-    });
-  }, [defaults]);
+  const { userContext, setUserContext, setDefaults } = useUserContextState(
+    DEV_USER,
+    data,
+    fetching,
+  );
+  const refreshUserContext = useRefreshUserContext(setDefaults);
 
   if (fetching) {
     return <AccounterLoader />;

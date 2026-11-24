@@ -5,14 +5,18 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { UserContext } from '../../providers/user-provider.js';
 import { ProtectedRoute, PublicOnlyGuard } from '../../router/guards/auth-guards.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, useSessionViewerMock, useViewerMock } = vi.hoisted(() => ({
-  useAuth0Mock: vi.fn(),
-  useSessionViewerMock: vi.fn(),
-  useViewerMock: vi.fn(),
-}));
+const { useAuth0Mock, useSessionViewerMock, useViewerMock, refreshUserContextMock } = vi.hoisted(
+  () => ({
+    useAuth0Mock: vi.fn(),
+    useSessionViewerMock: vi.fn(),
+    useViewerMock: vi.fn(),
+    refreshUserContextMock: vi.fn<() => Promise<void>>(),
+  }),
+);
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
@@ -84,10 +88,25 @@ async function renderProtectedPath(
   const container = document.createElement('div');
   document.body.append(container);
 
+  refreshUserContextMock.mockResolvedValue(undefined);
+
   let root: Root | null = null;
   await act(async () => {
     root = createRoot(container);
-    root.render(React.createElement(RouterProvider, { router }));
+    root.render(
+      // The provider's part the guard uses: a way to have the boot request read again.
+      React.createElement(
+        UserContext.Provider,
+        {
+          value: {
+            userContext: null,
+            setUserContext: () => {},
+            refreshUserContext: refreshUserContextMock,
+          },
+        },
+        React.createElement(RouterProvider, { router }),
+      ),
+    );
     await Promise.resolve();
   });
 
@@ -309,6 +328,43 @@ describe('OnboardingGuard', () => {
 
       expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
       expect(html).toContain('Charges Page');
+      await cleanup();
+    });
+
+    it('has the boot request read again when the fresh read says active: its user context is as out of date', async () => {
+      const { cleanup } = await renderProtectedPath(
+        ROUTES.CHARGES.ROOT,
+        authenticated,
+        noWorkspace,
+        ACTIVE_VIEWER,
+      );
+
+      expect(refreshUserContextMock).toHaveBeenCalledTimes(1);
+      await cleanup();
+    });
+
+    it('leaves the boot request alone when the two reads agree, or the fresh one has no answer', async () => {
+      for (const freshState of [
+        noWorkspace,
+        { fetching: true, error: undefined, viewer: null },
+        { fetching: false, error: new Error('network down'), viewer: null },
+      ]) {
+        vi.clearAllMocks();
+        const { cleanup } = await renderProtectedPath(
+          ROUTES.CHARGES.ROOT,
+          authenticated,
+          noWorkspace,
+          freshState,
+        );
+
+        expect(refreshUserContextMock).not.toHaveBeenCalled();
+        await cleanup();
+      }
+
+      // An active session needs no second read, and so nothing can disagree with it.
+      vi.clearAllMocks();
+      const { cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated);
+      expect(refreshUserContextMock).not.toHaveBeenCalled();
       await cleanup();
     });
 
