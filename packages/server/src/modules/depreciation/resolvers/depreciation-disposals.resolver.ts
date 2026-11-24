@@ -11,9 +11,10 @@ import {
   computeStoredDisposal,
   isDisposalDateLocked,
   loadAssetContext,
+  loadDisposalInputs,
+  loadDisposalLocalCost,
   storedProceeds,
   storedRefundMode,
-  toDisposalInput,
 } from '../helpers/depreciation-disposals.helper.js';
 import { DepreciationDisposalsProvider } from '../providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../providers/depreciation.provider.js';
@@ -42,24 +43,29 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
       const records = await injector
         .get(DepreciationProvider)
         .getDepreciationRecordsActivatedBy({ date: activeOn });
-      const [disposalsPerRecord, localCosts] = await Promise.all([
-        injector
-          .get(DepreciationDisposalsProvider)
-          .getDisposalsByDepreciationIdLoader.loadMany(records.map(record => record.id)),
-        Promise.all(records.map(record => resolveAssetLocalCost(injector, record))),
-      ]);
-      return records.filter((_record, index) => {
-        const disposals = disposalsPerRecord[index];
-        if (disposals instanceof Error) {
-          throw disposals;
-        }
-        const { cost } = localCosts[index];
-        const disposedBefore = disposals
-          .filter(disposal => disposal.disposal_date <= activeOn)
-          .map(toDisposalInput);
-        // a record without an amount can't be disposed of, so it isn't offered
-        return cost != null && remainingAssetCost({ cost }, disposedBefore) > 0;
-      });
+      const disposalsPerRecord = await injector
+        .get(DepreciationDisposalsProvider)
+        .getDisposalsByDepreciationIdLoader.loadMany(records.map(record => record.id));
+      const offered = await Promise.all(
+        records.map(async (record, index) => {
+          const disposals = disposalsPerRecord[index];
+          if (disposals instanceof Error) {
+            throw disposals;
+          }
+          const { cost } = await resolveAssetLocalCost(injector, record);
+          // a record without an amount can't be disposed of, so it isn't offered
+          if (cost == null) {
+            return false;
+          }
+          const disposedBefore = await loadDisposalInputs(
+            injector,
+            record,
+            disposals.filter(disposal => disposal.disposal_date <= activeOn),
+          );
+          return remainingAssetCost({ cost }, disposedBefore) > 0;
+        }),
+      );
+      return records.filter((_record, index) => offered[index]);
     },
     previewDepreciationDisposal: async (_, { input }, { injector }) => {
       try {
@@ -68,7 +74,7 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         if (check.errors) {
           return commonError(check.errors.join('; '));
         }
-        const { result, remainingCost, remainingBookValue } = check;
+        const { result, exchangeRate, remainingCost, remainingBookValue } = check;
         const [
           disposedCost,
           proceeds,
@@ -95,6 +101,7 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         return {
           __typename: 'DepreciationDisposalComputation',
           disposedCost,
+          exchangeRate,
           proceeds,
           accumulatedDepreciation,
           netBookValue,
@@ -126,7 +133,9 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           type: input.type,
           refundMode: check.refundMode,
           disposalDate: input.disposalDate,
-          disposedCost: input.disposedCost,
+          disposedCost: check.stored.disposedCost,
+          originalAmount: check.stored.originalAmount,
+          originalCurrency: check.stored.originalCurrency,
           proceeds: check.result.proceeds,
           description: input.description ?? null,
         });
@@ -152,7 +161,17 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         const clearChargeId = input.chargeId === null;
         const chargeId = clearChargeId ? null : (input.chargeId ?? existing.charge_id);
         const type = input.type ?? existing.type;
-        const disposedCost = input.disposedCost ?? Number(existing.disposed_cost);
+        // a cost refund of a foreign-currency asset keeps its amount in the asset's currency, and
+        // any other event its local cost, unless the other one is given
+        const keepOriginalAmount =
+          input.disposedCost == null && type === 'COST_REFUND' && existing.original_amount != null;
+        const originalAmount =
+          input.originalAmount ?? (keepOriginalAmount ? Number(existing.original_amount) : null);
+        const disposedCost =
+          input.disposedCost ??
+          (input.originalAmount == null && existing.disposed_cost != null
+            ? Number(existing.disposed_cost)
+            : null);
         // a refund keeps its mode unless one is given (a mode given for another type is rejected)
         const refundMode =
           input.refundMode === undefined
@@ -169,6 +188,7 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           chargeId,
           disposalDate: input.disposalDate ?? existing.disposal_date,
           disposedCost,
+          originalAmount,
           proceeds:
             input.proceeds ??
             // a sale keeps its stored proceeds; a write-off and a cost refund have none
@@ -185,7 +205,9 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           type: input.type ?? null,
           refundMode: check.refundMode,
           disposalDate: input.disposalDate ?? null,
-          disposedCost: input.disposedCost ?? null,
+          disposedCost: check.stored.disposedCost,
+          originalAmount: check.stored.originalAmount,
+          originalCurrency: check.stored.originalCurrency,
           proceeds: check.result.proceeds,
           // null clears the description; leaving it out keeps the stored one
           description: input.description === undefined ? existing.description : input.description,
@@ -245,8 +267,11 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           .getDisposalsByDepreciationIdLoader.load(record.id),
         resolveAssetLocalCost(injector, record),
       ]);
-      // disposals are in the local currency, so the remaining cost is too
-      const remaining = remainingAssetCost({ cost: cost ?? 0 }, disposals.map(toDisposalInput));
+      // disposals are in the local currency (or converted to it), so the remaining cost is too
+      const remaining = remainingAssetCost(
+        { cost: cost ?? 0 },
+        await loadDisposalInputs(injector, record, disposals),
+      );
       return localAmount(injector, remaining);
     },
   },
@@ -287,7 +312,19 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
     type: disposal => disposal.type,
     refundMode: disposal => storedRefundMode(disposal),
     disposalDate: disposal => disposal.disposal_date,
-    disposedCost: (disposal, _, { injector }) => localAmount(injector, disposal.disposed_cost),
+    disposedCost: async (disposal, _, { injector }) =>
+      localAmount(injector, (await loadDisposalLocalCost(injector, disposal)).cost),
+    originalAmount: async (disposal, _, { injector }) => {
+      if (disposal.original_amount == null) {
+        return null;
+      }
+      if (disposal.original_currency) {
+        return formatFinancialAmount(disposal.original_amount, disposal.original_currency);
+      }
+      return localAmount(injector, disposal.original_amount);
+    },
+    exchangeRate: async (disposal, _, { injector }) =>
+      (await loadDisposalLocalCost(injector, disposal)).rate,
     proceeds: (disposal, _, { injector }) => localAmount(injector, storedProceeds(disposal)),
     description: disposal => disposal.description,
     accumulatedDepreciation: async (disposal, _, { injector }) =>

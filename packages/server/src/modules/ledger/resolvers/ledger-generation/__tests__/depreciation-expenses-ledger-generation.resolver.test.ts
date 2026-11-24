@@ -62,6 +62,8 @@ function disposal(
     description: null,
     disposal_date: '2024-06-30',
     disposed_cost: '1000',
+    original_amount: null,
+    original_currency: null,
     owner_id: OWNER_ID,
     proceeds: '0',
     refund_mode: null,

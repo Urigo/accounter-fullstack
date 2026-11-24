@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
@@ -8,7 +9,9 @@ import {
   getChargeTransactionsMeta,
 } from '../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetDepreciationRecordsByIdsResult } from '../types.js';
+import type { CostRefundMode } from './asset-depreciation.helper.js';
 
 export type AssetLocalCostSource =
   /** `local_amount` is set and wins */
@@ -36,8 +39,36 @@ export type AssetCostRecord = Pick<
 >;
 
 /**
- * The date a foreign-currency asset is converted at: the purchase charge's (earliest) document
- * date, falling back to its first payment date, then to the asset's activation date
+ * The earliest date of a charge's misc expenses: their earliest invoice date, else their earliest
+ * value date; null when the charge has none
+ */
+export async function getChargeMiscExpensesMinDate(
+  injector: Injector,
+  chargeId: string,
+): Promise<TimelessDateString | null> {
+  const expenses = await injector
+    .get(MiscExpensesProvider)
+    .getExpensesByChargeIdLoader.load(chargeId);
+  let minInvoiceDate: TimelessDateString | null = null;
+  let minValueDate: TimelessDateString | null = null;
+  for (const expense of expenses) {
+    if (expense.invoice_date && (!minInvoiceDate || expense.invoice_date < minInvoiceDate)) {
+      minInvoiceDate = expense.invoice_date;
+    }
+    if (expense.value_date) {
+      const valueDate = dateToTimelessDateString(expense.value_date);
+      if (!minValueDate || valueDate < minValueDate) {
+        minValueDate = valueDate;
+      }
+    }
+  }
+  return minInvoiceDate ?? minValueDate;
+}
+
+/**
+ * The date a foreign-currency asset is converted at (the contract date): the purchase charge's
+ * (earliest) document date, falling back to its misc expenses (an acquisition entered without
+ * documents), then to its first payment date, then to the asset's activation date
  */
 export async function getAssetRateDate(
   injector: Injector,
@@ -46,6 +77,10 @@ export async function getAssetRateDate(
   const { documentsMinDate } = await getChargeDocumentsMeta(record.charge_id, injector);
   if (documentsMinDate) {
     return documentsMinDate;
+  }
+  const miscExpensesMinDate = await getChargeMiscExpensesMinDate(injector, record.charge_id);
+  if (miscExpensesMinDate) {
+    return miscExpensesMinDate;
   }
   const { transactionsMinDebitDate } = await getChargeTransactionsMeta(record.charge_id, injector);
   return transactionsMinDebitDate ?? record.activation_date;
@@ -112,4 +147,73 @@ export function resolveAssetLocalCost(
     result.catch(() => perInjector?.delete(record));
   }
   return result;
+}
+
+export type RefundConversion = {
+  /** the refund in the local currency, in agorot */
+  cost: number;
+  /** local currency per unit of the asset's currency */
+  rate: number;
+  /** the date of that rate; null for an asset whose local cost is overridden */
+  rateDate: TimelessDateString | null;
+};
+
+function toAgorot(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+/**
+ * Converts a cost refund entered in the currency of a foreign-currency asset to the local currency:
+ * - `FROM_ACTIVATION` corrects the original price, so it converts at the asset's cost-basis rate
+ *   (local cost ÷ amount): the purchase date's rate, or the rate implied by a local cost override;
+ * - `FROM_REFUND_DATE` is a later rebate, a receivable arising on the refund date: it converts at
+ *   the refund charge's rate (its earliest document date, else the refund date).
+ */
+export async function convertForeignRefund(
+  injector: Injector,
+  record: AssetCostRecord,
+  refund: {
+    originalAmount: number;
+    refundMode: CostRefundMode;
+    chargeId?: string | null;
+    refundDate: TimelessDateString;
+  },
+): Promise<RefundConversion> {
+  if (refund.refundMode === 'FROM_ACTIVATION') {
+    const assetCost = await resolveAssetLocalCost(injector, record);
+    const amount = record.amount == null ? null : Number(record.amount);
+    if (assetCost.cost == null || !amount) {
+      throw new GraphQLError(
+        `Depreciation record ${record.id} has no amount to convert its cost refunds by`,
+      );
+    }
+    return {
+      cost: toAgorot((refund.originalAmount * assetCost.cost) / amount),
+      rate: assetCost.cost / amount,
+      rateDate: assetCost.rateDate,
+    };
+  }
+
+  const { defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
+  if (!record.currency) {
+    throw new GraphQLError(`Depreciation record ${record.id} has no currency`);
+  }
+  const rateDate = refund.chargeId
+    ? ((await getChargeDocumentsMeta(refund.chargeId, injector)).documentsMinDate ??
+      refund.refundDate)
+    : refund.refundDate;
+  let rate: number;
+  try {
+    rate = await injector
+      .get(ExchangeProvider)
+      .getExchangeRates(record.currency as Currency, defaultLocalCurrency, rateDate);
+  } catch (error) {
+    console.error(error);
+    throw new GraphQLError(
+      `Unable to convert the cost refund of depreciation record ${record.id} from ${record.currency} to ${defaultLocalCurrency} at ${rateDate}`,
+    );
+  }
+  return { cost: toAgorot(refund.originalAmount * rate), rate, rateDate };
 }

@@ -45,12 +45,12 @@ const getDepreciationDisposalsByDates = sql<IGetDepreciationDisposalsByDatesQuer
 
 const insertDepreciationDisposal = sql<IInsertDepreciationDisposalQuery>`
   INSERT INTO accounter_schema.depreciation_disposals (
-    owner_id, depreciation_id, charge_id, type, refund_mode, disposal_date, disposed_cost, proceeds,
-    description
+    owner_id, depreciation_id, charge_id, type, refund_mode, disposal_date, disposed_cost,
+    original_amount, original_currency, proceeds, description
   )
   VALUES (
-    $ownerId, $depreciationId, $chargeId, $type, $refundMode, $disposalDate, $disposedCost, $proceeds,
-    $description
+    $ownerId, $depreciationId, $chargeId, $type, $refundMode, $disposalDate, $disposedCost,
+    $originalAmount, $originalCurrency, $proceeds, $description
   )
   RETURNING *;`;
 
@@ -61,7 +61,11 @@ const updateDepreciationDisposal = sql<IUpdateDepreciationDisposalQuery>`
     type = COALESCE($type, type),
     refund_mode = $refundMode,
     disposal_date = COALESCE($disposalDate, disposal_date),
-    disposed_cost = COALESCE($disposedCost, disposed_cost),
+    -- a cost refund of a foreign-currency asset holds its amount in that currency and no local
+    -- cost, every other event holds its local cost. Both are written as resolved.
+    disposed_cost = $disposedCost,
+    original_amount = $originalAmount,
+    original_currency = $originalCurrency,
     proceeds = COALESCE($proceeds, proceeds),
     description = $description,
     updated_at = clock_timestamp()

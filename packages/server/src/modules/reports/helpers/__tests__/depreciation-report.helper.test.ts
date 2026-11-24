@@ -1,13 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Injector } from 'graphql-modules';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { DepreciationCategoriesProvider } from '../../../depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import type {
   IGetDepreciationDisposalsByIdsResult,
   IGetDepreciationRecordsByDatesResult,
 } from '../../../depreciation/types.js';
 import { calculateDepreciationAmount } from '../depreciation-report.helper.js';
+
+vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
+  // a purchase charge in a foreign currency is dated on the contract date
+  getChargeDocumentsMeta: vi.fn(async () => ({ documentsMinDate: '2023-08-20' })),
+}));
 
 /* All IDs, amounts and dates below are made up. */
 
@@ -43,7 +51,7 @@ function event(
   overrides: Partial<IGetDepreciationDisposalsByIdsResult> & {
     depreciation_id: string;
     disposal_date: IGetDepreciationDisposalsByIdsResult['disposal_date'];
-    disposed_cost: string;
+    disposed_cost: string | null;
   },
 ): IGetDepreciationDisposalsByIdsResult {
   return {
@@ -51,6 +59,8 @@ function event(
     created_at: new Date('2025-01-01T00:00:00.000Z'),
     description: null,
     id: `${overrides.depreciation_id}-event`,
+    original_amount: null,
+    original_currency: null,
     owner_id: OWNER_ID,
     proceeds: '0',
     refund_mode: null,
@@ -65,7 +75,14 @@ function makeInjector(
   eventsByRecordId: Record<string, IGetDepreciationDisposalsByIdsResult[]> = {},
 ) {
   const loadCategory = vi.fn(async (id: string) => ({ id, percentage: PERCENTAGES[id] }));
+  // ₪3.700 to the dollar on the contract date
+  const getExchangeRates = vi.fn(async (_base: string, _quote: string, _date: string) => 3.7);
   const providers = new Map<unknown, unknown>([
+    [
+      AdminContextProvider,
+      { getVerifiedAdminContext: async () => ({ defaultLocalCurrency: 'ILS' }) },
+    ],
+    [ExchangeProvider, { getExchangeRates }],
     [DepreciationProvider, { getDepreciationRecordsByDates: async () => records }],
     [
       DepreciationCategoriesProvider,
@@ -81,7 +98,7 @@ function makeInjector(
     ],
   ]);
   const injector = { get: (token: unknown) => providers.get(token) } as unknown as Injector;
-  return { injector, loadCategory };
+  return { injector, loadCategory, getExchangeRates };
 }
 
 describe('calculateDepreciationAmount', () => {
@@ -211,6 +228,75 @@ describe('calculateDepreciationAmount', () => {
         gnmDepreciationYearlyAmount: 83_250,
         marketingDepreciationYearlyAmount: 0,
         totalDepreciationYearlyAmount: 259_074,
+      });
+    });
+
+    describe('recorded in USD, as paid (no local cost overrides)', () => {
+      // the same assets in USD, converted at the contract date's ₪3.700, and the refunds entered
+      // in USD: converted at the assets' cost-basis rate, the same ₪59,200 / ₪74,000 / ₪222,000
+      const usd = (id: string, amount: string) => {
+        const asset = assets.find(a => a.id === id)!;
+        return { ...asset, amount, currency: 'USD' as const };
+      };
+      const usdAssets = [
+        usd('software', '160000'),
+        usd('customer-relationships', '200000'),
+        usd('goodwill', '60000'),
+      ];
+      const usdRefund = (depreciationId: string, amount: string) =>
+        event({
+          depreciation_id: depreciationId,
+          disposal_date: '2024-04-14',
+          disposed_cost: null,
+          original_amount: amount,
+          original_currency: 'USD',
+          charge_id: 'charge-refund',
+          type: 'COST_REFUND',
+          refund_mode: 'FROM_ACTIVATION',
+        });
+      const usdRefunds = {
+        software: [usdRefund('software', '16000')],
+        'customer-relationships': [usdRefund('customer-relationships', '20000')],
+        goodwill: [usdRefund('goodwill', '60000')],
+      };
+
+      it('keeps 2023 as filed', async () => {
+        const { injector, getExchangeRates } = makeInjector(usdAssets, usdRefunds);
+
+        await expect(calculateDepreciationAmount(injector, 2023, OWNER_ID)).resolves.toEqual({
+          rndDepreciationYearlyAmount: 71_721,
+          gnmDepreciationYearlyAmount: 33_959 + 8150,
+          marketingDepreciationYearlyAmount: 0,
+          totalDepreciationYearlyAmount: 113_830,
+        });
+        expect(getExchangeRates).toHaveBeenCalledWith('USD', 'ILS', '2023-08-20');
+      });
+
+      it('books 2024 on the corrected cost', async () => {
+        const { injector } = makeInjector(usdAssets, usdRefunds);
+
+        await expect(calculateDepreciationAmount(injector, 2024, OWNER_ID)).resolves.toEqual({
+          rndDepreciationYearlyAmount: 175_824,
+          gnmDepreciationYearlyAmount: 83_250,
+          marketingDepreciationYearlyAmount: 0,
+          totalDepreciationYearlyAmount: 259_074,
+        });
+      });
+
+      it('takes a local cost override over the converted amount', async () => {
+        // software overridden at its ₪592,000: no rate lookup, the same depreciation
+        const { injector, getExchangeRates } = makeInjector(
+          [{ ...usd('software', '160000'), local_amount: '592000' }],
+          { software: usdRefunds.software },
+        );
+
+        await expect(calculateDepreciationAmount(injector, 2024, OWNER_ID)).resolves.toEqual({
+          rndDepreciationYearlyAmount: 175_824,
+          gnmDepreciationYearlyAmount: 0,
+          marketingDepreciationYearlyAmount: 0,
+          totalDepreciationYearlyAmount: 175_824,
+        });
+        expect(getExchangeRates).not.toHaveBeenCalled();
       });
     });
   });

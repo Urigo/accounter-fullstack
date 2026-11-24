@@ -7,7 +7,7 @@ import {
 } from '../../depreciation/helpers/asset-depreciation.helper.js';
 import {
   loadAssetInput,
-  toDisposalInput,
+  loadDisposalInputs,
 } from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
@@ -53,7 +53,7 @@ export async function calculateDepreciationAmount(
       ]);
       const { yearDepreciation: yearlyDepreciationAmount } = calculateAssetYear(
         asset,
-        disposals.map(toDisposalInput),
+        await loadDisposalInputs(injector, record, disposals),
         year,
       );
       // nothing to add: fully depreciated or disposed of, or in a category that is not depreciated (0%)

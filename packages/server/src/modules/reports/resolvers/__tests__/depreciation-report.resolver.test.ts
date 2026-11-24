@@ -59,6 +59,8 @@ function costRefund(depreciationId: string, amount: number): IGetDepreciationDis
     description: null,
     disposal_date: REFUND_DATE,
     disposed_cost: String(amount),
+    original_amount: null,
+    original_currency: null,
     owner_id: OWNER_ID,
     proceeds: '0',
     refund_mode: 'FROM_ACTIVATION',

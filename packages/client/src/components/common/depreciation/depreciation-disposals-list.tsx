@@ -31,12 +31,19 @@ import { DepreciationDisposalModal, REFUND_MODE_LABELS } from './depreciation-di
         id
         userDescription
       }
+      amount {
+        currency
+      }
     }
     charge {
       id
     }
     disposedCost {
       raw
+    }
+    originalAmount {
+      raw
+      formatted
     }
     proceeds {
       raw
@@ -210,7 +217,14 @@ export function DepreciationDisposalsList({
                 {assetCell(refund)}
                 <TableCell>{formatTimelessDate(refund.disposalDate, 'dd/MM/yyyy')}</TableCell>
                 {labelCell(refund, REFUND_MODE_LABELS[refund.refundMode ?? 'FROM_ACTIVATION'])}
-                <TableCell>{amount(refund.costReduction.raw)}</TableCell>
+                <TableCell>
+                  {amount(refund.costReduction.raw)}
+                  {refund.originalAmount && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({refund.originalAmount.formatted})
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>{amount(refund.depreciationCorrection.raw)}</TableCell>
                 {actionsCell(refund, 'cost refund')}
               </TableRow>
@@ -223,12 +237,14 @@ export function DepreciationDisposalsList({
           opened
           close={() => setEditing(null)}
           onDone={onChange}
+          assetCurrency={editing.depreciationRecord.amount.currency}
           disposal={{
             id: editing.id,
             depreciationRecordId: editing.depreciationRecord.id,
             type: editing.type,
             disposalDate: editing.disposalDate,
             disposedCost: editing.disposedCost.raw,
+            originalAmount: editing.originalAmount?.raw,
             proceeds: editing.proceeds.raw,
             refundMode: editing.refundMode,
             chargeId: editing.charge?.id,

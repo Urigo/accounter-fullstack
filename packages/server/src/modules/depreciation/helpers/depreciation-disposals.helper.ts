@@ -12,7 +12,12 @@ import type {
   IGetDepreciationDisposalsByIdsResult,
   IGetDepreciationRecordsByIdsResult,
 } from '../types.js';
-import { resolveAssetLocalCost, type AssetCostRecord } from './asset-cost.helper.js';
+import {
+  convertForeignRefund,
+  resolveAssetLocalCost,
+  type AssetCostRecord,
+  type RefundConversion,
+} from './asset-cost.helper.js';
 import {
   calculateAssetYear,
   computeCostRefund,
@@ -71,20 +76,99 @@ export async function loadAssetInput(
   return toAssetInput(record, category, cost);
 }
 
+/**
+ * The engine's input for a stored event. `disposedCost` is its local cost: pass it for a cost
+ * refund entered in the asset's currency (see `loadDisposalInputs`), which stores none.
+ */
 export function toDisposalInput(
   disposal: Pick<
     IGetDepreciationDisposalsByIdsResult,
     'id' | 'type' | 'refund_mode' | 'disposal_date' | 'disposed_cost' | 'proceeds'
   >,
+  disposedCost?: number,
 ): AssetDisposalInput {
   return {
     id: disposal.id,
     kind: disposal.type,
     refundMode: storedRefundMode(disposal),
     disposalDate: disposal.disposal_date,
-    disposedCost: Number(disposal.disposed_cost),
+    disposedCost: disposedCost ?? Number(disposal.disposed_cost),
     proceeds: storedProceeds(disposal),
   };
+}
+
+export type DisposalLocalCost = {
+  /** the event's cost in the local currency */
+  cost: number;
+  /** for a cost refund entered in the asset's currency, the rate it converts at */
+  rate: number | null;
+};
+
+/**
+ * The local cost of a stored event: its `disposed_cost`, or, for a cost refund entered in the
+ * currency of a foreign-currency asset, its `original_amount` converted (see
+ * `convertForeignRefund`)
+ */
+export async function resolveDisposalLocalCost(
+  injector: Injector,
+  record: AssetCostRecord,
+  disposal: Pick<
+    IGetDepreciationDisposalsByIdsResult,
+    | 'id'
+    | 'type'
+    | 'refund_mode'
+    | 'charge_id'
+    | 'disposal_date'
+    | 'disposed_cost'
+    | 'original_amount'
+    | 'original_currency'
+  >,
+): Promise<DisposalLocalCost> {
+  if (disposal.original_amount == null) {
+    return { cost: Number(disposal.disposed_cost), rate: null };
+  }
+  if (disposal.original_currency && disposal.original_currency !== record.currency) {
+    throw new GraphQLError(
+      `Depreciation disposal ${disposal.id} is in ${disposal.original_currency}, but its asset is recorded in ${record.currency ?? 'the local currency'}`,
+    );
+  }
+  const { cost, rate } = await convertForeignRefund(injector, record, {
+    originalAmount: Number(disposal.original_amount),
+    refundMode: storedRefundMode(disposal) ?? DEFAULT_COST_REFUND_MODE,
+    chargeId: disposal.charge_id,
+    refundDate: disposal.disposal_date,
+  });
+  return { cost, rate };
+}
+
+/** The engine's input for an asset's stored events, at their local cost */
+export function loadDisposalInputs(
+  injector: Injector,
+  record: AssetCostRecord,
+  disposals: readonly IGetDepreciationDisposalsByIdsResult[],
+): Promise<AssetDisposalInput[]> {
+  return Promise.all(
+    disposals.map(async disposal =>
+      toDisposalInput(disposal, (await resolveDisposalLocalCost(injector, record, disposal)).cost),
+    ),
+  );
+}
+
+/** The local cost of a stored event, loading its asset */
+export async function loadDisposalLocalCost(
+  injector: Injector,
+  disposal: IGetDepreciationDisposalsByIdsResult,
+): Promise<DisposalLocalCost> {
+  if (disposal.original_amount == null) {
+    return { cost: Number(disposal.disposed_cost), rate: null };
+  }
+  const record = await injector
+    .get(DepreciationProvider)
+    .getDepreciationRecordByIdLoader.load(disposal.depreciation_id);
+  if (!record) {
+    throw new GraphQLError(`Depreciation record with id ${disposal.depreciation_id} not found`);
+  }
+  return resolveDisposalLocalCost(injector, record, disposal);
 }
 
 export type AssetContext = {
@@ -191,8 +275,9 @@ export async function computeStoredDisposal(
   injector: Injector,
   disposal: IGetDepreciationDisposalsByIdsResult,
 ): Promise<DisposalComputation> {
-  const { asset, disposals } = await loadAssetContext(injector, disposal.depreciation_id);
-  const result = computeAssetEvent(asset, disposals.map(toDisposalInput), disposal.id);
+  const { record, asset, disposals } = await loadAssetContext(injector, disposal.depreciation_id);
+  const events = await loadDisposalInputs(injector, record, disposals);
+  const result = computeAssetEvent(asset, events, disposal.id);
   if (!result) {
     throw new GraphQLError(`Unable to compute depreciation disposal ${disposal.id}`);
   }
@@ -209,7 +294,13 @@ export type DisposalCandidate = {
   refundMode?: CostRefundMode | null;
   chargeId?: string | null;
   disposalDate: TimelessDateString;
-  disposedCost: number;
+  /**
+   * The local cost; required, except for a cost refund of an asset recorded in a foreign currency,
+   * which takes `originalAmount` instead
+   */
+  disposedCost?: number | null;
+  /** A cost refund of an asset recorded in a foreign currency, in the asset's currency */
+  originalAmount?: number | null;
   /** For a sale; a write-off and a cost refund have none */
   proceeds?: number | null;
 };
@@ -259,6 +350,8 @@ export async function checkDisposal(
       errors: string[];
       result?: never;
       refundMode?: never;
+      stored?: never;
+      exchangeRate?: never;
       remainingCost?: never;
       remainingBookValue?: never;
     }
@@ -267,6 +360,17 @@ export async function checkDisposal(
       result: DisposalComputation;
       /** The refund mode to store (`null` unless a cost refund) */
       refundMode: CostRefundMode | null;
+      /**
+       * The amounts to store: the local cost, or, for a cost refund of a foreign-currency asset, the
+       * amount in the asset's currency and no local cost (it is converted when read)
+       */
+      stored: {
+        disposedCost: number | null;
+        originalAmount: number | null;
+        originalCurrency: IGetDepreciationDisposalsByIdsResult['original_currency'];
+      };
+      /** The rate a cost refund entered in the asset's currency converts at; null otherwise */
+      exchangeRate: number | null;
       /** The asset's cost at the end of the event's year, after the event */
       remainingCost: number;
       /** The asset's net book value at the end of the event's year, after the event */
@@ -274,7 +378,7 @@ export async function checkDisposal(
     }
 > {
   const { record, localCost, asset, disposals } = context;
-  const [{ ledgerLock, ownerId }, charge] = await Promise.all([
+  const [{ defaultLocalCurrency, ledgerLock, ownerId }, charge] = await Promise.all([
     injector.get(AdminContextProvider).getVerifiedAdminContext(),
     candidate.chargeId
       ? injector.get(ChargesProvider).getChargeByIdLoader.load(candidate.chargeId)
@@ -303,6 +407,45 @@ export async function checkDisposal(
   if (localCost == null) {
     errors.push('Set an amount on the depreciation record before disposing of it');
   }
+
+  // a cost refund of an asset recorded in a foreign currency is entered in that currency
+  const foreignCurrency =
+    record.currency && record.currency !== defaultLocalCurrency ? record.currency : null;
+  let disposedCost = candidate.disposedCost ?? null;
+  let conversion: RefundConversion | null = null;
+  if (candidate.originalAmount != null) {
+    if (candidate.type !== 'COST_REFUND') {
+      errors.push("An amount in the asset's currency (originalAmount) is for cost refunds only");
+    } else if (!foreignCurrency) {
+      errors.push(
+        `An amount in the asset's currency (originalAmount) is for assets recorded in a foreign currency; give this refund in ${defaultLocalCurrency} (disposedCost)`,
+      );
+    } else if (candidate.disposedCost != null) {
+      errors.push(
+        `Give a refund of an asset recorded in ${foreignCurrency} in ${foreignCurrency} (originalAmount) only, not as a ${defaultLocalCurrency} cost`,
+      );
+    } else if (candidate.originalAmount <= 0 || Number.isNaN(candidate.originalAmount)) {
+      errors.push('The refunded amount must be positive');
+    } else if (localCost != null) {
+      try {
+        conversion = await convertForeignRefund(injector, record, {
+          originalAmount: candidate.originalAmount,
+          refundMode: refundMode ?? DEFAULT_COST_REFUND_MODE,
+          chargeId: candidate.chargeId,
+          refundDate: candidate.disposalDate,
+        });
+        disposedCost = conversion.cost;
+      } catch (e) {
+        errors.push(e instanceof Error ? e.message : String(e));
+      }
+    }
+  } else if (candidate.type === 'COST_REFUND' && foreignCurrency) {
+    errors.push(
+      `Enter a cost refund of an asset recorded in ${foreignCurrency} in ${foreignCurrency} (originalAmount)`,
+    );
+  } else if (disposedCost == null) {
+    errors.push('Disposed cost is required');
+  }
   const stored = candidate.id
     ? disposals.find(disposal => disposal.id === candidate.id)
     : undefined;
@@ -315,15 +458,23 @@ export async function checkDisposal(
     errors.push(`Disposal date ${candidate.disposalDate} is in the locked period (${ledgerLock})`);
   }
 
+  if (disposedCost == null) {
+    return { errors };
+  }
+
   const id = candidate.id ?? PREVIEW_DISPOSAL_ID;
   const all: AssetDisposalInput[] = [
-    ...disposals.filter(disposal => disposal.id !== candidate.id).map(toDisposalInput),
+    ...(await loadDisposalInputs(
+      injector,
+      record,
+      disposals.filter(disposal => disposal.id !== candidate.id),
+    )),
     {
       id,
       kind: candidate.type,
       refundMode,
       disposalDate: candidate.disposalDate,
-      disposedCost: candidate.disposedCost,
+      disposedCost,
       proceeds,
     },
   ];
@@ -341,6 +492,14 @@ export async function checkDisposal(
   return {
     result,
     refundMode,
+    stored: conversion
+      ? {
+          disposedCost: null,
+          originalAmount: candidate.originalAmount ?? null,
+          originalCurrency: foreignCurrency,
+        }
+      : { disposedCost, originalAmount: null, originalCurrency: null },
+    exchangeRate: conversion?.rate ?? null,
     remainingCost: year.closingCost,
     remainingBookValue: year.netBookValue,
   };

@@ -16,7 +16,7 @@ import {
 } from '../../depreciation/helpers/asset-depreciation.helper.js';
 import {
   loadAssetInput,
-  toDisposalInput,
+  loadDisposalInputs,
 } from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
@@ -194,7 +194,11 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
-          const yearResult = calculateAssetYear(asset, disposals.map(toDisposalInput), year);
+          const yearResult = calculateAssetYear(
+            asset,
+            await loadDisposalInputs(injector, record, disposals),
+            year,
+          );
           if (isClosedBeforeYear(asset, disposals, startOfTimelessYear(year), yearResult)) {
             return;
           }

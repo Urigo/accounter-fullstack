@@ -226,6 +226,7 @@ import migration_2026_11_22T14_30_00_rls_depreciation_disposals from './actions/
 import migration_2026_11_24T10_00_00_depreciation_refund_mode_and_correction_category from './actions/2026-11-24T10-00-00.depreciation-refund-mode-and-correction-category.js';
 import migration_2026_11_24T10_30_00_depreciation_category_percentage_100 from './actions/2026-11-24T10-30-00.depreciation-category-percentage-100.js';
 import migration_2026_11_24T11_00_00_depreciation_local_amount from './actions/2026-11-24T11-00-00.depreciation-local-amount.js';
+import migration_2026_11_24T11_30_00_depreciation_disposal_original_amount from './actions/2026-11-24T11-30-00.depreciation-disposal-original-amount.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -456,6 +457,7 @@ export const MIGRATIONS = [
   migration_2026_11_24T10_00_00_depreciation_refund_mode_and_correction_category,
   migration_2026_11_24T10_30_00_depreciation_category_percentage_100,
   migration_2026_11_24T11_00_00_depreciation_local_amount,
+  migration_2026_11_24T11_30_00_depreciation_disposal_original_amount,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

@@ -205,6 +205,7 @@ function makeInjector(options: {
   rates: MockRate[];
   disposals?: unknown[];
   depreciationRecords?: unknown[];
+  miscExpenses?: unknown[];
 }): Injector {
   return makeMockInjector(
     new Map<unknown, unknown>([
@@ -274,7 +275,10 @@ function makeInjector(options: {
           },
         },
       ],
-      [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
+      [
+        MiscExpensesProvider,
+        { getExpensesByChargeIdLoader: { load: async () => options.miscExpenses ?? [] } },
+      ],
       [
         DepreciationDisposalsProvider,
         { getDisposalsByChargeIdLoader: { load: async () => options.disposals ?? [] } },
@@ -399,6 +403,79 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         localAmount: 100,
       }),
     ]);
+  });
+
+  describe('an asset purchase entered as misc expenses, without documents', () => {
+    // USD 1,000 of software bought from the supplier on the contract day (₪3.60), paid a week later
+    // at ₪3.70
+    const paymentDay: TimelessDateString = '2025-03-19';
+
+    function acquisition(depreciationRecords: unknown[]) {
+      vi.mocked(getChargeDocumentsMeta).mockResolvedValue({
+        invoiceCount: 0,
+        receiptCount: 0,
+      } as never);
+      const contractTime = at(DAY, 0, 0);
+      return makeInjector({
+        miscExpenses: [
+          {
+            id: 'software',
+            charge_id: CHARGE_ID,
+            owner_id: OWNER_ID,
+            amount: '1000',
+            currency: Currency.Usd,
+            creditor_id: SUPPLIER_ID,
+            debtor_id: 'tax-category-software',
+            description: 'software',
+            invoice_date: DAY,
+            value_date: contractTime,
+          },
+        ],
+        transactions: [
+          buildTransaction({
+            id: 'payment',
+            chargeId: CHARGE_ID,
+            ownerId: OWNER_ID,
+            accountId: PAYING_ACCOUNT_ID,
+            businessId: SUPPLIER_ID,
+            amount: '-1000',
+            currency: Currency.Usd,
+            debitDate: paymentDay,
+          }),
+        ],
+        rates: [
+          [Currency.Usd, contractTime, 3.6],
+          [Currency.Usd, paymentDay, 3.7],
+        ],
+        depreciationRecords,
+      });
+    }
+
+    it("books the payment's rate difference to exchange rates when the charge carries assets", async () => {
+      const { records, balance, errors } = await generate(
+        acquisition([{ id: 'asset', charge_id: CHARGE_ID }]),
+      );
+
+      expect(errors).toEqual([]);
+      expect(balance?.isBalanced).toBe(true);
+      expect(exchangeRecords(records).map(summarize)).toEqual([
+        expect.objectContaining({
+          debit: 'tax-category-exchange-rates',
+          credit: SUPPLIER_ID,
+          currency: Currency.Ils,
+          localAmount: 100,
+        }),
+      ]);
+    });
+
+    it('still finds no exchange rate account for misc expenses of a charge without assets', async () => {
+      const { records, errors } = await generate(acquisition([]));
+
+      expect(exchangeRecords(records)).toEqual([]);
+      expect(errors).toContain(
+        `Failed to locate tax category for exchange rate for business ID="${SUPPLIER_ID}"`,
+      );
+    });
   });
 
   it('reports a same-day fiat mismatch instead of booking it as an exchange-rate difference', async () => {
