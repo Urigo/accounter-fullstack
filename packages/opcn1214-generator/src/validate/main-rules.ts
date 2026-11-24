@@ -3,7 +3,6 @@
  * checks over the normalized main record, so they run on validated input and on parsed files alike.
  */
 import { isAbsentValue } from '../codec/record.js';
-import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { FieldDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -40,14 +39,6 @@ const UNTRANSMITTED_REASONS = [
 const BANK_ACCOUNT_CODES = ['277', '278', '280'] as const;
 const ISRAELI_PURCHASE = 'qualifyingCompany.israeliPurchaseAmount';
 const FOREIGN_PURCHASE = 'qualifyingCompany.foreignPurchaseAmount';
-
-/**
- * True for a number above 0: an optional count or amount of 0 is absent in the file (SPEC §8.4), so
- * input and parsed files are judged alike.
- */
-function isPositive(value: Primitive): boolean {
-  return typeof value === 'number' && value > 0;
-}
 
 /** The 1000 records of `report` (one per report). */
 function mainRecords(report: NormalizedReport): NormalizedRecord[] {
@@ -110,6 +101,15 @@ function codeIssue(
  */
 function isAbsent(report: NormalizedReport, record: NormalizedRecord, key: string): boolean {
   return isAbsentValue(mainField(report, key), record.values[key]);
+}
+
+/**
+ * Whether the optional count, amount or number `key` of `record` is above 0. Built on isAbsent, so a
+ * 0 the file writes as absent counts as not given, on input as in a parsed file.
+ */
+function isPositive(report: NormalizedReport, record: NormalizedRecord, key: string): boolean {
+  const value = record.values[key];
+  return !isAbsent(report, record, key) && typeof value === 'number' && value > 0;
 }
 
 /** A rule: when the flag or yes/no `condition` is true, the header field `key` must have a value. */
@@ -274,7 +274,7 @@ function reportablePositionsUnexpected(report: NormalizedReport): Issue[] {
     .filter(
       record =>
         record.values['declarations.tookReportablePosition'] === false &&
-        REPORTABLE_POSITION_KEYS.some(key => record.values[key] !== undefined),
+        REPORTABLE_POSITION_KEYS.some(key => isPositive(report, record, key)),
     )
     .map(record =>
       fieldIssue(
@@ -296,7 +296,7 @@ function cgUntransmittedReason(report: NormalizedReport): Issue[] {
   return mainRecords(report)
     .filter(
       record =>
-        isPositive(record.values[UNTRANSMITTED_COUNT]) &&
+        isPositive(report, record, UNTRANSMITTED_COUNT) &&
         UNTRANSMITTED_REASONS.every(key => record.values[key] !== true),
     )
     .map(record =>
@@ -317,7 +317,7 @@ function cgUntransmittedReasonWithoutCount(report: NormalizedReport): Issue[] {
     .filter(
       record =>
         UNTRANSMITTED_REASONS.some(key => record.values[key] === true) &&
-        !isPositive(record.values[UNTRANSMITTED_COUNT]),
+        !isPositive(report, record, UNTRANSMITTED_COUNT),
     )
     .map(record =>
       fieldIssue(
@@ -358,8 +358,8 @@ function qualifyingCompanyPurchaseAmounts(report: NormalizedReport): Issue[] {
     .filter(
       record =>
         record.values['qualifyingCompany.purchased'] === true &&
-        !isPositive(record.values[ISRAELI_PURCHASE]) &&
-        !isPositive(record.values[FOREIGN_PURCHASE]),
+        !isPositive(report, record, ISRAELI_PURCHASE) &&
+        !isPositive(report, record, FOREIGN_PURCHASE),
     )
     .map(record =>
       fieldIssue(
@@ -387,7 +387,7 @@ const qualifyingCompanyAmortizationAmount = requiresField(
 function countRequiresCode(ruleId: RuleId, countKey: string, code: string): ReportRule {
   return report =>
     mainRecords(report)
-      .filter(record => isPositive(record.values[countKey]) && !record.codes.has(code))
+      .filter(record => isPositive(report, record, countKey) && !record.codes.has(code))
       .map(record =>
         codeIssue(
           ruleId,

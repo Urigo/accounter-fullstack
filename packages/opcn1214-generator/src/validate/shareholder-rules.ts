@@ -31,8 +31,9 @@ function shareholderField(report: NormalizedReport, key: string): FieldDef {
 
 /**
  * shareholders.dividendRights.total: when at least one shareholder states dividend rights, they
- * must total exactly 100 (p.23; SPEC §15 A-15). Summed in hundredths, so 33.33 + 33.33 + 33.34 is
- * exactly 100 despite floating point.
+ * must total exactly 100 (p.23; SPEC §15 A-15). Each value is taken as written, rounded to
+ * hundredths like field.percentRange and the encoder, and summed in hundredths, so 14.46 + 49.59 +
+ * 35.95 is exactly 100 although the raw float sum is 100.00000000000001.
  */
 function dividendRightsTotal(report: NormalizedReport): Issue[] {
   const stated = shareholderRecords(report)
@@ -59,16 +60,22 @@ function dividendRightsTotal(report: NormalizedReport): Issue[] {
 }
 
 /**
- * shareholders.duplicateId: an idNumber that an earlier shareholder already has, except the shared
- * special IDs. One issue per repeat, at the repeating shareholder.
+ * shareholders.duplicateId: an idNumber that an earlier shareholder already has, compared as written
+ * (zero-padded to 9 digits), except the shared special IDs. One issue per repeat, at the repeating
+ * shareholder.
  */
 function duplicateId(report: NormalizedReport): Issue[] {
   const field = shareholderField(report, ID_NUMBER);
   const seen = new Set<string>();
   const issues: Issue[] = [];
   for (const record of shareholderRecords(report)) {
-    const id = record.values[ID_NUMBER];
-    if (typeof id !== 'string' || SHARED_IDS.has(id)) {
+    const raw = record.values[ID_NUMBER];
+    if (typeof raw !== 'string') {
+      continue;
+    }
+    // As written to the file, zero-padded to 9 digits: '12345678' and '012345678' are one ID.
+    const id = raw.padStart(field.length, '0');
+    if (SHARED_IDS.has(id)) {
       continue;
     }
     if (seen.has(id)) {

@@ -368,6 +368,18 @@ describe('record 1000 consistency warnings (SPEC §10.3)', () => {
     ).toEqual([]);
   });
 
+  it('main.reportablePositions.unexpected: a zero position is absent, on input as in a parsed file', () => {
+    const input = minimalInput({
+      declarations: { tookReportablePosition: false, reportablePositions: [0] },
+    });
+    expect(issuesOf(input, 'main.reportablePositions.unexpected')).toEqual([]);
+    expect(
+      parse1214(generate1214(input, OPTIONS).text).issues.filter(
+        issue => issue.ruleId === 'main.reportablePositions.unexpected',
+      ),
+    ).toEqual([]);
+  });
+
   describe('main.cgUntransmitted', () => {
     it.each([
       ['lossOrNoGain', { lossOrNoGain: true }],

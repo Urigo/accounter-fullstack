@@ -296,7 +296,7 @@ export const RULES = deepFreeze([
     source: 'derived',
     scope: '1000',
     description:
-      'Reportable positions (1034–1046) given while tookReportablePosition (1030) is no.',
+      'Non-zero reportable positions (1034–1046) given while tookReportablePosition (1030) is no.',
     specRef: { page: 11 },
   },
   {
@@ -382,7 +382,8 @@ export const RULES = deepFreeze([
     severity: 'warning',
     source: 'derived',
     scope: '1020',
-    description: 'The same shareholder idNumber twice (999999964 and 999999998 excluded).',
+    description:
+      'The same shareholder idNumber twice, compared zero-padded to 9 digits (999999964 and 999999998 excluded).',
   },
   {
     id: 'parse.empty',

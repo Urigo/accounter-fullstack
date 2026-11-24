@@ -36,7 +36,11 @@ describe('shareholder rules (SPEC §10.4)', () => {
     it.each([
       ['100', [100]],
       ['33.33 + 33.33 + 33.34', [33.33, 33.33, 33.34]],
-      ['0.1 + 0.2 + 99.7 (hundredths, not floats)', [0.1, 0.2, 99.7]],
+      ['0.1 + 0.2 + 99.7', [0.1, 0.2, 99.7]],
+      [
+        '14.46 + 49.59 + 35.95 (hundredths: the raw float sum is 100.00000000000001)',
+        [14.46, 49.59, 35.95],
+      ],
       ['50 + 50 and one without', [50, 50, undefined]],
       ['nobody states it', [undefined, undefined]],
     ])('%s passes', (_, percents) => {
@@ -94,6 +98,29 @@ describe('shareholder rules (SPEC §10.4)', () => {
         }),
         expect.objectContaining({ path: 'shareholders[3].idNumber', recordIndex: 3 }),
       ]);
+    });
+
+    it('compares IDs as written, zero-padded to 9 digits, on input as in a parsed file', () => {
+      const input = minimalInput({
+        shareholders: [holder('12345674', 50), holder('012345674', 50)],
+      });
+      const expected = [
+        expect.objectContaining({
+          path: 'shareholders[1].idNumber',
+          recordIndex: 1,
+          value: '012345674',
+        }),
+      ];
+      expect(
+        runPipeline(input, OPTIONS).issues.filter(
+          issue => issue.ruleId === 'shareholders.duplicateId',
+        ),
+      ).toEqual(expected);
+      expect(
+        parse1214(generate1214(input, OPTIONS).text).issues.filter(
+          issue => issue.ruleId === 'shareholders.duplicateId',
+        ),
+      ).toEqual(expected);
     });
 
     it.each(['999999964', '999999998'])('ignores the special ID %s', special => {

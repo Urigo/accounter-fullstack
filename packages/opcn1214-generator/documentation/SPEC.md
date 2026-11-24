@@ -1325,7 +1325,7 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                       | p.11     |
 | `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                          | p.11     |
 | `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                | p.11     |
-| `main.reportablePositions.unexpected`       | W   | derived | positions given while `tookReportablePosition` is false                                              | p.11     |
+| `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                     | p.11     |
 | `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                     | p.17     |
 | `main.rd.total`                             | W   | derived | sum of 1030 investment amounts ≠ code 165                                                            | p.17     |
 | `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                | p.7      |
@@ -1354,10 +1354,10 @@ by `parse.derivedMismatch`.
 
 ### 10.4 Records 1010 / 1020 / 1030
 
-| Rule ID                             | Sev | Source  | Condition (violation)                                                                                | Ref  |
-| ----------------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------- | ---- |
-| `shareholders.dividendRights.total` | E   | spec    | at least one shareholder has `dividendRightsPercent` and the total ≠ 100.00 (computed in hundredths) | p.23 |
-| `shareholders.duplicateId`          | W   | derived | the same `idNumber` twice (excluding 999999964 / 999999998)                                          | —    |
+| Rule ID                             | Sev | Source  | Condition (violation)                                                                                                                  | Ref  |
+| ----------------------------------- | --- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `shareholders.dividendRights.total` | E   | spec    | at least one shareholder has `dividendRightsPercent` and the total ≠ 100.00 (each value rounded to hundredths as written, then summed) | p.23 |
+| `shareholders.duplicateId`          | W   | derived | the same `idNumber` twice, compared zero-padded to 9 digits (excluding 999999964 / 999999998)                                          | —    |
 
 (Names, relation type, control flag and amounts are covered by §10.2 through the layout's `required`
 and `values` columns.)

@@ -172,7 +172,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
           idNumber: '123456782',
           fullName: 'ישראל ישראלי',
           isControllingShareholder: true,
-          dividendRightsPercent: 0.7 + 0.2 + 0.1,
+          // A lone shareholder's dividend rights must total 100 (written as 100.00).
+          dividendRightsPercent: 14.46 + 49.59 + 35.95,
           votingRightsPercent: 1.1 + 2.2,
           otherRightsPercent: 10.1 + 20.2,
         },

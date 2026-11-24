@@ -362,12 +362,13 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
     });
 
     // Float noise: compared as written (hundredths), like field.decimals and the encoder.
+    // votingRightsPercent, as above: a lone shareholder's dividend rights must total 100.
     it.each([
       ['14.46 + 49.59 + 35.95', 14.46 + 49.59 + 35.95, 100.00000000000001],
       ['0.7 + 0.2 + 0.1', 0.7 + 0.2 + 0.1, 0.9999999999999999],
-    ])('accepts %s, written as an in-range value', (_, dividendRightsPercent, raw) => {
-      expect(dividendRightsPercent).toBe(raw);
-      const issues = runPipeline(withShareholder({ dividendRightsPercent }), OPTIONS).issues;
+    ])('accepts %s, written as an in-range value', (_, votingRightsPercent, raw) => {
+      expect(votingRightsPercent).toBe(raw);
+      const issues = runPipeline(withShareholder({ votingRightsPercent }), OPTIONS).issues;
       expect(issues).toEqual([]);
     });
 

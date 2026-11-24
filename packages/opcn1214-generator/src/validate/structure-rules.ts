@@ -23,9 +23,6 @@ export function mainCodePairsMax(report: NormalizedReport): Issue[] {
     );
 }
 
-/** Most shareholders (1020 records) in a report (p.2, p.21). */
-const MAX_SHAREHOLDERS = 99;
-
 function shareholderCount(report: NormalizedReport): number {
   return report.records.filter(record => record.recordType === '1020').length;
 }
@@ -54,19 +51,23 @@ export function shareholdersMin(report: NormalizedReport): Issue[] {
   ];
 }
 
-/** struct.shareholders.max: more than 99 shareholders (p.2, p.21). */
+/**
+ * struct.shareholders.max: more shareholders than the layout's 1020 maxOccurs (99 in 2024; p.2,
+ * p.21).
+ */
 export function shareholdersMax(report: NormalizedReport): Issue[] {
+  const max = report.layout.records['1020'].maxOccurs;
   const count = shareholderCount(report);
-  if (count <= MAX_SHAREHOLDERS) {
+  if (count <= max) {
     return [];
   }
   return [
     makeIssue('struct.shareholders.max', {
-      message: `The report has ${count} shareholders; at most ${MAX_SHAREHOLDERS} are allowed.`,
+      message: `The report has ${count} shareholders; at most ${max} are allowed.`,
       path: 'shareholders',
       recordType: '1020',
       value: count,
-      expected: `at most ${MAX_SHAREHOLDERS}`,
+      expected: `at most ${max}`,
       specRef: { page: 21 },
     }),
   ];
