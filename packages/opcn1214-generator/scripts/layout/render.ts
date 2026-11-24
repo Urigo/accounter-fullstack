@@ -359,6 +359,13 @@ ${symbols.map(symbol => `${symbol}: ${codeUnion(withNotes(of(`30${symbol}`)))};`
 /** Codes of the code-amount section of the capital-gains appendix of a symbol. */
 export type CapitalGainsCode<S extends CapitalGainsSymbol> = CapitalGainsCodeMap[S];
 
+interface CapitalGainsInputCodeMap {
+${symbols.map(symbol => `${symbol}: ${codeUnion(withNotes(of(`30${symbol}`, code => !code.derived)))};`).join('\n')}
+}
+
+/** Capital-gains codes the caller may pass in \`amounts\` (all but the derived ones, SPEC §7.4). */
+export type CapitalGainsInputCode<S extends CapitalGainsSymbol> = CapitalGainsInputCodeMap[S];
+
 /** Country codes of record 2200 (SPEC §3.6); \`-88\` = country unknown. */
 export type CountryCode = ${codeUnion(countries.map(([code, name]) => ({ code, note: name })))};
 
@@ -377,6 +384,10 @@ export const CAPITAL_GAINS_SYMBOLS = [${symbols.join(',')}] as const satisfies r
 export const CAPITAL_GAINS_CODES = {
 ${symbols.map(symbol => `${symbol}: ${codeArray(of(`30${symbol}`).map(code => code.code))},`).join('\n')}
 } as const satisfies { readonly [S in CapitalGainsSymbol]: readonly CapitalGainsCode<S>[] };
+
+export const CAPITAL_GAINS_INPUT_CODES = {
+${symbols.map(symbol => `${symbol}: ${codeArray(of(`30${symbol}`, code => !code.derived).map(code => code.code))},`).join('\n')}
+} as const satisfies { readonly [S in CapitalGainsSymbol]: readonly CapitalGainsInputCode<S>[] };
 
 export const COUNTRY_CODES = ${codeArray(countries.map(([code]) => code))} as const satisfies readonly CountryCode[];
 `;

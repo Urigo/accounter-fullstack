@@ -2,6 +2,7 @@ import { getLayout } from '../../src/layout/registry.js';
 import type { RecordType } from '../../src/layout/types.js';
 import {
   CAPITAL_GAINS_CODES,
+  CAPITAL_GAINS_INPUT_CODES,
   CAPITAL_GAINS_SYMBOLS,
   COUNTRY_BREAKDOWN_CODES,
   COUNTRY_CODES,
@@ -10,6 +11,7 @@ import {
   MAIN_FORM_CODES,
   MAIN_FORM_INPUT_CODES,
   type CapitalGainsCode,
+  type CapitalGainsInputCode,
   type CapitalGainsSymbol,
   type CountryBreakdownCode,
   type CountryCode,
@@ -33,6 +35,12 @@ describe('code unions — types', () => {
     expectTypeOf<'401'>().not.toExtend<CountryBreakdownCode>();
     expectTypeOf<'501'>().toExtend<CapitalGainsCode<77>>();
     expectTypeOf<'501'>().not.toExtend<CapitalGainsCode<27>>();
+    expectTypeOf<'501'>().not.toExtend<CapitalGainsInputCode<77>>();
+    expectTypeOf<'505'>().not.toExtend<CapitalGainsInputCode<77>>();
+    expectTypeOf<CapitalGainsInputCode<77>>().toEqualTypeOf<
+      Exclude<CapitalGainsCode<77>, '501' | '502' | '503' | '504' | '505'>
+    >();
+    expectTypeOf<CapitalGainsInputCode<27>>().toEqualTypeOf<CapitalGainsCode<27>>();
     expectTypeOf<'-88'>().toExtend<CountryCode>();
     expectTypeOf<'004'>().toExtend<CountryCode>();
     expectTypeOf<'4'>().not.toExtend<CountryCode>();
@@ -50,6 +58,12 @@ describe('code unions — types', () => {
     expectTypeOf<(typeof CAPITAL_GAINS_SYMBOLS)[number]>().toEqualTypeOf<CapitalGainsSymbol>();
     expectTypeOf<(typeof CAPITAL_GAINS_CODES)[27][number]>().toEqualTypeOf<CapitalGainsCode<27>>();
     expectTypeOf<(typeof CAPITAL_GAINS_CODES)[77][number]>().toEqualTypeOf<CapitalGainsCode<77>>();
+    expectTypeOf<(typeof CAPITAL_GAINS_INPUT_CODES)[27][number]>().toEqualTypeOf<
+      CapitalGainsInputCode<27>
+    >();
+    expectTypeOf<(typeof CAPITAL_GAINS_INPUT_CODES)[77][number]>().toEqualTypeOf<
+      CapitalGainsInputCode<77>
+    >();
     expectTypeOf<(typeof COUNTRY_CODES)[number]>().toEqualTypeOf<CountryCode>();
   });
 });
@@ -82,6 +96,19 @@ describe('code unions — runtime arrays match the layout', () => {
       expect(CAPITAL_GAINS_CODES[symbol]).toEqual(codesOf(type).map(code => code.code));
     }
     expect(Object.keys(CAPITAL_GAINS_CODES).map(Number)).toEqual([...CAPITAL_GAINS_SYMBOLS]);
+  });
+
+  it('lists the input codes of every capital-gains symbol (all but the derived 3077 501–505)', () => {
+    for (const symbol of CAPITAL_GAINS_SYMBOLS) {
+      const type = `30${symbol}` as const satisfies RecordType;
+      expect(CAPITAL_GAINS_INPUT_CODES[symbol]).toEqual(
+        codesOf(type)
+          .filter(code => !code.derived)
+          .map(code => code.code),
+      );
+    }
+    expect(Object.keys(CAPITAL_GAINS_INPUT_CODES).map(Number)).toEqual([...CAPITAL_GAINS_SYMBOLS]);
+    expect(CAPITAL_GAINS_CODES[77].length - CAPITAL_GAINS_INPUT_CODES[77].length).toBe(5);
   });
 
   it('lists the 255 country codes as keyed in the layout', () => {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { parseCsvRecords } from '../../scripts/layout/csv.js';
+import { parseValues } from '../../scripts/layout/values.js';
 import { countryKey } from '../../src/layout/countries.js';
 import { getLayout } from '../../src/layout/registry.js';
 import {
@@ -197,6 +198,25 @@ describe('layout 2024 — code-amount sections', () => {
         ...['501', '502', '503', '504', '505'].map(code => `3077:${code}`),
       ].sort(),
     );
+  });
+  it('copies every codes.csv row into its CodeDef', () => {
+    const csvCodes = readCsv('codes.csv');
+    expect(csvCodes).toHaveLength(260);
+    for (const row of csvCodes) {
+      const def = records
+        .find(record => record.type === row.record)
+        ?.codes.find(code => code.code === row.code);
+      expect(def).toMatchObject({
+        length: Number(row.length),
+        required: row.required,
+        kind: row.kind,
+        zeroAllowed: row.zeroAllowed === 'yes',
+        perCountryBreakdown: row.perCountryBreakdown === 'yes',
+        notesHe: row.notesHe,
+        specPage: Number(row.specPage),
+      });
+      expect(def?.values).toEqual(parseValues(row.values ?? ''));
+    }
   });
 });
 

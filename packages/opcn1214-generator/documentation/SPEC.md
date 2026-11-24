@@ -419,13 +419,15 @@ packages/opcn1214-generator/
   export type ForeignAppendixCode = '401' | … | '494';             // 51 codes
   export type CountryBreakdownCode = '416' | '417' | … | '461';    // 23 codes
   export type CapitalGainsCode<S extends Symbol> = …;              // per symbol
+  export type CapitalGainsInputCode<S extends Symbol> = …;         // per symbol, minus derived codes
   export type CountryCode = '-88' | '004' | … ;                    // 255 codes
   ```
 
 - Generated files are committed; a test regenerates in memory and fails if the committed output
   differs (`tests/layout/codegen-sync.test.ts`).
-- The Hebrew `notesHe` text is emitted as JSDoc on the code unions, so IDEs show the spec note for
-  each code.
+- The Hebrew `notesHe` text is emitted as a JSDoc comment before each member of the code unions. It
+  documents the generated file only: TypeScript attaches no comment to a union member, so IDE hover
+  and completion on a code (or on a key of an `amounts` map typed from a union) do not show it.
 
 ### 5.4 Layout types (`src/layout/types.ts`)
 

@@ -105,7 +105,7 @@ export interface RecordDef {
     readonly kind: 'codeAmount' | 'countryAmount';
     readonly start: number;
     readonly length: number;
-    /** Maximum entries: 1000 → 61 (p.13); 2200 → 10 (p.31); other records → their number of codes. */
+    /** Maximum entries: 1000 → 61 (p.13); 2200 → 10 (p.30); other records → their number of codes. */
     readonly maxEntries: number;
   };
   readonly minOccurs: number;
