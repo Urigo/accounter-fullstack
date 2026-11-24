@@ -63,22 +63,31 @@ function gapError(raw: string, offset: number): CodecDecodeError {
   );
 }
 
-/** Decodes a value with its codec, translating a decode error to the section offset. */
-function decodeAt(raw: string, offset: number, shape: FieldShape): Primitive {
+/**
+ * Decodes a value with its codec, translating a decode error to the section offset and prefixing
+ * its message with `label` (the code or country entry the value belongs to), since the value
+ * codec's message only gives the offset within the value.
+ */
+function decodeAt(raw: string, offset: number, shape: FieldShape, label: string): Primitive {
   try {
     return codecFor(shape.kind).decode(raw.slice(offset, offset + shape.length), shape);
   } catch (error) {
     if (error instanceof CodecDecodeError) {
-      throw new CodecDecodeError(error.reason, offset + error.offset, error.message, {
-        cause: error,
-      });
+      throw new CodecDecodeError(
+        error.reason,
+        offset + error.offset,
+        `${label}: ${error.message}`,
+        {
+          cause: error,
+        },
+      );
     }
     throw error;
   }
 }
 
-function numberAt(raw: string, offset: number, shape: FieldShape): number {
-  const value = decodeAt(raw, offset, shape);
+function numberAt(raw: string, offset: number, shape: FieldShape, label: string): number {
+  const value = decodeAt(raw, offset, shape, label);
   if (typeof value !== 'number') {
     throw new Opcn1214InternalError(`Codec of ${shape.kind} decoded a non-number`);
   }
@@ -110,7 +119,8 @@ export function encodeCodeSection(
 /**
  * Inverse of encodeCodeSection: returns code → value in section order. Throws CodecDecodeError
  * 'section' (offset within the section) for an unknown code, a truncated entry, a duplicate code
- * or non-zero data after an all-zero gap; value errors keep their reason, with a section offset.
+ * or non-zero data after an all-zero gap; value errors keep their reason, with a section offset
+ * and a message that names the code.
  */
 export function decodeCodeSection(
   raw: string,
@@ -139,7 +149,7 @@ export function decodeCodeSection(
     if (offset + CODE_LENGTH + code.length > length) {
       throw sectionError(offset, `Truncated entry of code ${key}`);
     }
-    values.set(key, numberAt(raw, offset + CODE_LENGTH, codeShape(code)));
+    values.set(key, numberAt(raw, offset + CODE_LENGTH, codeShape(code), `code ${key}`));
     offset += CODE_LENGTH + code.length;
   }
   return values;
@@ -167,7 +177,8 @@ export function encodeCountrySection(entries: readonly CountryEntry[], length: n
  * Inverse of encodeCountrySection: returns the entries in section order, countries as their
  * 3-character keys. Throws CodecDecodeError 'section' (offset within the section) for a truncated
  * entry, an affiliation other than '1', a malformed country code or non-zero data after an all-zero
- * gap; income errors keep their reason, with a section offset.
+ * gap; income errors keep their reason, with a section offset and a message that names the entry
+ * (1-based) and its country.
  */
 export function decodeCountrySection(raw: string, length: number): CountryEntry[] {
   checkSectionLength(raw, length);
@@ -189,7 +200,11 @@ export function decodeCountrySection(raw: string, length: number): CountryEntry[
     if (!COUNTRY_KEY.test(country)) {
       throw sectionError(countryOffset, `Malformed country code "${country}"`);
     }
-    entries.push({ country, income: numberAt(raw, countryOffset + COUNTRY_LENGTH, INCOME_SHAPE) });
+    const label = `country entry ${entries.length + 1} (${country})`;
+    entries.push({
+      country,
+      income: numberAt(raw, countryOffset + COUNTRY_LENGTH, INCOME_SHAPE, label),
+    });
     offset += COUNTRY_ENTRY_LENGTH;
   }
   return entries;

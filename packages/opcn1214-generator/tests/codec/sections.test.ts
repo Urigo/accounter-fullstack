@@ -238,6 +238,8 @@ describe('decodeCodeSection', () => {
     const error = decodeError(() => decodeCodeSection(raw, CODES_1000, 2048));
     expect(error.reason).toBe('numeric');
     expect(error.offset).toBe(19);
+    // The value codec's offset is within the value; the message names the code it belongs to.
+    expect(error.message).toMatch(/^code 010: Non-digit character at offset 11 of amount /);
   });
 });
 
@@ -329,5 +331,8 @@ describe('country section', () => {
     const error = decodeError(() => decodeCountrySection(raw, LENGTH));
     expect(error.reason).toBe('numeric');
     expect(error.offset).toBe(31);
+    expect(error.message).toMatch(
+      /^country entry 2 \(040\): Non-digit character at offset 11 of amount /,
+    );
   });
 });
