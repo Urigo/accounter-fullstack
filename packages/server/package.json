@@ -81,7 +81,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch",
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch",
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "6.0.0",
     "@types/inline-css": "3.0.4",
