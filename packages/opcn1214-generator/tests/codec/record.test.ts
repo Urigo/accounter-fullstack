@@ -251,6 +251,11 @@ describe('absent values on decode', () => {
           expect(decoded.values[fieldDef.key], `${def.type} ${fieldDef.key}`).toBeUndefined();
         }
       }
+      // Absent values are left out of `values` (toEqual cannot tell a key holding undefined).
+      const kept = def.fields.filter(
+        fieldDef => fieldDef.required === 'yes' && fieldDef.kind !== 'filler',
+      );
+      expect(Object.keys(decoded.values), def.type).toEqual(kept.map(fieldDef => fieldDef.key));
     }
   });
 

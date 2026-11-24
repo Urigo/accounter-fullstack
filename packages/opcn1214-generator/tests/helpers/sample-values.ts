@@ -49,12 +49,12 @@ const FIELD_SAMPLES: { [K in Exclude<FieldKind, 'filler'>]: (field: FieldDef) =>
 };
 
 /** The sample value of a header field; undefined for fillers (never stored). */
-export function sampleFieldValue(field: FieldDef): Primitive {
+function sampleFieldValue(field: FieldDef): Primitive {
   return field.kind === 'filler' ? undefined : FIELD_SAMPLES[field.kind](field);
 }
 
 /** The sample value of a code-amount code, in natural units. */
-export function sampleCodeValue(code: CodeDef): number {
+function sampleCodeValue(code: CodeDef): number {
   switch (code.kind) {
     case 'amount':
     case 'num':
