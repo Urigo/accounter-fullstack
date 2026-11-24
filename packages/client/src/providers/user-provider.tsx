@@ -1,6 +1,6 @@
-import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import equal from 'deep-equal';
-import { useClient, useQuery } from 'urql';
+import { useClient, useQuery, type CombinedError } from 'urql';
 import { useAuth0 } from '@auth0/auth0-react';
 import { AccounterLoader } from '../components/common/loaders/loader.js';
 import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
@@ -8,6 +8,13 @@ import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query UserContext {
+    # Read in the same request as the user context, for the onboarding guard: one boot request
+    # instead of two, the second of which waited for the first.
+    viewer {
+      email
+      emailVerified
+      status
+    }
     userContext {
       memberships {
         businessId
@@ -33,7 +40,42 @@ type ContextType = {
    * after a change to a setting it is derived from.
    */
   refreshUserContext?: () => Promise<void>;
+  /** The boot read: who the caller is and whether they are provisioned. See {@link SessionState}. */
+  session?: SessionState;
 };
+
+/**
+ * The caller's identity and provisioning state (`viewer`), from the request that also reads the
+ * user context. `viewer` answers even for an identity linked to no business, whose `userContext`
+ * fails with `ONBOARDING_REQUIRED`, so the onboarding guard can still tell why.
+ */
+export type SessionState = {
+  /** The boot request has answered, with data, an error or both. */
+  loaded: boolean;
+  /**
+   * Set only when `viewer` itself could not be read. The `userContext` error of an unprovisioned
+   * identity comes in the same response and is not one: `viewer` answered, and says why.
+   */
+  error: CombinedError | undefined;
+  viewer: UserContextQuery['viewer'];
+};
+
+function toSessionState(
+  data: UserContextQuery | undefined,
+  error: CombinedError | undefined,
+  fetching: boolean,
+): SessionState {
+  const viewerFailed =
+    !!error &&
+    (!!error.networkError ||
+      !data ||
+      error.graphQLErrors.some(graphQLError => graphQLError.path?.[0] === 'viewer'));
+  return {
+    loaded: !fetching && (!!data || !!error),
+    error: viewerFailed ? error : undefined,
+    viewer: data?.viewer ?? null,
+  };
+}
 
 export interface BusinessMembershipInfo {
   businessId: string;
@@ -124,11 +166,12 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
   const refreshUserContext = useRefreshUserContext(setDefaults);
 
-  const [{ data, fetching }, fetchUserContext] = useQuery({
+  const [{ data, fetching, error }, fetchUserContext] = useQuery({
     query: UserContextDocument,
     variables: {},
     pause: true,
   });
+  const session = useMemo(() => toSessionState(data, error, fetching), [data, error, fetching]);
 
   // update active user
   useEffect(() => {
@@ -173,7 +216,7 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   }
 
   return (
-    <UserContext.Provider value={{ userContext, setUserContext, refreshUserContext }}>
+    <UserContext.Provider value={{ userContext, setUserContext, refreshUserContext, session }}>
       {children}
     </UserContext.Provider>
   );
@@ -184,11 +227,12 @@ function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode 
   const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
   const refreshUserContext = useRefreshUserContext(setDefaults);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching, error }] = useQuery({
     query: UserContextDocument,
     variables: {},
     pause: false,
   });
+  const session = useMemo(() => toSessionState(data, error, fetching), [data, error, fetching]);
 
   useEffect(() => {
     if (data && !fetching) {
@@ -213,7 +257,7 @@ function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode 
   }
 
   return (
-    <UserContext.Provider value={{ userContext, setUserContext, refreshUserContext }}>
+    <UserContext.Provider value={{ userContext, setUserContext, refreshUserContext, session }}>
       {children}
     </UserContext.Provider>
   );

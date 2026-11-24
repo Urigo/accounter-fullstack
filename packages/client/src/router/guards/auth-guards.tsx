@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { PageSkeleton } from '../../components/layout/page-skeleton.js';
-import { useViewer } from '../../hooks/use-viewer.js';
+import { useSessionViewer, useViewer } from '../../hooks/use-viewer.js';
 import { hasStoredAuth0Session } from '../../lib/auth0-session.js';
 import { ROUTES } from '../routes.js';
 
@@ -57,7 +57,18 @@ function Auth0ProtectedRoute({ children }: GuardProps): ReactElement {
  * screen handles its own failures.
  */
 export function OnboardingGuard({ children }: GuardProps): ReactElement {
-  const { fetching, error, viewer } = useViewer();
+  // From the boot request `UserProvider` sends, rather than a query of its own: that one was sent
+  // twice per load (the provider's loader remounts this guard), the second time after the boot
+  // request, holding the shell back by another round trip.
+  const session = useSessionViewer();
+  // The boot request answers once per page load, so by now a not-active answer may be stale: an
+  // invitation accepted since, on a page that then navigates here. Read it again before sending
+  // the user away. /welcome reads `viewer` itself and sends an active user back to the app, so
+  // acting on a stale answer bounced them between the two without end.
+  const needsFreshRead =
+    !session.fetching && !session.error && !!session.viewer && session.viewer.status !== 'ACTIVE';
+  const fresh = useViewer({ pause: !needsFreshRead });
+  const { fetching, error, viewer } = needsFreshRead ? fresh : session;
 
   if (fetching) {
     return <PageSkeleton />;

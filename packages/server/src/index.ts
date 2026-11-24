@@ -20,6 +20,7 @@ import { createYogaLogger, log, serializeError, setLogLevel } from './observabil
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
+import { corsOptions } from './plugins/cors.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { requestLogPlugin } from './plugins/request-log-plugin.js';
 import { pgTypeParsers } from './shared/helpers/pg-type-parsers.js';
@@ -190,6 +191,7 @@ async function main() {
     // Yoga's 25 MB default is too small for the email-ingestion gateway, which sends up
     // to 20 MB of attachments (`MAX_EXTRACTED_BYTES`) base64-inlined in JSON, ~27 MB.
     maxRequestBodySize: 50_000_000,
+    cors: corsOptions,
     plugins: [
       correlationIdPlugin(),
       // Before useGraphQLModules, and so before Yoga's error masking: it logs errors unmasked.

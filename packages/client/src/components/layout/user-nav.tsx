@@ -31,8 +31,8 @@ function sameBusinessIds(a: string[], b: string[]): boolean {
 type UserNavModal = 'balance-charge' | 'pull-documents';
 
 /**
- * A modal picked by the same click that applied a pending business scope. Applying the scope
- * remounts this component (see `applyPendingBusinessScope`), which would drop the modal with the
+ * A modal picked by the same click that applied a pending business scope. Applying the scope can
+ * remount this component (see `applyPendingBusinessScope`), which would drop the modal with the
  * old instance's state, so the next mount opens it from here instead.
  */
 let modalAwaitingRemount: UserNavModal | null = null;
@@ -105,9 +105,10 @@ export function UserNav(): JSX.Element | null {
   }));
 
   // Toggling a business only edits `selectedBusinessIds`. Applying the scope swaps the urql
-  // client, which refetches every query — including the one `OnboardingGuard` holds the whole app
-  // shell back on, so this menu unmounts with it. Applied on each toggle, that closed the menu
-  // after every click; instead the scope is applied once, when the picker or the menu closes.
+  // client, which refetches every query. One that holds the whole app shell back while it loads
+  // unmounts this menu with it: `OnboardingGuard`'s, when it reads `viewer` itself instead of
+  // taking it from the boot request. Applied on each toggle, that closed the menu after every
+  // click; instead the scope is applied once, when the picker or the menu closes.
   // Returns whether it applied anything.
   function applyPendingBusinessScope(): boolean {
     if (sameBusinessIds(selectedBusinessIds, getBusinessScopeIds())) {
@@ -123,8 +124,8 @@ export function UserNav(): JSX.Element | null {
     }
   }
 
-  // Picking a modal closes the menu, and a pending scope applied then would remount this component
-  // and drop the modal. Applied here first, the modal is handed to the next mount instead.
+  // Picking a modal closes the menu, and a pending scope applied then could remount this component
+  // and drop the modal. Applied here first, the modal is handed to the next mount as well.
   function showModal(modal: UserNavModal): void {
     setOpenModal(modal);
     if (applyPendingBusinessScope()) {
