@@ -66,6 +66,12 @@ interface MultiSelectProps
    */
   onValueChange: (value: string[]) => void;
 
+  /**
+   * Callback function triggered when the options popover opens or closes.
+   * Lets a caller that defers acting on the selection apply it once, when the user is done.
+   */
+  onOpenChange?: (open: boolean) => void;
+
   /** The default selected values when the component mounts. */
   defaultValue?: string[];
 
@@ -118,6 +124,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     {
       options,
       onValueChange,
+      onOpenChange,
       variant,
       defaultValue = [],
       placeholder = 'Select options',
@@ -141,6 +148,16 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     const portalContainer = usePortalContainer();
     const [selectedValues, setSelectedValues] = React.useState<string[]>(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+    // The last open state reported to `onOpenChange`. A trigger click toggles the popover twice
+    // over (the button's own handler and Radix's), so reports are deduplicated against this.
+    const reportedOpenRef = React.useRef(false);
+    const setPopoverOpen = (open: boolean) => {
+      setIsPopoverOpen(open);
+      if (reportedOpenRef.current !== open) {
+        reportedOpenRef.current = open;
+        onOpenChange?.(open);
+      }
+    };
     const [isAnimating, setIsAnimating] = React.useState(false);
     // The search lives here, outside the popover content, so it is cleared whenever the popover
     // opens or closes (adjusting state during render, as React recommends over an effect) — the
@@ -172,7 +189,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
 
     const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter') {
-        setIsPopoverOpen(true);
+        setPopoverOpen(true);
       } else if (event.key === 'Backspace' && !event.currentTarget.value) {
         const newSelectedValues = [...selectedValues];
         newSelectedValues.pop();
@@ -195,7 +212,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     };
 
     const handleTogglePopover = () => {
-      setIsPopoverOpen(prev => !prev);
+      setPopoverOpen(!isPopoverOpen);
     };
 
     const clearExtraOptions = () => {
@@ -221,7 +238,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
           if (open) {
             setOrderSnapshot(selectedValues);
           }
-          setIsPopoverOpen(open);
+          setPopoverOpen(open);
         }}
         modal={modalPopover || !!portalContainer}
       >
@@ -335,7 +352,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
           className="w-auto p-0"
           align="start"
           container={portalContainer}
-          onEscapeKeyDown={() => setIsPopoverOpen(false)}
+          onEscapeKeyDown={() => setPopoverOpen(false)}
         >
           {/* Filtering and ordering happen in `rankOptions`; see there for why cmdk's own
               filter isn't used. */}
@@ -411,7 +428,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                     </>
                   )}
                   <CommandItem
-                    onSelect={() => setIsPopoverOpen(false)}
+                    onSelect={() => setPopoverOpen(false)}
                     className="flex-1 justify-center cursor-pointer max-w-full"
                   >
                     Close

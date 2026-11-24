@@ -23,6 +23,11 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 
+/** Same businesses in the same order. Order counts: the server picks the write target by it. */
+function sameBusinessIds(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
 export function UserNav(): JSX.Element | null {
   const { userContext } = useContext(UserContext);
   const { isAuthenticated, user } = useAuth0();
@@ -87,14 +92,20 @@ export function UserNav(): JSX.Element | null {
     description: m.businessId,
   }));
 
-  function handleBusinessScopeChange(ids: string[]): void {
-    setSelectedBusinessIds(ids);
-    setBusinessScope(ids);
+  // Toggling a business only edits `selectedBusinessIds`. Applying the scope swaps the urql
+  // client, which refetches every query — including the one `OnboardingGuard` holds the whole app
+  // shell back on, so this menu unmounts with it. Applied on each toggle, that closed the menu
+  // after every click; instead the scope is applied once, when the picker or the menu closes.
+  function applyBusinessScopeOnClose(open: boolean): void {
+    if (!open && !sameBusinessIds(selectedBusinessIds, getBusinessScopeIds())) {
+      setBusinessScope(selectedBusinessIds);
+    }
   }
 
   return (
     <>
-      <DropdownMenu>
+      {/* Closing the menu can unmount an open picker before it reports its own close. */}
+      <DropdownMenu onOpenChange={applyBusinessScopeOnClose}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8 items-center flex flex-row justify-center">
@@ -121,7 +132,8 @@ export function UserNav(): JSX.Element | null {
                 <MultiSelect
                   options={businessOptions}
                   defaultValue={selectedBusinessIds}
-                  onValueChange={handleBusinessScopeChange}
+                  onValueChange={setSelectedBusinessIds}
+                  onOpenChange={applyBusinessScopeOnClose}
                   placeholder="All businesses"
                   maxCount={2}
                   className="text-xs"

@@ -9,10 +9,18 @@ import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, logoutMock, useMyMembershipsMock } = vi.hoisted(() => ({
+const {
+  useAuth0Mock,
+  logoutMock,
+  useMyMembershipsMock,
+  getBusinessScopeIdsMock,
+  setBusinessScopeMock,
+} = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
   logoutMock: vi.fn(),
   useMyMembershipsMock: vi.fn(),
+  getBusinessScopeIdsMock: vi.fn<() => string[]>(),
+  setBusinessScopeMock: vi.fn<(ids: string[]) => void>(),
 }));
 
 vi.mock('@auth0/auth0-react', () => ({
@@ -23,21 +31,61 @@ vi.mock('../../hooks/use-my-memberships.js', () => ({
   useMyMemberships: useMyMembershipsMock,
 }));
 
+// The applied scope lives in the urql provider's module state; these stand in for it.
+vi.mock('../../providers/urql.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../providers/urql.js')>()),
+  getBusinessScopeIds: getBusinessScopeIdsMock,
+  setBusinessScope: setBusinessScopeMock,
+}));
+
 vi.mock('../common/modals/balance-charge-modal.js', () => ({
   BalanceChargeModal: () => null,
 }));
 
-// Stand-in that just lists the option labels, so tests can assert what the
-// business-scope picker offers without driving a real popover.
-vi.mock('../common/inputs/multi-select.js', () => ({
-  MultiSelect: ({ options }: { options: Array<{ value: string; label: string }> }) => (
-    <ul data-slot="business-scope-options">
-      {options.map(option => (
-        <li key={option.value}>{option.label}</li>
-      ))}
-    </ul>
-  ),
-}));
+// Stand-in for the business-scope picker, so tests can assert what it offers and drive it without
+// a real popover. Like the real one it keeps its own selection, seeded from `defaultValue`, reports
+// every toggle through `onValueChange`, and reports closing through `onOpenChange`.
+vi.mock('../common/inputs/multi-select.js', async () => {
+  const { useState } = await import('react');
+  return {
+    MultiSelect: ({
+      options,
+      defaultValue = [],
+      onValueChange,
+      onOpenChange,
+    }: {
+      options: Array<{ value: string; label: string }>;
+      defaultValue?: string[];
+      onValueChange: (value: string[]) => void;
+      onOpenChange?: (open: boolean) => void;
+    }) => {
+      const [selected, setSelected] = useState(defaultValue);
+      const toggle = (value: string) => {
+        const next = selected.includes(value)
+          ? selected.filter(id => id !== value)
+          : [...selected, value];
+        setSelected(next);
+        onValueChange(next);
+      };
+      return (
+        <div data-slot="business-scope-picker">
+          <ul data-slot="business-scope-options">
+            {options.map(option => (
+              <li key={option.value}>
+                <button data-option={option.value} onClick={() => toggle(option.value)}>
+                  {option.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button data-slot="close-picker" onClick={() => onOpenChange?.(false)}>
+            Close
+          </button>
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock('../ui/avatar.js', () => ({
   Avatar: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -48,7 +96,19 @@ vi.mock('../ui/avatar.js', () => ({
 }));
 
 vi.mock('../ui/dropdown-menu.js', () => ({
-  DropdownMenu: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  // The close button stands in for Radix dismissing the menu (outside click, Escape, an item).
+  DropdownMenu: ({
+    children,
+    onOpenChange,
+  }: {
+    children?: React.ReactNode;
+    onOpenChange?: (open: boolean) => void;
+  }) => (
+    <div>
+      {children}
+      <button data-slot="close-menu" onClick={() => onOpenChange?.(false)} />
+    </div>
+  ),
   DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuLabel: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -150,6 +210,7 @@ describe('UserNav menu', () => {
     logoutMock.mockResolvedValue(undefined);
     // Default: the unscoped membership query has produced nothing yet.
     useMyMembershipsMock.mockReturnValue({ fetching: false, memberships: [] });
+    getBusinessScopeIdsMock.mockReturnValue([]);
   });
 
   it('renders null when user is not authenticated', async () => {
@@ -387,6 +448,127 @@ describe('UserNav menu', () => {
       item => item.textContent,
     );
     expect(labels).toEqual(['Acme', 'Unknown']);
+
+    await cleanup();
+  });
+});
+
+describe('UserNav business scope picker', () => {
+  const memberships = [
+    { businessId: 'business-1', role: 'business_owner', businessName: 'Acme' },
+    { businessId: 'business-2', role: 'business_owner', businessName: 'Globex' },
+    { businessId: 'business-3', role: 'accountant', businessName: 'Initech' },
+  ];
+  const userContext: UserInfo = {
+    ...baseUserContext,
+    context: { ...baseUserContext.context, memberships },
+  };
+
+  let appliedScope: string[];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: { name: 'John Doe', email: 'john@example.com' },
+      logout: logoutMock,
+    });
+    useMyMembershipsMock.mockReturnValue({ fetching: false, memberships: [] });
+    // Mirror the provider: what `setBusinessScope` stores is what `getBusinessScopeIds` reads.
+    appliedScope = [];
+    getBusinessScopeIdsMock.mockImplementation(() => appliedScope);
+    setBusinessScopeMock.mockImplementation(ids => {
+      appliedScope = ids;
+    });
+  });
+
+  async function click(container: HTMLElement, selector: string): Promise<void> {
+    const element = container.querySelector<HTMLElement>(selector);
+    expect(element, selector).toBeTruthy();
+    await act(async () => {
+      element?.click();
+      await Promise.resolve();
+    });
+  }
+
+  const toggle = (container: HTMLElement, businessId: string) =>
+    click(container, `[data-option="${businessId}"]`);
+
+  it('keeps the menu open while toggling businesses and applies the scope once, on close', async () => {
+    const { container, cleanup } = await renderUserNav(userContext);
+    const picker = container.querySelector('[data-slot="business-scope-picker"]');
+    expect(picker).toBeTruthy();
+
+    await toggle(container, 'business-1');
+    await toggle(container, 'business-3');
+    await toggle(container, 'business-2');
+
+    // Applying swaps the urql client, which remounts the app shell and this menu with it.
+    expect(setBusinessScopeMock).not.toHaveBeenCalled();
+    expect(picker?.isConnected).toBe(true);
+    expect(container.querySelector('[data-slot="business-scope-picker"]')).toBe(picker);
+
+    await click(container, '[data-slot="close-picker"]');
+
+    expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+    expect(setBusinessScopeMock).toHaveBeenCalledWith(['business-1', 'business-3', 'business-2']);
+
+    // The menu closing next has nothing left to apply.
+    await click(container, '[data-slot="close-menu"]');
+    expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+
+    await cleanup();
+  });
+
+  it('applies a pending selection when the menu closes with the picker still open', async () => {
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    await toggle(container, 'business-2');
+    await click(container, '[data-slot="close-menu"]');
+
+    expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+    expect(setBusinessScopeMock).toHaveBeenCalledWith(['business-2']);
+
+    await cleanup();
+  });
+
+  it('does not apply a selection that ends where it started', async () => {
+    appliedScope = ['business-1'];
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    await toggle(container, 'business-2');
+    await toggle(container, 'business-2');
+    await click(container, '[data-slot="close-picker"]');
+    await click(container, '[data-slot="close-menu"]');
+
+    expect(setBusinessScopeMock).not.toHaveBeenCalled();
+
+    await cleanup();
+  });
+
+  it('applies a reordered selection, since the order picks the write target', async () => {
+    appliedScope = ['business-1', 'business-2'];
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    await toggle(container, 'business-1');
+    await toggle(container, 'business-1');
+    await click(container, '[data-slot="close-picker"]');
+
+    expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+    expect(setBusinessScopeMock).toHaveBeenCalledWith(['business-2', 'business-1']);
+
+    await cleanup();
+  });
+
+  it('applies "All businesses" when every business is deselected', async () => {
+    appliedScope = ['business-1'];
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    await toggle(container, 'business-1');
+    await click(container, '[data-slot="close-picker"]');
+
+    expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+    expect(setBusinessScopeMock).toHaveBeenCalledWith([]);
 
     await cleanup();
   });
