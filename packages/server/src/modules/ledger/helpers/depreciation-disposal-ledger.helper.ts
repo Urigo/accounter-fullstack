@@ -185,8 +185,9 @@ export type DisposalsLedger = {
   /**
    * What the charge's own entries should credit to its proceeds account for these events, in local
    * currency: the sales' proceeds plus the cost refunds' cost reductions. `null` when there is
-   * nothing to check: no sale or cost refund among the events, or one of them could not be computed
-   * (its error is reported in `errors`).
+   * nothing to check: no sale or cost refund among the events, or an event's rows could not be built
+   * (its error is reported in `errors`), so that no check or exchange row acts on money that was
+   * never moved out of the proceeds account.
    */
   expectedProceeds: number | null;
 };
@@ -229,26 +230,21 @@ export async function generateDepreciationDisposalsLedger(
   const errors: string[] = [];
   let expectedProceeds = 0;
   let carriesMoney = false;
-  let incomplete = false;
+  let rowsMissing = false;
 
   for (const disposal of disposals) {
-    const carriesMoneyForEvent = disposal.type === 'SALE' || disposal.type === 'COST_REFUND';
-    carriesMoney ||= carriesMoneyForEvent;
+    carriesMoney ||= disposal.type === 'SALE' || disposal.type === 'COST_REFUND';
     try {
       const [{ record }, result] = await Promise.all([
         loadAssetContext(injector, disposal.depreciation_id),
         computeStoredDisposal(injector, disposal),
       ]);
-      if (disposal.type === 'SALE') {
-        expectedProceeds += result.proceeds;
-      } else if (disposal.type === 'COST_REFUND') {
-        expectedProceeds += result.costReduction;
-      }
       const [assetCharge, assetAccountId] = await Promise.all([
         injector.get(ChargesProvider).getChargeByIdLoader.load(record.charge_id),
         getChargeTaxCategoryId(record.charge_id, injector),
       ]);
       if (!assetAccountId) {
+        rowsMissing = true;
         errors.push(
           `Asset disposal ${disposal.id}: the asset's charge has no tax category (asset account)`,
         );
@@ -278,8 +274,13 @@ export async function generateDepreciationDisposalsLedger(
       });
       entries.push(...built.entries);
       errors.push(...built.errors);
+      if (disposal.type === 'SALE') {
+        expectedProceeds += result.proceeds;
+      } else if (disposal.type === 'COST_REFUND') {
+        expectedProceeds += result.costReduction;
+      }
     } catch (e) {
-      incomplete ||= carriesMoneyForEvent;
+      rowsMissing = true;
       errors.push(`Asset disposal ${disposal.id}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -287,7 +288,7 @@ export async function generateDepreciationDisposalsLedger(
   return {
     entries,
     errors,
-    expectedProceeds: carriesMoney && !incomplete ? expectedProceeds : null,
+    expectedProceeds: carriesMoney && !rowsMissing ? expectedProceeds : null,
   };
 }
 

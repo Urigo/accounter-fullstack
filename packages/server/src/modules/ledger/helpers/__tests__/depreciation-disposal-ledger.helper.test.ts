@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { Injector } from 'graphql-modules';
 import { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, TimelessDateString } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import { getChargeTaxCategoryId } from '../../../charges/helpers/common.helper.js';
+import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import type {
   AssetDepreciationInput,
   AssetDisposalInput,
@@ -9,14 +13,32 @@ import type {
 } from '../../../depreciation/helpers/asset-depreciation.helper.js';
 import {
   computeAssetEvent,
+  computeStoredDisposal,
+  loadAssetContext,
+  type AssetContext,
   type DisposalComputation,
 } from '../../../depreciation/helpers/depreciation-disposals.helper.js';
+import type { IGetDepreciationDisposalsByIdsResult } from '../../../depreciation/types.js';
 import {
   buildDisposalLedgerEntries,
   checkDisposalProceeds,
   correctedYears,
+  generateDepreciationDisposalsLedger,
   type DisposalLedgerAccounts,
 } from '../depreciation-disposal-ledger.helper.js';
+
+vi.mock('../../../depreciation/helpers/depreciation-disposals.helper.js', async importOriginal => ({
+  ...(await importOriginal<
+    typeof import('../../../depreciation/helpers/depreciation-disposals.helper.js')
+  >()),
+  loadAssetContext: vi.fn(),
+  computeStoredDisposal: vi.fn(),
+}));
+
+vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
+  getChargeTaxCategoryId: vi.fn(),
+}));
 
 const ASSET = 'tax-category-computers';
 const AD = 'tax-category-accumulated-depreciation';
@@ -431,5 +453,110 @@ describe('checkDisposalProceeds', () => {
     ).toBe(
       'Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 21,000.00 to its tax category (-4,000.00 diff)',
     );
+  });
+});
+
+describe('generateDepreciationDisposalsLedger', () => {
+  /*
+   * Two cost refunds on one refund charge, each of a different asset. The engine's results and the
+   * assets are stubbed; the asset account is the tax category of the asset's purchase charge.
+   */
+  const REFUND_CHARGE = { id: 'charge-refund', owner_id: 'owner' };
+
+  function refund(id: string, depreciationId: string): IGetDepreciationDisposalsByIdsResult {
+    return {
+      charge_id: REFUND_CHARGE.id,
+      created_at: new Date('2025-07-01T00:00:00.000Z'),
+      depreciation_id: depreciationId,
+      description: null,
+      disposal_date: DATE,
+      disposed_cost: '20000',
+      id,
+      owner_id: 'owner',
+      proceeds: '0',
+      refund_mode: 'FROM_ACTIVATION',
+      type: 'COST_REFUND',
+      updated_at: new Date('2025-07-01T00:00:00.000Z'),
+    };
+  }
+
+  const injector = {
+    get: (token: unknown) => {
+      if (token === AdminContextProvider) {
+        return {
+          getVerifiedAdminContext: async () => ({
+            defaultLocalCurrency: Currency.Ils,
+            depreciation: {
+              accumulatedDepreciationTaxCategoryId: AD,
+              disposalGainTaxCategoryId: GAIN,
+              disposalLossTaxCategoryId: LOSS,
+              correctionTaxCategoryId: CORRECTION,
+            },
+          }),
+        };
+      }
+      if (token === ChargesProvider) {
+        return { getChargeByIdLoader: { load: async () => ({ user_description: null }) } };
+      }
+      throw new Error(`Unexpected provider token: ${String(token)}`);
+    },
+  } as unknown as Injector;
+
+  function stubAssets(assetAccounts: Record<string, string | null>) {
+    vi.mocked(loadAssetContext).mockImplementation(
+      async (_injector, depreciationId) =>
+        ({
+          record: { charge_id: `charge-${depreciationId}`, activation_date: ACTIVATION },
+        }) as AssetContext,
+    );
+    vi.mocked(computeStoredDisposal).mockResolvedValue({
+      disposedCost: 20_000,
+      proceeds: 0,
+      accumulatedDepreciation: 1500,
+      netBookValue: 18_500,
+      gainLoss: 0,
+      costReduction: 20_000,
+      depreciationCorrection: 1500,
+    });
+    vi.mocked(getChargeTaxCategoryId).mockImplementation(
+      async chargeRef => assetAccounts[String(chargeRef).replace('charge-', '')] ?? null,
+    );
+  }
+
+  it('expects the cost reductions of all the events on the charge', async () => {
+    stubAssets({ laptops: 'tax-category-laptops', servers: 'tax-category-servers' });
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      [refund('laptops-refund', 'laptops'), refund('servers-refund', 'servers')],
+      REFUND_CHARGE,
+      injector,
+      CLEARING,
+    );
+
+    expect(ledger.errors).toEqual([]);
+    expect(ledger.entries).toHaveLength(4);
+    expect(ledger.expectedProceeds).toBe(40_000);
+  });
+
+  it("expects nothing when an event's rows can't be built", async () => {
+    // the servers' purchase charge has no tax category, so there is no asset account to credit
+    stubAssets({ laptops: 'tax-category-laptops', servers: null });
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      [refund('laptops-refund', 'laptops'), refund('servers-refund', 'servers')],
+      REFUND_CHARGE,
+      injector,
+      CLEARING,
+    );
+
+    expect(ledger.errors).toEqual([
+      "Asset disposal servers-refund: the asset's charge has no tax category (asset account)",
+    ]);
+    // the laptops' rows only: nothing moves the servers' refund out of the clearing account
+    expect(rows(ledger.entries)).toEqual([
+      [CLEARING, 'tax-category-laptops', 20_000, 'Asset cost refund: cost reduction'],
+      [AD, CORRECTION, 1500, 'Asset cost refund: depreciation correction for 2023-2024'],
+    ]);
+    expect(ledger.expectedProceeds).toBeNull();
   });
 });
