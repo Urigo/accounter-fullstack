@@ -1085,7 +1085,8 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
 ### 8.2 Parsing algorithm (`parse1214`)
 
 1. Decode: `Uint8Array` → string with windows-1255 (or UTF-8 when `options.encoding`). Strip a UTF-8
-   BOM if present. Accept `\r\n` or `\n` line endings; ignore one trailing empty line.
+   BOM if present (only the file's leading one: a BOM at the start of a later line is content, for
+   bytes as for a string). Accept `\r\n` or `\n` line endings; ignore one trailing empty line.
 2. For each line: check form type (`1214`), record type (known for the year), 128-zero prefix, exact
    length. The tax year is read from the first 1000 record's position 146 and selects the layout; a
    file that does not start with a 1000 record is rejected.
@@ -1120,7 +1121,11 @@ issues are sorted by line, then column, and each has a 1-based `line` and `colum
 offending character, the start of the record type for `parse.order`, the field position for
 `parse.control.counts`, and column 1 of the line after the last one for `parse.control.missing` (and
 of line 1 for `parse.empty`). A line with a structural problem (encoding, form or record type,
-prefix, length) is not decoded further, but still counts for the order and 9999 checks.
+prefix, length) is not decoded further, but still counts for the order and 9999 checks. Bytes of the
+1000 line that do not decode after its tax year (1000@146–149) do not hide the layout, so the other
+lines are still checked. A decode error inside a code-amount entry carries the entry's `code` and,
+for a known code, its input path (`amounts["<code>"]`). Any record after the 9999, a second 9999
+included, is `parse.order`, and the 9999 counts are compared with the records before it only.
 
 ### 8.3 Determinism
 
@@ -1369,7 +1374,7 @@ date; 3054 purchase date and code-15 date; 3077 code-15 and code-20 dates) and r
 | `parse.formType`        | positions 1–4 ≠ `1214`                                                                                       |
 | `parse.recordType`      | unknown record type                                                                                          |
 | `parse.prefixFiller`    | positions 9–136 not all `0`                                                                                  |
-| `parse.order`           | record out of the §3.3 order, or a second 1000 before a 9999                                                 |
+| `parse.order`           | record out of the §3.3 order, a second 1000 before a 9999, or any record after the 9999 (a second 9999 too)  |
 | `parse.occurrences`     | maximum record counts of §3.2 exceeded (minimums are business rules)                                         |
 | `parse.control.missing` | report not terminated by 9999                                                                                |
 | `parse.control.counts`  | 9999 counts differ from the records present                                                                  |

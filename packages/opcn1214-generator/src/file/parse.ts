@@ -4,10 +4,11 @@
  * undecodable content) are collected for every line and thrown together as Opcn1214ParseError.
  */
 import { decodeRecord } from '../codec/record.js';
+import { CODE_LENGTH } from '../codec/sections.js';
 import { CodecDecodeError, type CodecDecodeReason } from '../codec/types.js';
 import { Opcn1214ParseError, unsupportedTaxYearIssue } from '../errors.js';
 import { getLayout, supportedTaxYears } from '../layout/registry.js';
-import type { FieldDef, RecordDef, RecordType, YearLayout } from '../layout/types.js';
+import type { CodeDef, FieldDef, RecordDef, RecordType, YearLayout } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import { codeKey, pathFor } from '../normalize/paths.js';
 import { isRecordType, makeIssue, recordRank, type Issue } from '../validate/issue.js';
@@ -65,12 +66,15 @@ function recordTypeText(line: FileLine): string {
 
 /**
  * The layout selected by the tax year of the first 1000 record (SPEC §8.2 step 2), or undefined
- * (with an issue) when there is no 1000 record or its tax year is not a supported year.
+ * (with an issue) when there is no 1000 record, bytes up to its tax year do not decode, or its tax
+ * year is not a supported year.
  */
 function selectLayout(lines: readonly FileLine[], issues: Issue[]): YearLayout | undefined {
   const index = lines.findIndex(line => recordTypeText(line) === '1000');
   const main = lines[index];
-  if (main === undefined || main.invalidAt !== undefined) {
+  // Bytes that do not decode after the tax year do not hide it: every windows-1255 byte is one
+  // character, and in UTF-8 the characters before the first invalid sequence keep their offsets.
+  if (main === undefined || (main.invalidAt !== undefined && main.invalidAt < TAX_YEAR.end)) {
     return undefined;
   }
   const at: Location = {
@@ -214,6 +218,37 @@ function fieldAt(def: RecordDef, offset: number): FieldDef | undefined {
   );
 }
 
+/**
+ * The code of the code-amount entry of `line` that holds `offset` (0-based, within the line), or
+ * undefined when `offset` is outside a code-amount section, or in an unknown code's entry or the
+ * tail after the entries. Walks the section from its start like decodeCodeSection.
+ */
+function codeAt(def: RecordDef, line: string, offset: number): CodeDef | undefined {
+  const section = def.section;
+  if (section?.kind !== 'codeAmount') {
+    return undefined;
+  }
+  const start = section.start - 1;
+  const end = start + section.length;
+  if (offset < start || offset >= end) {
+    return undefined;
+  }
+  let entry = start;
+  while (entry < end && entry <= offset) {
+    const key = line.slice(entry, entry + CODE_LENGTH);
+    const code = def.codes.find(candidate => candidate.code === key);
+    if (!code) {
+      return undefined;
+    }
+    const next = entry + CODE_LENGTH + code.length;
+    if (offset < next) {
+      return code;
+    }
+    entry = next;
+  }
+  return undefined;
+}
+
 /** The parse issue of undecodable content of a record (offset within the line). */
 function decodeIssue(
   def: RecordDef,
@@ -225,7 +260,14 @@ function decodeIssue(
   const location = { ...at, column: error.offset + 1 };
   const ruleId = decodeRule(error.reason, error.offset);
   if (!field) {
-    return parseIssue(ruleId, error.message, location);
+    // Inside a code-amount section: the code of the entry and its input path (SPEC §9.1).
+    const code = codeAt(def, line, error.offset);
+    return code
+      ? parseIssue(ruleId, error.message, location, {
+          code: code.code,
+          path: pathFor(def.type, at.recordIndex, codeKey(code.code)),
+        })
+      : parseIssue(ruleId, error.message, location);
   }
   const start = field.position - 1;
   return parseIssue(ruleId, error.message, location, {
@@ -247,12 +289,16 @@ function withPaths(record: NormalizedRecord): NormalizedRecord {
 
 /**
  * The record-order issue of a record of `type` (SPEC §3.3), given the types of the records before
- * it. Records after a 9999 are out of order until batches are split there (H1).
+ * it. Any record after a 9999, a second 9999 included, is out of order until batches are split
+ * there (H1).
  */
 function orderProblem(type: RecordType, before: readonly RecordType[]): string | undefined {
   const previous = before.at(-1);
   if (previous === undefined) {
     return type === '1000' ? undefined : 'The file does not start with a 1000 record.';
+  }
+  if (before.includes('9999')) {
+    return `Record ${type} comes after the 9999 record that ends the report.`;
   }
   if (type === '1000' && before.includes('1000')) {
     return 'A second 1000 record before a 9999 record.';
@@ -363,7 +409,8 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
     );
   }
   if (layout && control) {
-    const present = types.filter(type => type !== '9999');
+    // Only the report's own records: those after the 9999 are already parse.order issues.
+    const present = types.slice(0, types.indexOf('9999'));
     issues.push(...controlIssues(layout, control.record, control.line, present));
   }
   if (issues.length > 0 || !layout) {

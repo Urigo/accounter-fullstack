@@ -47,9 +47,11 @@ function byteLines(bytes: Uint8Array): Uint8Array[] {
 function decodeLine(bytes: Uint8Array, encoding: ParseOptions['encoding']): FileLine {
   if (encoding === 'utf-8') {
     try {
-      return { text: new TextDecoder('utf-8', { fatal: true }).decode(bytes) };
+      // ignoreBOM: a BOM at the start of a line is content, as in string input; the file's own
+      // leading BOM is already removed from the bytes.
+      return { text: new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes) };
     } catch {
-      const text = new TextDecoder('utf-8').decode(bytes);
+      const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
       return { text, invalidAt: Math.max(0, text.indexOf(REPLACEMENT_CHARACTER)) };
     }
   }

@@ -38,6 +38,18 @@ describe('splitFile', () => {
     ).toEqual(['א', 'B']);
   });
 
+  it('keeps a BOM at the start of a later line, in bytes as in a string', () => {
+    const bytes = new Uint8Array([0x41, 0x0d, 0x0a, ...UTF8_BOM_BYTES, 0x42, 0x0d, 0x0a]);
+    expect(splitFile(bytes, { encoding: 'utf-8' })).toEqual(['A', `${BOM}B`]);
+    expect(splitFile(`A\r\n${BOM}B\r\n`)).toEqual(['A', `${BOM}B`]);
+    // Also when the line has an invalid sequence after the BOM.
+    const invalid = new Uint8Array([0x41, 0x0a, ...UTF8_BOM_BYTES, 0x42, 0xc3]);
+    expect(split(invalid, { encoding: 'utf-8' })).toEqual([
+      { text: 'A' },
+      { text: `${BOM}B\uFFFD`, invalidAt: 2 },
+    ]);
+  });
+
   it('accepts CRLF and LF line endings', () => {
     expect(splitFile('A\nB\n')).toEqual(['A', 'B']);
     expect(splitFile('A\r\nB\nC\r\n')).toEqual(['A', 'B', 'C']);

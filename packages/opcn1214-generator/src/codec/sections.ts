@@ -11,7 +11,8 @@ import type { CodeDef } from '../layout/types.js';
 import { codecFor } from './registry.js';
 import { CodecDecodeError, type FieldShape, type Primitive } from './types.js';
 
-const CODE_LENGTH = 3;
+/** Width of the code of a code-amount entry. */
+export const CODE_LENGTH = 3;
 const COUNTRY_LENGTH = 3;
 const AFFILIATION = '1';
 /** A country code as the model holds it: 1–3 digits or '-88'. */

@@ -1,3 +1,4 @@
+import { encodeWindows1255 } from '../../src/codec/windows1255.js';
 import { generate1214, Opcn1214ParseError, parse1214, type Issue } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import { minimalInput } from '../fixtures/builders.js';
@@ -166,6 +167,35 @@ describe('parse1214', () => {
     );
   });
 
+  it('reports a record after the 9999, and only that, without miscounting the 9999', () => {
+    const lines = text.split(CRLF);
+    const after = [lines[0], lines[1], lines[2], lines[1], ''].join(CRLF);
+    expect(parseErrorIssues(() => parse1214(after))).toEqual([
+      expect.objectContaining({
+        ruleId: 'parse.order',
+        line: 4,
+        column: 5,
+        message: 'Line 4, column 5: Record 1020 comes after the 9999 record that ends the report.',
+      }),
+    ]);
+    const mainAfter = [lines[0], lines[1], lines[2], lines[0], ''].join(CRLF);
+    expect(parseErrorIssues(() => parse1214(mainAfter))).toEqual([
+      expect.objectContaining({
+        ruleId: 'parse.order',
+        line: 4,
+        message: 'Line 4, column 5: Record 1000 comes after the 9999 record that ends the report.',
+      }),
+    ]);
+  });
+
+  it('reports a second 9999 record', () => {
+    const lines = text.split(CRLF);
+    const twoControls = [lines[0], lines[1], lines[2], lines[2], ''].join(CRLF);
+    expect(parseErrorIssues(() => parse1214(twoControls))).toEqual([
+      expect.objectContaining({ ruleId: 'parse.order', line: 4, recordType: '9999' }),
+    ]);
+  });
+
   it('reports a missing 9999 after the last line', () => {
     expect(parseErrorIssues(() => parse1214(dropLine(text, 3)))).toEqual([
       expect.objectContaining({ ruleId: 'parse.control.missing', line: 3, column: 1 }),
@@ -184,6 +214,44 @@ describe('parse1214', () => {
     expect(parseErrorIssues(() => parse1214(unassigned))).toContainEqual(
       expect.objectContaining({ ruleId: 'parse.encoding', line: 1, column: 5 }),
     );
+  });
+
+  it('still selects the layout when the bad byte of the 1000 line comes after the tax year', () => {
+    // Byte 200 of line 1 is 0xFF (unassigned in windows-1255), and line 2 is one character short.
+    const golden = goldenText('minimal');
+    const lines = golden.split(CRLF);
+    const bytes = encodeWindows1255(
+      [lines[0], lines[1]?.slice(0, -1), ...lines.slice(2)].join(CRLF),
+    );
+    bytes[199] = 0xff;
+    expect(parseErrorIssues(() => parse1214(bytes))).toEqual([
+      expect.objectContaining({ ruleId: 'parse.encoding', line: 1, column: 200 }),
+      expect.objectContaining({ ruleId: 'parse.lineLength', line: 2, column: 1160 }),
+    ]);
+    // Before the tax year, the layout is unknown: only the encoding problem is reported.
+    const early = encodeWindows1255(goldenText('minimal'));
+    early[140] = 0xff;
+    expect(parseErrorIssues(() => parse1214(early))).toEqual([
+      expect.objectContaining({ ruleId: 'parse.encoding', line: 1, column: 141 }),
+    ]);
+  });
+
+  it('gives decode errors inside a code-amount entry the code and its input path', () => {
+    // 1000@2185 is the code-amount section: code 018 (1 digit), then code 072 (value from 2192).
+    expect(text.split(CRLF)[0]?.slice(2184, 2192)).toBe('01840720');
+    expect(parseErrorIssues(() => parse1214(tamper(text, 1, 2195, 'X')))).toEqual([
+      expect.objectContaining({
+        ruleId: 'parse.numeric',
+        code: '072',
+        path: 'amounts["072"]',
+        line: 1,
+        column: 2195,
+      }),
+    ]);
+    // An unknown code has no input path.
+    const [issue] = parseErrorIssues(() => parse1214(tamper(text, 1, 2185, '999')));
+    expect(issue).toMatchObject({ ruleId: 'parse.codeSection', path: '' });
+    expect(issue).not.toHaveProperty('code');
   });
 
   it('reports an unsupported tax year in 1000@146 as struct.taxYear.unsupported', () => {

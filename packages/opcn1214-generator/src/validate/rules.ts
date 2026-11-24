@@ -204,7 +204,7 @@ export const RULES = deepFreeze([
     source: 'spec',
     scope: 'parse',
     description:
-      'A record out of the SPEC §3.3 order (the file must start with 1000), or a second 1000 before a 9999.',
+      'A record out of the SPEC §3.3 order (the file must start with 1000), a second 1000 before a 9999, or any record after the 9999 (a second 9999 too).',
   },
   {
     id: 'parse.control.missing',
