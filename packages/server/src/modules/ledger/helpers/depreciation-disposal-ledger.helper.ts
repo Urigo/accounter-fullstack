@@ -17,7 +17,10 @@ import {
   storedRefundMode,
   type DisposalComputation,
 } from '../../depreciation/helpers/depreciation-disposals.helper.js';
-import type { IGetDepreciationDisposalsByIdsResult } from '../../depreciation/types.js';
+import type {
+  IGetDepreciationDisposalsByIdsResult,
+  IGetDepreciationRecordsByIdsResult,
+} from '../../depreciation/types.js';
 
 export type DisposalLedgerAccounts = {
   /** The asset's cost account: the tax category of the charge that bought it */
@@ -179,6 +182,17 @@ export function buildDisposalLedgerEntries(params: {
   return { entries, errors };
 }
 
+/**
+ * An asset's cost account: its own asset account when set (one charge buying several assets, e.g.
+ * an acquisition booked through misc expenses), else the tax category of the charge that bought it
+ */
+export async function getAssetAccountId(
+  record: Pick<IGetDepreciationRecordsByIdsResult, 'asset_tax_category_id' | 'charge_id'>,
+  injector: Injector,
+): Promise<string | null | undefined> {
+  return record.asset_tax_category_id ?? getChargeTaxCategoryId(record.charge_id, injector);
+}
+
 export type DisposalsLedger = {
   entries: LedgerProto[];
   errors: string[];
@@ -241,12 +255,12 @@ export async function generateDepreciationDisposalsLedger(
       ]);
       const [assetCharge, assetAccountId] = await Promise.all([
         injector.get(ChargesProvider).getChargeByIdLoader.load(record.charge_id),
-        getChargeTaxCategoryId(record.charge_id, injector),
+        getAssetAccountId(record, injector),
       ]);
       if (!assetAccountId) {
         rowsMissing = true;
         errors.push(
-          `Asset disposal ${disposal.id}: the asset's charge has no tax category (asset account)`,
+          `Asset disposal ${disposal.id}: the asset has no account: set its asset account, or a tax category on the charge that bought it`,
         );
         continue;
       }

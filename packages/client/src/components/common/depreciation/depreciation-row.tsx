@@ -21,6 +21,7 @@ import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { TableCell, TableRow } from '../../ui/table.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
+import { AssetAccountInput } from './asset-account-input.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
 import { depreciationCategoryLabel } from './depreciation-category-label.js';
 import { depreciationTypes } from './index.js';
@@ -40,6 +41,10 @@ import { depreciationTypes } from './index.js';
       raw
     }
     localAmountOverride
+    assetTaxCategory {
+      id
+      name
+    }
     exchangeRate
     exchangeRateDate
     activationDate
@@ -261,6 +266,29 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
             />
           ) : (
             <div>{depreciationCategoryLabel(depreciationRecord.category)}</div>
+          )}
+          {isEditMode ? (
+            <FormField
+              name="assetTaxCategoryId"
+              control={control}
+              defaultValue={depreciationRecord.assetTaxCategory?.id ?? undefined}
+              render={({ field }): ReactElement => (
+                <div className="mt-2">
+                  <AssetAccountInput
+                    value={field.value}
+                    // the default option clears the record's own account
+                    onChange={field.onChange}
+                    form={`form ${depreciationRecord.id}`}
+                  />
+                </div>
+              )}
+            />
+          ) : (
+            depreciationRecord.assetTaxCategory && (
+              <div className="text-muted-foreground text-xs">
+                Asset account: {depreciationRecord.assetTaxCategory.name}
+              </div>
+            )
           )}
         </TableCell>
         <TableCell>

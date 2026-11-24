@@ -26,6 +26,8 @@ export default gql`
     localAmount: FinancialAmount
     " the local cost basis override, if set "
     localAmountOverride: Float
+    " the asset's own cost account, if set; otherwise the asset account is the tax category of the charge that bought it "
+    assetTaxCategory: TaxCategory
     " the rate the amount was converted at; null for local-currency records and overrides "
     exchangeRate: Float
     " the date of the rate the amount was converted at; null for local-currency records and overrides "
@@ -86,6 +88,8 @@ export default gql`
     currency: Currency
     " cost basis override in the local currency, for an asset paid for in a foreign currency "
     localAmount: Float
+    " the asset's cost account; defaults to the tax category of the charge that bought it. Set it when one charge buys several assets "
+    assetTaxCategoryId: UUID
     activationDate: TimelessDate!
     type: DepreciationType
     categoryId: UUID!
@@ -102,6 +106,8 @@ export default gql`
     currency: Currency
     " cost basis override in the local currency; null clears it, leaving it out keeps it "
     localAmount: Float
+    " the asset's cost account; null clears it (back to the charge's tax category), leaving it out keeps it "
+    assetTaxCategoryId: UUID
     activationDate: TimelessDate
     type: DepreciationType
     categoryId: UUID

@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { LoadingOverlay } from '../../ui/overlay.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { PopUpModal } from '../modals/modal.js';
+import { AssetAccountInput } from './asset-account-input.js';
 import { depreciationCategoryLabel } from './depreciation-category-label.js';
 import { depreciationTypes } from './index.js';
 
@@ -194,6 +195,15 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                   placeholder="Scroll to see all options"
                   error={fieldState.error?.message}
                 />
+              )}
+            />
+            <Controller
+              name="assetTaxCategoryId"
+              control={control}
+              render={({ field }): ReactElement => (
+                <div className="mt-2">
+                  <AssetAccountInput value={field.value} onChange={field.onChange} />
+                </div>
               )}
             />
             <Controller

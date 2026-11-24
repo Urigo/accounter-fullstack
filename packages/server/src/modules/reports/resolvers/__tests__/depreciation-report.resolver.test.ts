@@ -41,6 +41,7 @@ function asset(id: string, category: string, amount: number): IGetDepreciationRe
     id,
     activation_date: '2023-08-20',
     amount: String(amount),
+    asset_tax_category_id: null,
     category,
     charge_id: 'acquisition-charge',
     currency: null,

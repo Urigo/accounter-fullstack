@@ -94,14 +94,18 @@ const updateDepreciationRecord = sql<IUpdateDepreciationRecordQuery>`
   local_amount = CASE
     WHEN $clearLocalAmount::boolean THEN NULL
     ELSE COALESCE($localAmount, local_amount)
+  END,
+  asset_tax_category_id = CASE
+    WHEN $clearAssetTaxCategoryId::boolean THEN NULL
+    ELSE COALESCE($assetTaxCategoryId, asset_tax_category_id)
   END
   WHERE
     id = $id
   RETURNING *;`;
 
 const insertDepreciationRecord = sql<IInsertDepreciationRecordQuery>`
-  INSERT INTO accounter_schema.depreciation (charge_id, amount, local_amount, currency, activation_date, type, category, owner_id)
-  VALUES ($chargeId, $amount, $localAmount, $currency, $activationDate, $type, $categoryId, $ownerId)
+  INSERT INTO accounter_schema.depreciation (charge_id, amount, local_amount, currency, activation_date, type, category, asset_tax_category_id, owner_id)
+  VALUES ($chargeId, $amount, $localAmount, $currency, $activationDate, $type, $categoryId, $assetTaxCategoryId, $ownerId)
   RETURNING *`;
 
 const deleteDepreciationRecord = sql<IDeleteDepreciationRecordQuery>`

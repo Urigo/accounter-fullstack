@@ -25,5 +25,11 @@
   difference to the exchange-rates account instead of the asset account, including an acquisition
   entered as misc expenses without documents, so the asset account matches the depreciation
   report's cost.
+- **Per-record asset account**: a new optional `depreciation.asset_tax_category_id`
+  (`assetTaxCategoryId` on the record inputs, `assetTaxCategory` on `DepreciationRecord`) names the
+  asset's cost account. Disposal and refund rows take it, falling back to the tax category of the
+  charge that bought the asset, so one charge can buy several assets (e.g. an acquisition booked
+  through misc expenses).
 - The depreciation record row and form show the converted local cost and take an optional local
-  cost override; the disposal modal takes a foreign-currency asset's refund in the asset's currency.
+  cost override and an asset account; the disposal modal takes a foreign-currency asset's refund in
+  the asset's currency.
