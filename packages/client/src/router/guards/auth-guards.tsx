@@ -62,7 +62,7 @@ export function OnboardingGuard({ children }: GuardProps): ReactElement {
   // twice per load (the provider's loader remounts this guard), the second time after the boot
   // request, holding the shell back by another round trip.
   const session = useSessionViewer();
-  // The boot request answers once per page load, so by now a not-active answer may be stale: an
+  // The boot request may be older than this render, so a not-active answer may be stale: an
   // invitation accepted since, on a page that then navigates here. Read it again before sending
   // the user away. /welcome reads `viewer` itself and sends an active user back to the app, so
   // acting on a stale answer bounced them between the two without end.
