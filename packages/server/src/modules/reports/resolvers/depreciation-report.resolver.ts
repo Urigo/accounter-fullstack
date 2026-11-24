@@ -32,28 +32,35 @@ type AssetRecord = {
   originalCost: number;
   reportYearDelta: number;
   reportYearDisposedCost: number;
+  reportYearRefundedCost: number;
   totalDepreciableCosts: number;
   statutoryDepreciationRate: number;
   claimedDepreciationRate: number;
   reportYearClaimedDepreciation: number;
   pastYearsAccumulatedDepreciation: number;
   reportYearDisposedDepreciation: number;
+  reportYearDepreciationCorrection: number;
   totalDepreciation: number;
   netValue: number;
   reportYearDisposalProceeds: number;
   reportYearDisposalGainLoss: number;
   disposalDate?: TimelessDateString;
+  /** The year's sales and write-offs */
   disposals: IGetDepreciationDisposalsByIdsResult[];
+  /** The year's cost refunds */
+  costRefunds: IGetDepreciationDisposalsByIdsResult[];
 };
 
 const SUMMARY_KEYS = [
   'originalCost',
   'reportYearDelta',
   'reportYearDisposedCost',
+  'reportYearRefundedCost',
   'totalDepreciableCosts',
   'reportYearClaimedDepreciation',
   'pastYearsAccumulatedDepreciation',
   'reportYearDisposedDepreciation',
+  'reportYearDepreciationCorrection',
   'totalDepreciation',
   'netValue',
   'reportYearDisposalProceeds',
@@ -74,6 +81,11 @@ function addToSummary(summary: Summary, record: Summary) {
 
 function nullableRound(value?: number | null) {
   return value ? Math.round(value) : null;
+}
+
+/** A category with a 0% rate holds assets that are not depreciated, such as trademarks */
+function isDepreciated(category: Pick<IGetAllDepreciationCategoriesResult, 'percentage'>) {
+  return Number(category.percentage) > 0;
 }
 
 export const depreciationReportResolvers: ReportsModule.Resolvers = {
@@ -111,6 +123,12 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
         depreciationCategoriesPromise,
       ]);
 
+      // Assets in categories that are not depreciated (0%) stay off the report: no rows, no totals
+      const notDepreciatedCategoryIds = new Set(
+        depreciationCategories
+          .filter(category => !isDepreciated(category))
+          .map(category => category.id),
+      );
       const categoryMap = new Map<
         string,
         {
@@ -119,14 +137,16 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
           summary: Summary;
         }
       >(
-        depreciationCategories.map(category => [
-          category.id,
-          { category, assets: [], summary: emptySummary() },
-        ]),
+        depreciationCategories
+          .filter(category => isDepreciated(category))
+          .map(category => [category.id, { category, assets: [], summary: emptySummary() }]),
       );
 
       await Promise.all(
         depreciationRecords.map(async record => {
+          if (notDepreciatedCategoryIds.has(record.category)) {
+            return;
+          }
           const depreciationCategory = categoryMap.get(record.category);
           if (!depreciationCategory) {
             console.error('No depreciation category for depreciation record', record);
@@ -151,6 +171,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             year,
           );
           const yearDisposalIds = new Set(yearResult.disposals.map(disposal => disposal.id));
+          const yearRefundIds = new Set(yearResult.costRefunds.map(refund => refund.id));
           const fullyDisposed = yearResult.closingCost === 0 && yearResult.disposals.length > 0;
 
           const assetRecord: AssetRecord = {
@@ -162,12 +183,14 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             originalCost: yearResult.openingCost,
             reportYearDelta: yearResult.additions,
             reportYearDisposedCost: yearResult.disposedCost,
+            reportYearRefundedCost: yearResult.refundedCost,
             totalDepreciableCosts: yearResult.closingCost,
             statutoryDepreciationRate: Number(depreciationCategory.category.percentage),
             claimedDepreciationRate: yearResult.yearlyDepreciationRate,
             reportYearClaimedDepreciation: yearResult.yearDepreciation,
             pastYearsAccumulatedDepreciation: yearResult.openingAccumulatedDepreciation,
             reportYearDisposedDepreciation: yearResult.disposedAccumulatedDepreciation,
+            reportYearDepreciationCorrection: yearResult.depreciationCorrection,
             totalDepreciation: yearResult.closingAccumulatedDepreciation,
             netValue: yearResult.netBookValue,
             reportYearDisposalProceeds: yearResult.disposals.reduce(
@@ -180,6 +203,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             ),
             disposalDate: fullyDisposed ? yearResult.disposals.at(-1)?.disposalDate : undefined,
             disposals: disposals.filter(disposal => yearDisposalIds.has(disposal.id)),
+            costRefunds: disposals.filter(disposal => yearRefundIds.has(disposal.id)),
           };
 
           depreciationCategory.assets.push(assetRecord);
@@ -217,7 +241,10 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
     originalCost: record => (record.originalCost ? Math.round(record.originalCost) : null),
     reportYearDelta: record => (record.reportYearDelta ? Math.round(record.reportYearDelta) : null),
     reportYearDisposedCost: record => nullableRound(record.reportYearDisposedCost),
+    reportYearRefundedCost: record => nullableRound(record.reportYearRefundedCost),
     reportYearDisposedDepreciation: record => nullableRound(record.reportYearDisposedDepreciation),
+    reportYearDepreciationCorrection: record =>
+      nullableRound(record.reportYearDepreciationCorrection),
     reportYearDisposalProceeds: record => nullableRound(record.reportYearDisposalProceeds),
     reportYearDisposalGainLoss: record => nullableRound(record.reportYearDisposalGainLoss),
     totalDepreciableCosts: record => Math.round(record.totalDepreciableCosts),
@@ -230,7 +257,10 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
     originalCost: record => (record.originalCost ? Math.round(record.originalCost) : null),
     reportYearDelta: record => (record.reportYearDelta ? Math.round(record.reportYearDelta) : null),
     reportYearDisposedCost: record => nullableRound(record.reportYearDisposedCost),
+    reportYearRefundedCost: record => nullableRound(record.reportYearRefundedCost),
     reportYearDisposedDepreciation: record => nullableRound(record.reportYearDisposedDepreciation),
+    reportYearDepreciationCorrection: record =>
+      nullableRound(record.reportYearDepreciationCorrection),
     reportYearDisposalProceeds: record => nullableRound(record.reportYearDisposalProceeds),
     reportYearDisposalGainLoss: record => nullableRound(record.reportYearDisposalGainLoss),
     totalDepreciableCosts: record => Math.round(record.totalDepreciableCosts),

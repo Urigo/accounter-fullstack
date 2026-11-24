@@ -28,6 +28,11 @@ export const DepreciationSummaryRow = ({ data, groupName }: Props): ReactElement
           : undefined}
       </TableCell>
       <TableCell>
+        {summary.reportYearRefundedCost
+          ? `(${formatStringifyAmount(summary.reportYearRefundedCost, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
         {summary.totalDepreciableCosts
           ? formatStringifyAmount(summary.totalDepreciableCosts, 0)
           : undefined}
@@ -47,6 +52,11 @@ export const DepreciationSummaryRow = ({ data, groupName }: Props): ReactElement
       <TableCell>
         {summary.reportYearDisposedDepreciation
           ? `(${formatStringifyAmount(summary.reportYearDisposedDepreciation, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearDepreciationCorrection
+          ? `(${formatStringifyAmount(summary.reportYearDepreciationCorrection, 0)})`
           : undefined}
       </TableCell>
       <TableCell>

@@ -43,6 +43,11 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
           ? `(${formatStringifyAmount(summary.reportYearDisposedCost, 0)})`
           : undefined}
       </TableCell>
+      <TableCell>
+        {summary.reportYearRefundedCost
+          ? `(${formatStringifyAmount(summary.reportYearRefundedCost, 0)})`
+          : undefined}
+      </TableCell>
       <TableCell>{formatStringifyAmount(summary.totalDepreciableCosts, 0)}</TableCell>
       <TableCell>{formatStringifyAmount(record.statutoryDepreciationRate, 0)}%</TableCell>
       <TableCell>
@@ -63,6 +68,11 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
       <TableCell>
         {summary.reportYearDisposedDepreciation
           ? `(${formatStringifyAmount(summary.reportYearDisposedDepreciation, 0)})`
+          : '-'}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearDepreciationCorrection
+          ? `(${formatStringifyAmount(summary.reportYearDepreciationCorrection, 0)})`
           : '-'}
       </TableCell>
       <TableCell>

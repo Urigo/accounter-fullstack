@@ -101,9 +101,8 @@ describe('calculateAssetYear without disposals', () => {
     const asset: AssetDepreciationInput = {
       cost: 10_000,
       depreciationRate: 25,
+      // the engine ends it on 2022-12-31: activation + 4 years − 1 day
       activationDate: d('2019-01-01'),
-      // as the records query computes it: activation + 100/rate × 365 days
-      expirationDate: d('2022-12-31'),
     };
     const result = calculateAssetYear(asset, [], 2025);
     expect(result.openingAccumulatedDepreciation).toBe(10_000);
@@ -266,9 +265,8 @@ describe('calculateAssetYear with sales and write-offs', () => {
     const oldAsset: AssetDepreciationInput = {
       cost: 10_000,
       depreciationRate: 25,
+      // the engine ends it on 2022-12-31: activation + 4 years − 1 day
       activationDate: d('2019-01-01'),
-      // as the records query computes it: activation + 100/rate × 365 days
-      expirationDate: d('2022-12-31'),
     };
     const sale: AssetDisposalInput = {
       id: 'sale',

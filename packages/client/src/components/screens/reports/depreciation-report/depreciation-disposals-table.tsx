@@ -63,7 +63,7 @@ type Props = {
   records: FragmentType<typeof DepreciationReportDisposalsFragmentDoc>[];
 };
 
-/** The report year's disposals: the working paper behind the disposals columns (1342 / 1399ח) */
+/** The report year's sales and write-offs: the working paper behind the disposals columns (1342 / 1399ח) */
 export const DepreciationDisposalsTable = ({ records }: Props): ReactElement | null => {
   const rows = records
     .map(record => getFragmentData(DepreciationReportDisposalsFragmentDoc, record))

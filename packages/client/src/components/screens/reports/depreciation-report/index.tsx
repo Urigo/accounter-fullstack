@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../ui/table.js';
+import { DepreciationCostRefundsTable } from './depreciation-cost-refunds-table.js';
 import { DepreciationDisposalsTable } from './depreciation-disposals-table.js';
 import { DepreciationRecordRow } from './depreciation-record-row.js';
 import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from './depreciation-report-filters-utils.js';
@@ -31,10 +32,12 @@ import { DepreciationSummaryRow } from './depreciation-summary-row.js';
     originalCost
     reportYearDelta
     reportYearDisposedCost
+    reportYearRefundedCost
     totalDepreciableCosts
     reportYearClaimedDepreciation
     pastYearsAccumulatedDepreciation
     reportYearDisposedDepreciation
+    reportYearDepreciationCorrection
     totalDepreciation
     netValue
     reportYearDisposalProceeds
@@ -66,6 +69,7 @@ import { DepreciationSummaryRow } from './depreciation-summary-row.js';
           disposalDate
           ...DepreciationReportRecordCore
           ...DepreciationReportDisposals
+          ...DepreciationReportCostRefunds
         }
         summary {
           id
@@ -132,10 +136,10 @@ export const DepreciationReport = (): ReactElement => {
         <Table>
           <TableHeader>
             <TableRow className="font-bold text-xl">
-              <TableHead colSpan={7} className="text-center border-x">
+              <TableHead colSpan={8} className="text-center border-x">
                 List of Assets and Costs
               </TableHead>
-              <TableHead colSpan={6} className="text-center border-x">
+              <TableHead colSpan={7} className="text-center border-x">
                 Depreciation
               </TableHead>
               <TableHead className="text-center border-x">Remaining</TableHead>
@@ -148,6 +152,7 @@ export const DepreciationReport = (): ReactElement => {
               <TableHead className="whitespace-normal">Original Cost</TableHead>
               <TableHead className="whitespace-normal">Changes During the Year</TableHead>
               <TableHead className="whitespace-normal">Disposals During the Year</TableHead>
+              <TableHead className="whitespace-normal">Cost Refunds During the Year</TableHead>
               <TableHead className="whitespace-normal">Total Depreciable Assets</TableHead>
               <TableHead className="whitespace-normal">Statutory Depreciation Rate</TableHead>
               <TableHead className="whitespace-normal">Claimed Depreciation Rate</TableHead>
@@ -156,6 +161,7 @@ export const DepreciationReport = (): ReactElement => {
                 Previous Tax Years Accumulated Depreciation
               </TableHead>
               <TableHead className="whitespace-normal">Depreciation of Disposals</TableHead>
+              <TableHead className="whitespace-normal">Depreciation Correction</TableHead>
               <TableHead className="whitespace-normal">Total Depreciation</TableHead>
               <TableHead className="whitespace-normal">Net Book Value</TableHead>
               <TableHead className="whitespace-normal print:hidden">Charge</TableHead>
@@ -169,11 +175,11 @@ export const DepreciationReport = (): ReactElement => {
                     <TableRow className="font-bold">
                       <TableCell>{`Category ${index + 1}`}</TableCell>
                       <TableCell colSpan={2}>{category.category.name}</TableCell>
-                      <TableCell colSpan={4} />
+                      <TableCell colSpan={5} />
                       <TableCell>
                         {formatStringifyAmount(category.category.percentage, 0)}%
                       </TableCell>
-                      <TableCell colSpan={6} />
+                      <TableCell colSpan={7} />
                       <TableCell className="print:hidden" />
                     </TableRow>
                     {category.records
@@ -194,9 +200,14 @@ export const DepreciationReport = (): ReactElement => {
         </Table>
       )}
       {!fetching && data?.depreciationReport && (
-        <DepreciationDisposalsTable
-          records={data.depreciationReport.categories.flatMap(category => category.records)}
-        />
+        <>
+          <DepreciationDisposalsTable
+            records={data.depreciationReport.categories.flatMap(category => category.records)}
+          />
+          <DepreciationCostRefundsTable
+            records={data.depreciationReport.categories.flatMap(category => category.records)}
+          />
+        </>
       )}
     </PageLayout>
   );
