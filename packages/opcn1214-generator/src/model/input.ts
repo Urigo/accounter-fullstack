@@ -5,6 +5,7 @@
  */
 import type {
   CapitalGainsCode,
+  CapitalGainsInputCode,
   CountryBreakdownCode,
   CountryCode,
   ForeignAppendixCode,
@@ -620,7 +621,5 @@ export interface OtherTransactionsAppendix {
    * (written ×100), 018 is the rate 23 or 50 (written ×100), 092 a single digit (SPEC §15 A-11),
    * 071 = 1 marks virtual currency; no code of 3077 is zeroAllowed (SPEC §4.5).
    */
-  amounts: Partial<
-    Record<Exclude<CapitalGainsCode<77>, '501' | '502' | '503' | '504' | '505'>, number>
-  >;
+  amounts: Partial<Record<CapitalGainsInputCode<77>, number>>;
 }
