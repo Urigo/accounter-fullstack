@@ -12,7 +12,8 @@ Ledger lock now works as a close control:
   on or before their owner's lock date. "Locked" is now derived from the lock date instead of the
   per-record `locked` flag, so `lockLedgerRecords` no longer runs an unscoped `UPDATE`.
 - New `unlockLedger(date, reason)` mutation moves the lock back to an earlier date. Locking and
-  reopening are written to the audit log (who, when, from, to, reason). `lockLedgerRecords` can
-  only move the lock forward, and `updateAdminContext` no longer accepts `ledgerLock` (deprecated).
+  reopening are written to the audit log (who, when, from, to, reason) in the same transaction as
+  the lock change. `lockLedgerRecords` can only move the lock forward (locking to the current date
+  is a no-op), and `updateAdminContext` no longer accepts `ledgerLock` (deprecated).
 - Annual audit step 8 reads the lock date from a fresh query, refreshes the user context after
   locking, and offers a "Reopen Ledger" dialog.

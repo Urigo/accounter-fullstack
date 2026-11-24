@@ -4,8 +4,10 @@ import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { formatCurrency, resolveWriteTargetBusinessId } from '../../../shared/helpers/index.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import {
   mergeSecuritiesContext,
   parseStoredSecuritiesContext,
@@ -16,10 +18,12 @@ import type {
   AdminContext,
   IGetAdminContextsQuery,
   IGetAdminContextsResult,
+  IGetLedgerLockForUpdateQuery,
   IGetSecuritiesContextForUpdateQuery,
   IGetSecurityBusinessIdsQuery,
   IUpdateAdminContextParams,
   IUpdateAdminContextQuery,
+  IUpdateLedgerLockQuery,
   IUpdateSecuritiesContextQuery,
 } from '../types.js';
 
@@ -316,6 +320,20 @@ const getSecuritiesContextForUpdate = sql<IGetSecuritiesContextForUpdateQuery>`
   FOR UPDATE;
 `;
 
+const getLedgerLockForUpdate = sql<IGetLedgerLockForUpdateQuery>`
+  SELECT ledger_lock
+  FROM accounter_schema.user_context
+  WHERE owner_id = $ownerId!
+  FOR UPDATE;
+`;
+
+const updateLedgerLock = sql<IUpdateLedgerLockQuery>`
+  UPDATE accounter_schema.user_context
+  SET ledger_lock = $ledgerLock!
+  WHERE owner_id = $ownerId!
+  RETURNING ledger_lock;
+`;
+
 /**
  * Replaces the whole jsonb document: the caller merges the change into the current value first
  * (see `updateSecuritiesContext`), so a patch never has to be expressed in SQL.
@@ -340,6 +358,7 @@ export class AdminContextProvider {
   constructor(
     private authContextProvider: AuthContextProvider,
     private db: TenantAwareDBClient,
+    private auditLogsProvider: AuditLogsProvider,
   ) {}
 
   public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
@@ -617,6 +636,84 @@ export class AdminContextProvider {
       return normalizedContext;
     }
     return null;
+  }
+
+  /**
+   * Moves the ledger lock date and writes its audit entry (who, from, to, reason) in one
+   * transaction. The current lock is re-read with `FOR UPDATE`, so concurrent lock/unlock calls
+   * are checked against the stored value rather than the request cache.
+   * - `LOCK` moves the lock forward only; locking to the current date is a no-op.
+   * - `UNLOCK` moves it back to an earlier date and requires a reason.
+   * Returns whether the lock moved.
+   */
+  public async moveLedgerLock({
+    action,
+    date,
+    reason,
+    userId,
+  }: {
+    action: 'LOCK' | 'UNLOCK';
+    date: TimelessDateString;
+    reason?: string | null;
+    userId?: string | null;
+  }): Promise<boolean> {
+    const trimmedReason = reason?.trim();
+    if (action === 'UNLOCK' && !trimmedReason) {
+      throw new GraphQLError('A reason is required to reopen the ledger');
+    }
+
+    const ownerId = await this.resolveOwnerIdForRequest();
+
+    const moved = await this.db.transaction(async client => {
+      const [current] = await getLedgerLockForUpdate.run({ ownerId }, client);
+      if (!current) {
+        throw new GraphQLError('Admin context not found for the authenticated user.', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+      const from = current.ledger_lock ?? null;
+
+      if (action === 'LOCK') {
+        if (from && date < from) {
+          throw new GraphQLError(
+            `Ledger is already locked until ${from}. Use unlockLedger to reopen it.`,
+          );
+        }
+        if (from === date) {
+          return false;
+        }
+      } else {
+        if (!from) {
+          throw new GraphQLError('Ledger is not locked');
+        }
+        if (date >= from) {
+          throw new GraphQLError(
+            `Reopen date must be before the current lock date (${from}). Use lockLedgerRecords to move the lock forward.`,
+          );
+        }
+      }
+
+      await updateLedgerLock.run({ ownerId, ledgerLock: date }, client);
+      await this.auditLogsProvider.log(
+        {
+          ownerId,
+          userId: userId ?? undefined,
+          action: action === 'LOCK' ? 'LEDGER_LOCKED' : 'LEDGER_UNLOCKED',
+          entity: 'LedgerLock',
+          entityId: ownerId,
+          details: { from, to: date, ...(trimmedReason ? { reason: trimmedReason } : {}) },
+        },
+        client,
+      );
+      return true;
+    });
+
+    if (moved) {
+      this.cachedContext = null;
+      this.cachedContextInitializing = null;
+      this.adminContextByOwnerIdLoader.clear(ownerId);
+    }
+    return moved;
   }
 
   /**

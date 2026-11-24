@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { AuditLogsProvider } from '../../../common/providers/audit-logs.provider.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { connectTestDb } from '../../../../__tests__/helpers/db-connection.js';
 import { seedAdminOnce } from '../../../../__tests__/helpers/db-fixtures.js';
@@ -38,7 +39,11 @@ function createProvider() {
     new DBProvider(pool),
     createMockAuthContextProvider(ownerId),
   );
-  return new AdminContextProvider(createMockAuthContextProvider(ownerId), dbClient);
+  return new AdminContextProvider(
+    createMockAuthContextProvider(ownerId),
+    dbClient,
+    new AuditLogsProvider(dbClient),
+  );
 }
 
 beforeAll(async () => {

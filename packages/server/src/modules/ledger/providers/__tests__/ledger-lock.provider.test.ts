@@ -98,4 +98,48 @@ describe('LedgerProvider — ledger lock', () => {
     await provider.insertLedgerRecords({ ledgerRecords: [record] });
     expect(query).toHaveBeenCalledTimes(1);
   });
+
+  describe('updateLedgerRecord', () => {
+    const LEDGER_ID = '00000000-0000-0000-0000-0000000000r1';
+    let storedRecord: { invoice_date: string; value_date: string };
+
+    beforeEach(() => {
+      storedRecord = { invoice_date: '2026-01-15', value_date: '2026-01-15' };
+      query.mockImplementation(async (text: string) => {
+        if (text.includes('WHERE id IN')) {
+          return { rows: [{ id: LEDGER_ID, owner_id: OWNER_ID, ...storedRecord }], rowCount: 1 };
+        }
+        return { rows: [], rowCount: 0 };
+      });
+    });
+
+    const updateCalls = () =>
+      query.mock.calls.filter(([text]) => String(text).includes('UPDATE accounter_schema.ledger_records'));
+
+    it('rejects updating a record that is in the locked period', async () => {
+      storedRecord.value_date = '2025-12-31';
+      await expect(
+        provider.updateLedgerRecord({ ledgerId: LEDGER_ID, description: 'x' }),
+      ).rejects.toBeInstanceOf(LedgerLockError);
+      expect(updateCalls()).toHaveLength(0);
+    });
+
+    it('rejects moving an unlocked record into the locked period', async () => {
+      await expect(
+        provider.updateLedgerRecord({
+          ledgerId: LEDGER_ID,
+          invoiceDate: '2025-12-15' as TimelessDateString,
+        }),
+      ).rejects.toBeInstanceOf(LedgerLockError);
+      expect(updateCalls()).toHaveLength(0);
+    });
+
+    it('allows updating an unlocked record within the open period', async () => {
+      await provider.updateLedgerRecord({
+        ledgerId: LEDGER_ID,
+        invoiceDate: '2026-02-01' as TimelessDateString,
+      });
+      expect(updateCalls()).toHaveLength(1);
+    });
+  });
 });
