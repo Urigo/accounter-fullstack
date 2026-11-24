@@ -28,7 +28,7 @@ function countOf(type: RecordType): Count {
 
 /** Value of each 9999 field, by FieldDef.key. */
 const COUNTS: Readonly<Record<string, Count>> = {
-  // One report per file; batches carry one 9999 per report (SPEC §3.1).
+  // Always 01 (p.60: only 1): every report ends with its own 9999, batches included (p.1).
   reportCount: () => 1,
   relatedCompanyCount: countOf('1010'),
   shareholderCount: countOf('1020'),

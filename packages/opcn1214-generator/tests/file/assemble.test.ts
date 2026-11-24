@@ -72,6 +72,17 @@ describe('buildControlRecord', () => {
     expect(Object.keys(buildControlRecord(minimalReport()).values)).toEqual(keys);
   });
 
+  it('throws for a 9999 field it has no count for', () => {
+    const control = LAYOUT.records['9999'];
+    const fields = control.fields.map(field =>
+      field.key === 'rdInvestmentRecordCount' ? { ...field, key: 'newCount' } : field,
+    );
+    const layout = { ...LAYOUT, records: { ...LAYOUT.records, '9999': { ...control, fields } } };
+    expect(() => buildControlRecord({ ...minimalReport(), layout })).toThrow(
+      'No derivation for record 9999 field newCount',
+    );
+  });
+
   it('counts every record type it reports', () => {
     const report = reportOf([
       ['1000', 1],
