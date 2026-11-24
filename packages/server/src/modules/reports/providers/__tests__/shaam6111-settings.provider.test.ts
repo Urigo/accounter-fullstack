@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { IGetShaam6111SettingsUpToYearResult } from '../../types.js';
 import { effectiveShaam6111Settings } from '../shaam6111-settings.provider.js';
 
+type SettingsRow = Pick<
+  IGetShaam6111SettingsUpToYearResult,
+  'year' | 'header' | 'tax_adjustment_overrides'
+>;
+
 describe('effectiveShaam6111Settings', () => {
-  const rows = [
+  const rows: SettingsRow[] = [
     {
       year: 2023,
       header: { industryCode: '6201', businessType: 'SERVICE', auditOpinionType: 'QUALIFIED' },
