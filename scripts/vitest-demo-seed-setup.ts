@@ -1,18 +1,44 @@
 import { Pool } from 'pg';
+import { ALLOW_DEMO_SEED_ENV } from '../packages/migrations/src/local-db-guard.js';
 import { checkLatestMigration } from '../packages/server/src/__tests__/helpers/migration-verification.js';
+import {
+  assertTestDatabaseIsLocal,
+  TEST_DATABASE_NAME,
+  testDbConfig,
+  testDbSchema,
+} from '../packages/server/src/__tests__/helpers/test-db-config.js';
 
-const testDbSchema = process.env.POSTGRES_SCHEMA || 'accounter_schema';
-
+/**
+ * Global setup of the `demo-seed` vitest project, run after `vitest-global-setup.ts`.
+ *
+ * The demo seed assumes the schema is at the latest migration. When it is not, the seed fails
+ * somewhere in the middle with a constraint or column error that says nothing about the cause.
+ * This checks first and leaves a flag for `seed-and-validate.test.ts`, which then fails with
+ * a pointer to the cause instead of starting the seed.
+ *
+ * The setup that runs before this one creates the test database and migrates it, so a stale
+ * schema here means that step did not get through, and its own warning says why.
+ *
+ * The flag is an environment variable because this runs in the main vitest process and the
+ * test runs in a worker, which inherits the environment.
+ *
+ * Whatever goes wrong here must not be thrown: vitest treats a global setup that throws as
+ * fatal for the whole run, the projects that need no database included. So nothing is opened
+ * when the suite is going to be skipped, and a database that cannot be reached is reported
+ * through the same flag as a stale one.
+ */
 export async function setup() {
-  // Check if migrations are current before running demo-seed tests
-  const pool = new Pool({
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: Number(process.env.POSTGRES_PORT) || 5432,
-    user: process.env.POSTGRES_USER || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-    database: process.env.POSTGRES_DB || 'accounter_test',
-    ssl: process.env.POSTGRES_SSL === '1' && { rejectUnauthorized: false },
-  });
+  // This opens its own pool, so it checks its own target rather than relying on the setup
+  // that ran before it.
+  assertTestDatabaseIsLocal();
+
+  // Without the opt-in the suite is skipped (see seed-and-validate.test.ts): there is nothing
+  // to check, and a run with no database up must not fail here.
+  if (process.env[ALLOW_DEMO_SEED_ENV] !== '1') {
+    return;
+  }
+
+  const pool = new Pool(testDbConfig);
 
   try {
     const result = await checkLatestMigration(pool, testDbSchema);
@@ -20,8 +46,14 @@ export async function setup() {
     if (!result.isLatest) {
       console.warn(`WARNING: ${result.errorMessage}`);
       console.warn(
-        `  Run migrations before demo-seed tests: yarn workspace @accounter/migrations migration:run`,
+        `  The test setup migrates "${TEST_DATABASE_NAME}" before this check runs, so it did not`,
       );
+      console.warn(`  get there: see the [test-setup] lines above. To migrate it by hand:`);
+      // The command names the server this check just used, not only the database.
+      // `migration:run` takes the host and port from the shell, or from the root .env when the
+      // shell does not set them, and this run's target may have come from neither.
+      const target = `POSTGRES_HOST=${testDbConfig.host} POSTGRES_PORT=${testDbConfig.port} POSTGRES_DB=${TEST_DATABASE_NAME}`;
+      console.warn(`    ${target} yarn workspace @accounter-helper/migrations migration:run`);
       console.warn(`  Demo-seed tests will fail.`);
 
       // Store flag to fail tests gracefully

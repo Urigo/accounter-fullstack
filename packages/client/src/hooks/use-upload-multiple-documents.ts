@@ -34,7 +34,7 @@ import { useApiMutation } from './use-api-mutation.js';
 type UploadMultipleDocuments = UploadMultipleDocumentsMutation['batchUploadDocuments'];
 
 /** The documents that actually uploaded — per-file failures are dropped from the batch. */
-type UploadedDocuments = FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>[];
+export type UploadedDocuments = FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>[];
 
 type UseUploadMultipleDocuments = {
   uploading: boolean;

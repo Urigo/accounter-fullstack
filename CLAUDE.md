@@ -112,6 +112,22 @@ yarn seed:admin-context # Seed admin context for server
   files).
 - TypeScript strict mode throughout.
 
+# Database Safety
+
+- The root `.env` can point at any database, and codegen, migrations, seeds and every DB-backed test
+  read it. Do not assume a command is local because it looks local. See "Database safety" in
+  `README.md` for what each command does against a non-local database.
+- Do not read `.env` files; the settings deny it. A guard that refuses prints its target without the
+  password, and `.env.template` lists every variable.
+- `ALLOW_REMOTE_DB`, `ALLOW_DEMO_SEED` and `ALLOW_DEMO_SEED_DATABASE` are per-command opt-ins that a
+  person decides. Never add one to a command on your own initiative, and never put one in a file. A
+  command that sets one waits for a person to confirm it, and is refused where nobody can be asked.
+- Do not run `yarn seed:staging-demo` unless the user asked for that command. It truncates the
+  domain tables of the database it reaches.
+- DB-backed tests use their own database, `accounter_test`, on the server `POSTGRES_HOST` names. The
+  test setup creates and migrates it; there is nothing to prepare and no reason to point tests at
+  another database.
+
 # Git & PR Conventions
 
 - NEVER commit, push, merge, rebase or otherwise write to main or prod. Always work on a feature

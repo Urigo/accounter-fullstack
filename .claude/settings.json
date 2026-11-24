@@ -1,4 +1,7 @@
 {
+  "env": {
+    "ENFORCE_LOCAL_DB": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(yarn *)",
@@ -32,13 +35,32 @@
       "Bash(git push --force *)",
       "Bash(git reset --hard *)",
       "Bash(yarn npm publish *)",
-      "Edit(**/.env)",
-      "Edit(**/.env.local)",
-      "Edit(**/.env.*.local)",
-      "Edit(**/.env.test)",
-      "Edit(**/.env.development)",
-      "Edit(**/.env.staging)",
-      "Edit(**/.env.production)"
+      "Edit(//**/.env)",
+      "Edit(//**/.env.local)",
+      "Edit(//**/.env.*.local)",
+      "Edit(//**/.env.test)",
+      "Edit(//**/.env.development)",
+      "Edit(//**/.env.staging)",
+      "Edit(//**/.env.production)",
+      "Edit(//**/.dev.vars)",
+      "Edit(.env*)",
+      "Edit(.dev.vars*)",
+      "Edit(!.env.template)",
+      "Edit(!.env.example)",
+      "Edit(!.dev.vars.example)",
+      "Read(//**/.env)",
+      "Read(//**/.env.local)",
+      "Read(//**/.env.*.local)",
+      "Read(//**/.env.test)",
+      "Read(//**/.env.development)",
+      "Read(//**/.env.staging)",
+      "Read(//**/.env.production)",
+      "Read(//**/.dev.vars)",
+      "Read(.env*)",
+      "Read(.dev.vars*)",
+      "Read(!.env.template)",
+      "Read(!.env.example)",
+      "Read(!.dev.vars.example)"
     ]
   },
   "hooks": {
@@ -50,6 +72,18 @@
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh",
             "timeout": 1200
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Monitor|mcp__terminal__run_in_terminal",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/ask-before-db-opt-in.mjs\"",
+            "timeout": 10
           }
         ]
       }

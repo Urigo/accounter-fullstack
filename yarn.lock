@@ -34,10 +34,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch"
     "@types/pg": "npm:8.23.1"
     pg-promise: "npm:12.8.0"
-    slonik: "npm:49.10.10"
+    slonik: "npm:49.15.0"
     tslib: "npm:2.9.1"
     zod: "npm:4.6.7"
   languageName: unknown
@@ -74,7 +74,7 @@ __metadata:
     "@emotion/styled": "npm:11.14.1"
     "@hookform/resolvers": "npm:7.0.8"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
-    "@mui/material": "npm:9.5.0"
+    "@mui/material": "npm:9.6.0"
     "@mui/x-charts": "npm:8.29.3"
     "@storybook/addon-a11y": "npm:10.6.8"
     "@storybook/react-vite": "npm:10.6.8"
@@ -105,7 +105,7 @@ __metadata:
     html2canvas-pro: "npm:2.6.4"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
-    lucide-react: "npm:1.77.0"
+    lucide-react: "npm:1.78.0"
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:6.5.438"
     radix-ui: "npm:1.8.1"
@@ -310,7 +310,7 @@ __metadata:
     fast-xml-parser: "npm:5.12.1"
     fastify: "npm:5.12.8"
     graphql-request: "npm:7.4.0"
-    lucide-react: "npm:1.77.0"
+    lucide-react: "npm:1.78.0"
     msw: "npm:3.0.7"
     react: "npm:19.3.1"
     react-dom: "npm:19.3.1"
@@ -346,16 +346,15 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:1.45.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:26.6.6"
     "@types/pg": "npm:8.23.1"
     "@whatwg-node/fetch": "npm:0.12.1"
-    ai: "npm:7.0.179"
-    async-mutex: "npm:0.5.0"
-    auth0: "npm:7.8.0"
+    ai: "npm:7.0.180"
+    auth0: "npm:7.9.0"
     basic-auth: "npm:3.1.0"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.11.0"
@@ -377,7 +376,7 @@ __metadata:
     pino-pretty: "npm:13.2.0"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.1.4"
-    slonik: "npm:49.10.10"
+    slonik: "npm:49.15.0"
     strip-indent: "npm:4.1.1"
     tsx: "npm:4.23.15"
     typescript: "npm:6.0.3"
@@ -429,16 +428,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.152":
-  version: 4.0.152
-  resolution: "@ai-sdk/gateway@npm:4.0.152"
+"@ai-sdk/gateway@npm:4.0.153":
+  version: 4.0.153
+  resolution: "@ai-sdk/gateway@npm:4.0.153"
   dependencies:
     "@ai-sdk/provider": "npm:4.0.39"
     "@ai-sdk/provider-utils": "npm:5.0.83"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/7c2a349d384fc571dba6134e35a6e2fbd6a615ff749a97bd6a6522111eb258f742fe9d0098c3fd6604ec4a3ed969051a6db5926f752ae9585e912f18968016ba
+  checksum: 10c0/8992e69e907bad175a9016c2cf39cc36e3cc0309dfd30af790feec4138b8e319d88603b004b671f4c9a3cbac563588bd4ce9bb9c64b19de40cd2f9a33c1a438c
   languageName: node
   linkType: hard
 
@@ -2587,9 +2586,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.68.6":
-  version: 0.68.6
-  resolution: "@graphql-hive/cli@npm:0.68.6"
+"@graphql-hive/cli@npm:0.68.7":
+  version: 0.68.7
+  resolution: "@graphql-hive/cli@npm:0.68.7"
   dependencies:
     "@graphql-hive/core": "npm:0.24.0"
     "@graphql-inspector/core": "npm:^8.0.3"
@@ -2600,9 +2599,9 @@ __metadata:
     "@graphql-tools/url-loader": "npm:^9.1.12"
     "@graphql-tools/utils": "npm:^12.0.3"
     "@graphql-typed-document-node/core": "npm:3.2.0"
-    "@oclif/core": "npm:3.26.6"
-    "@oclif/plugin-help": "npm:6.2.36"
-    "@oclif/plugin-update": "npm:4.7.16"
+    "@oclif/core": "npm:3.27.0"
+    "@oclif/plugin-help": "npm:6.3.0"
+    "@oclif/plugin-update": "npm:4.8.0"
     "@theguild/federation-composition": "npm:0.27.2"
     cli-table3: "npm:0.6.5"
     colors: "npm:1.4.0"
@@ -2613,7 +2612,7 @@ __metadata:
     zod: "npm:^4.6.6"
   bin:
     hive: bin/run
-  checksum: 10c0/7b0ea8137bb1b32a0d63a5f2cb4fd876d1af4ca987bff6eace6b1efbed1edaf8ee2d421bcca637b5e42256ef18456f3a1ed6cb93636b9a219ce993734fb8ca0c
+  checksum: 10c0/0234df12f198a31e4a655b78b47472430d23c4ecd682ef2dbbb9337e2e8c88b32974191bd334de7f5695e46d1f71f6ad8a28deab967145ad5e818c3f9fb07c82
   languageName: node
   linkType: hard
 
@@ -4852,22 +4851,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/core-downloads-tracker@npm:^9.5.0":
-  version: 9.5.0
-  resolution: "@mui/core-downloads-tracker@npm:9.5.0"
-  checksum: 10c0/3008f1c369768246c06273736c36513e35ca1032f46e01a59375f090121003a82aa76b4d7440c6d68ae363403cfc49cab5f379f24dbbd44c15d348a2d4ad210d
+"@mui/core-downloads-tracker@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@mui/core-downloads-tracker@npm:9.6.0"
+  checksum: 10c0/30ca1660a75a641f6b2936c60978d8665162c7ae85c79f372c4405eb052cee628582d154a17c63a8c4000be7238c4d64dfa710541e77c1cedab982108c88ec42
   languageName: node
   linkType: hard
 
-"@mui/material@npm:9.5.0":
-  version: 9.5.0
-  resolution: "@mui/material@npm:9.5.0"
+"@mui/material@npm:9.6.0":
+  version: 9.6.0
+  resolution: "@mui/material@npm:9.6.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.7 || ^8.0.5"
-    "@mui/core-downloads-tracker": "npm:^9.5.0"
-    "@mui/system": "npm:^9.5.0"
-    "@mui/types": "npm:^9.5.0"
-    "@mui/utils": "npm:^9.5.0"
+    "@mui/core-downloads-tracker": "npm:^9.6.0"
+    "@mui/system": "npm:^9.6.0"
+    "@mui/types": "npm:^9.6.0"
+    "@mui/utils": "npm:^9.6.0"
     "@popperjs/core": "npm:^2.11.8"
     "@types/react-transition-group": "npm:^4.4.12"
     clsx: "npm:^2.1.1"
@@ -4878,7 +4877,7 @@ __metadata:
   peerDependencies:
     "@emotion/react": ^11.5.0
     "@emotion/styled": ^11.3.0
-    "@mui/material-pigment-css": ^9.5.0
+    "@mui/material-pigment-css": ^9.6.0
     "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -4891,16 +4890,16 @@ __metadata:
       optional: true
     "@types/react":
       optional: true
-  checksum: 10c0/284f30d341d9c4458c4540f663e1018a4bf7a4c2701d155d56f577e3e9ce8c334d780ca16649da67ae30a755c8a279384c9f6d8390a3b6a15b119d7b18ef3f27
+  checksum: 10c0/0f550adabe79f5da59637e147840487a36707d4a2de091b3c1b601affdc90c55b2c8c8ad1316f8eef2533d050d42fd1a21034a4e30650b45138221eace6cf116
   languageName: node
   linkType: hard
 
-"@mui/private-theming@npm:^9.5.0":
-  version: 9.5.0
-  resolution: "@mui/private-theming@npm:9.5.0"
+"@mui/private-theming@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@mui/private-theming@npm:9.6.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.7 || ^8.0.5"
-    "@mui/utils": "npm:^9.5.0"
+    "@mui/utils": "npm:^9.6.0"
     prop-types: "npm:^15.8.1"
   peerDependencies:
     "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -4908,13 +4907,13 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/11476dc23ca5e6c9039e10b4c371a600f217b2657fcd5062527b90a2a1d35dd0be6f0fa39c58e4b5835c972034691e204015513d905e4dfd944252aaca8dbffd
+  checksum: 10c0/fcbb57b5d5e78965159f7dfcbeaf3a838d2d9f5ca9931b40d4f682c509d27d3979af66dd1dd0c0b4edd6387b15bcf333bf67b50b892e6ccdcc7b353f6ffd0daa
   languageName: node
   linkType: hard
 
-"@mui/styled-engine@npm:^9.5.0":
-  version: 9.5.0
-  resolution: "@mui/styled-engine@npm:9.5.0"
+"@mui/styled-engine@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@mui/styled-engine@npm:9.6.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.7 || ^8.0.5"
     "@emotion/cache": "npm:^11.14.0"
@@ -4931,19 +4930,19 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/ee05fb2ca82986d8905a5d02119719aea7e9938103463f8df948466dc2a170267810fbf5e31e33b5f813769c9f2ba964c677165f1632f7772dd734bcb61e0ef3
+  checksum: 10c0/9961c602e07536451faab7b12da3be4f88025548032a959d24118af35b73933deff44075e7a888370c64229af21d7ad548c4cf01533404d54b6ce6e2363c2141
   languageName: node
   linkType: hard
 
-"@mui/system@npm:^9.5.0":
-  version: 9.5.0
-  resolution: "@mui/system@npm:9.5.0"
+"@mui/system@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@mui/system@npm:9.6.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.7 || ^8.0.5"
-    "@mui/private-theming": "npm:^9.5.0"
-    "@mui/styled-engine": "npm:^9.5.0"
-    "@mui/types": "npm:^9.5.0"
-    "@mui/utils": "npm:^9.5.0"
+    "@mui/private-theming": "npm:^9.6.0"
+    "@mui/styled-engine": "npm:^9.6.0"
+    "@mui/types": "npm:^9.6.0"
+    "@mui/utils": "npm:^9.6.0"
     clsx: "npm:^2.1.1"
     csstype: "npm:^3.2.3"
     prop-types: "npm:^15.8.1"
@@ -4959,7 +4958,7 @@ __metadata:
       optional: true
     "@types/react":
       optional: true
-  checksum: 10c0/58bcc21dd65f2a5aba1f651d4b3f1ef3b0b19ac50042a7a67a209b40423e161f9c74dd6c9763739df10602b1a732ce60b6a8721395ad9463a9a3e36af6ba064b
+  checksum: 10c0/03da446945095a2f395bfc1e2368108f5ee6c10dcf5b10d2d4e655d592045b4440a9262ffe3ca10f86c967ac3d42e08e87fa8ac77df3223873dd5f5c3eb06188
   languageName: node
   linkType: hard
 
@@ -4977,9 +4976,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/types@npm:^9.5.0":
-  version: 9.5.0
-  resolution: "@mui/types@npm:9.5.0"
+"@mui/types@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@mui/types@npm:9.6.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.7 || ^8.0.5"
   peerDependencies:
@@ -4987,7 +4986,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/c7beb70dd1b9cb7b08164346545346519218a18d148e77a021d63f14da217b6f532fb305133d3273e4610f12eef94f35af7735bf487f5127dbd7e2036b179614
+  checksum: 10c0/011160262bf95e470902ba870bc1f44fb995c46b8a26bbdb79ac3e1fd7403c66c784fbb23b204d73bca507fbaf420cdf616777ac909ca967040353c9be1310fb
   languageName: node
   linkType: hard
 
@@ -5011,12 +5010,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^9.5.0":
-  version: 9.5.0
-  resolution: "@mui/utils@npm:9.5.0"
+"@mui/utils@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "@mui/utils@npm:9.6.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.7 || ^8.0.5"
-    "@mui/types": "npm:^9.5.0"
+    "@mui/types": "npm:^9.6.0"
     "@types/prop-types": "npm:^15.7.15"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
@@ -5027,7 +5026,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/4b68b96c1192dc9b960bba380a75df3826d0774574095967fa072e4b7fa97791ed39d1fbfa543e4a06296b0e9a7388ee247ad3126f717d7660e64a962bdadf90
+  checksum: 10c0/bfee9152105f2fd8315ecb1b1a9db6e4a7d52051e740c834457eeaa55d3c45d9ef48b3f519d434fead774786bed5e9ef9bd389b39d70fe147b904fe850105534
   languageName: node
   linkType: hard
 
@@ -5560,9 +5559,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oclif/core@npm:3.26.6":
-  version: 3.26.6
-  resolution: "@oclif/core@npm:3.26.6"
+"@oclif/core@npm:3.27.0":
+  version: 3.27.0
+  resolution: "@oclif/core@npm:3.27.0"
   dependencies:
     "@types/cli-progress": "npm:^3.11.5"
     ansi-escapes: "npm:^4.3.2"
@@ -5572,7 +5571,7 @@ __metadata:
     clean-stack: "npm:^3.0.1"
     cli-progress: "npm:^3.12.0"
     color: "npm:^4.2.3"
-    debug: "npm:^4.3.4"
+    debug: "npm:^4.3.5"
     ejs: "npm:^3.1.10"
     get-package-type: "npm:^0.1.0"
     globby: "npm:^11.1.0"
@@ -5592,7 +5591,7 @@ __metadata:
     widest-line: "npm:^3.1.0"
     wordwrap: "npm:^1.0.0"
     wrap-ansi: "npm:^7.0.0"
-  checksum: 10c0/43f93c4b44a81f922b56666cbd88e5eae10820fdba36211e26ef1572aaea229ea6800f138c50aa2ebd65603904d425cc64cd5fe76b0cec20515728173d7e0463
+  checksum: 10c0/4f663ccb3bed74fa5b73a82f3bf722c9be5564f0543cc29bd70e1a76b953bd2fe6ca1d6684561a3bd7bd1fe70eab1855b98f5563b2109d11161c06283c312b93
   languageName: node
   linkType: hard
 
@@ -5622,34 +5621,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oclif/plugin-help@npm:6.2.36":
-  version: 6.2.36
-  resolution: "@oclif/plugin-help@npm:6.2.36"
+"@oclif/plugin-help@npm:6.3.0":
+  version: 6.3.0
+  resolution: "@oclif/plugin-help@npm:6.3.0"
   dependencies:
     "@oclif/core": "npm:^4"
-  checksum: 10c0/d4517e99c863b919d535cb3a23e48fd37091026055ed6d51b51e9460032e75f801209c1988c86b39011c07476255520920ca366eca8235129781cb01ca4bf440
+  checksum: 10c0/3f0dfc8286b0e1458406491f3563a38250421949a9e2919e4c066e2dc4eeeeecd7b1b074aaa7cbed9ff3f1113833b23e9c60b41051406c111eca7bc265ed7082
   languageName: node
   linkType: hard
 
-"@oclif/plugin-update@npm:4.7.16":
-  version: 4.7.16
-  resolution: "@oclif/plugin-update@npm:4.7.16"
+"@oclif/plugin-update@npm:4.8.0":
+  version: 4.8.0
+  resolution: "@oclif/plugin-update@npm:4.8.0"
   dependencies:
     "@inquirer/select": "npm:^2.5.0"
     "@oclif/core": "npm:^4"
-    "@oclif/table": "npm:^0.5.1"
+    "@oclif/table": "npm:^0.5.9"
     ansis: "npm:^3.17.0"
     debug: "npm:^4.4.1"
     filesize: "npm:^6.1.0"
     got: "npm:^13"
     proxy-agent: "npm:^6.5.0"
-    semver: "npm:^7.7.3"
-    tar-fs: "npm:^2.1.4"
-  checksum: 10c0/b2711ef87114ce0c91ac8e371067cc82d33cb6dc775b9ef535d0d71c5f8b41d5a142765ddda695bf6512d49210bb439df4c30d0c329361fe7155e92db539c467
+    semver: "npm:^7.8.5"
+    tar-fs: "npm:^2.1.5"
+  checksum: 10c0/f94388901073fd284f5b8820884da0f2cf269345519c83d8f4a4a1c23f0df34044ece81b3c70f36a949598262bd755e88fc42687377e9595add343560fb27b8c
   languageName: node
   linkType: hard
 
-"@oclif/table@npm:^0.5.1":
+"@oclif/table@npm:^0.5.9":
   version: 0.5.9
   resolution: "@oclif/table@npm:0.5.9"
   dependencies:
@@ -9112,7 +9111,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/driver@npm:^49.10.10":
+"@slonik/driver@npm:^49.15.0":
   version: 49.15.0
   resolution: "@slonik/driver@npm:49.15.0"
   dependencies:
@@ -9127,7 +9126,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/errors@npm:^49.10.10, @slonik/errors@npm:^49.15.0":
+"@slonik/errors@npm:^49.15.0":
   version: 49.15.0
   resolution: "@slonik/errors@npm:49.15.0"
   dependencies:
@@ -9136,45 +9135,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:49.10.10":
-  version: 49.10.10
-  resolution: "@slonik/pg-driver@npm:49.10.10"
+"@slonik/pg-driver@npm:49.15.0":
+  version: 49.15.0
+  resolution: "@slonik/pg-driver@npm:49.15.0"
   dependencies:
-    "@slonik/driver": "npm:^49.10.10"
-    "@slonik/errors": "npm:^49.10.10"
-    "@slonik/sql-tag": "npm:^49.10.10"
-    "@slonik/types": "npm:^49.10.10"
-    "@slonik/utilities": "npm:^49.10.10"
+    "@slonik/driver": "npm:^49.15.0"
+    "@slonik/errors": "npm:^49.15.0"
+    "@slonik/sql-tag": "npm:^49.15.0"
+    "@slonik/types": "npm:^49.15.0"
+    "@slonik/utilities": "npm:^49.15.0"
     pg: "npm:^8.22.0"
     pg-query-stream: "npm:^4.12.0"
     pg-types: "npm:^4.1.0"
     postgres-array: "npm:^3.0.4"
   peerDependencies:
     zod: ^3.25 || ^4
-  checksum: 10c0/512979bd15eab46a11459db5017e62717a47d3248efdfe917d150cbbfe57274f261c253859dfb94a19f20d2fa9f281cab8d4d9da8ffb8087704240e3e0503043
+  checksum: 10c0/2aca8fb5373d51f93ba458cc194dd99e0e48c1b0929961893c9fa5aaa5bc97bb1163347b80e4e084b8980d9f6f1566263701c2fb1b28b8be5ff7bb58bac7a2b7
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch":
-  version: 49.10.10
-  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch::version=49.10.10&hash=fa0108"
+"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch":
+  version: 49.15.0
+  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch::version=49.15.0&hash=d2537d"
   dependencies:
-    "@slonik/driver": "npm:^49.10.10"
-    "@slonik/errors": "npm:^49.10.10"
-    "@slonik/sql-tag": "npm:^49.10.10"
-    "@slonik/types": "npm:^49.10.10"
-    "@slonik/utilities": "npm:^49.10.10"
+    "@slonik/driver": "npm:^49.15.0"
+    "@slonik/errors": "npm:^49.15.0"
+    "@slonik/sql-tag": "npm:^49.15.0"
+    "@slonik/types": "npm:^49.15.0"
+    "@slonik/utilities": "npm:^49.15.0"
     pg: "npm:^8.22.0"
     pg-query-stream: "npm:^4.12.0"
     pg-types: "npm:^4.1.0"
     postgres-array: "npm:^3.0.4"
   peerDependencies:
     zod: ^3.25 || ^4
-  checksum: 10c0/d62084d943cf1b76bdd0b9ef096c284506d5379e6876f207fa055697e7c0e7481d310c832eb503d6626eb12266f18f4840dba14b94b1dae2e2803c655ff0832c
+  checksum: 10c0/28e65c945ebd38b106b177677c252fe0f881f897b93c7696270bbe6072862d2c8dc2922fc80549210cd26dcd253f23f89a534c9c5b4e06cdfb91e6372881252a
   languageName: node
   linkType: hard
 
-"@slonik/sql-tag@npm:^49.10.10":
+"@slonik/sql-tag@npm:^49.15.0":
   version: 49.15.0
   resolution: "@slonik/sql-tag@npm:49.15.0"
   dependencies:
@@ -9188,7 +9187,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/types@npm:^49.10.10, @slonik/types@npm:^49.15.0":
+"@slonik/types@npm:^49.15.0":
   version: 49.15.0
   resolution: "@slonik/types@npm:49.15.0"
   peerDependencies:
@@ -9197,7 +9196,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/utilities@npm:^49.10.10, @slonik/utilities@npm:^49.15.0":
+"@slonik/utilities@npm:^49.15.0":
   version: 49.15.0
   resolution: "@slonik/utilities@npm:49.15.0"
   dependencies:
@@ -11043,7 +11042,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:7.0.2"
     "@graphql-codegen/typescript-resolvers": "npm:7.0.1"
     "@graphql-eslint/eslint-plugin": "npm:4.4.2"
-    "@graphql-hive/cli": "npm:0.68.6"
+    "@graphql-hive/cli": "npm:0.68.7"
     "@graphql-inspector/cli": "npm:7.0.8"
     "@graphql-tools/mock": "npm:10.1.4"
     "@parcel/watcher": "npm:2.6.0"
@@ -11129,16 +11128,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.179":
-  version: 7.0.179
-  resolution: "ai@npm:7.0.179"
+"ai@npm:7.0.180":
+  version: 7.0.180
+  resolution: "ai@npm:7.0.180"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.152"
+    "@ai-sdk/gateway": "npm:4.0.153"
     "@ai-sdk/provider": "npm:4.0.39"
     "@ai-sdk/provider-utils": "npm:5.0.83"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1f10422550809f3a74933f02adcc32c87d75b06ef83c44e370107bb70ca9bb8ba5b4a2762c7d4fd608c66562f1f4602c0b8a273f98b436befba371089a8b87ec
+  checksum: 10c0/0bf1bfd239587af1bbe43c2c491d4958eb1a344e722b9e2d48116f8201c2fe12b361109a235d06c998a227743a0fdb8d43552cbda51203f0ba07616345ddb424
   languageName: node
   linkType: hard
 
@@ -11572,15 +11571,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-mutex@npm:0.5.0":
-  version: 0.5.0
-  resolution: "async-mutex@npm:0.5.0"
-  dependencies:
-    tslib: "npm:^2.4.0"
-  checksum: 10c0/9096e6ad6b674c894d8ddd5aa4c512b09bb05931b8746ebd634952b05685608b2b0820ed5c406e6569919ff5fe237ab3c491e6f2887d6da6b6ba906db3ee9c32
-  languageName: node
-  linkType: hard
-
 "async-retry@npm:^1.3.3":
   version: 1.3.3
   resolution: "async-retry@npm:1.3.3"
@@ -11622,14 +11612,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"auth0@npm:7.8.0":
-  version: 7.8.0
-  resolution: "auth0@npm:7.8.0"
+"auth0@npm:7.9.0":
+  version: 7.9.0
+  resolution: "auth0@npm:7.9.0"
   dependencies:
     auth0-legacy: "npm:auth0@^4.37.1"
     jose: "npm:^5.0.0"
     uuid: "npm:^11.1.1"
-  checksum: 10c0/4aec20c06885fc487a905f3c78381ef0f4b4e29245c42396427178877d69ed86bcbc92660ced064449a7645a58927f2c0de066cd87a6e1a08be05c160bc1bb38
+  checksum: 10c0/26d7d1ae964a3b0357a01c7de08134f986fd8fba42f887908b7ca4aab4deabfe33720929e8eda1c8004562942c15e2161e4d84f1cfa586ea79c61a487a688a15
   languageName: node
   linkType: hard
 
@@ -18909,16 +18899,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:1.77.0":
-  version: 1.77.0
-  resolution: "lucide-react@npm:1.77.0"
+"lucide-react@npm:1.78.0":
+  version: 1.78.0
+  resolution: "lucide-react@npm:1.78.0"
   peerDependencies:
     "@types/react": "*"
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/602824e6080ae948bfeb875fef90b6ae341edaf9991d434405245460699ef3a7ed8aacb5c604cc2211794f4941179c13b1e43c0a9c0858964705b1b673a16f74
+  checksum: 10c0/1bdff1fdfc09a2da9ba67eed9b6a0a8ef8112ab01a44a5d4e4347c40190910190f0f1ca12bdc4c4795527047b4c09e92941141e08063180a20e324bab55afc62
   languageName: node
   linkType: hard
 
@@ -23874,16 +23864,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:49.10.10":
-  version: 49.10.10
-  resolution: "slonik@npm:49.10.10"
+"slonik@npm:49.15.0":
+  version: 49.15.0
+  resolution: "slonik@npm:49.15.0"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
-    "@slonik/driver": "npm:^49.10.10"
-    "@slonik/errors": "npm:^49.10.10"
-    "@slonik/pg-driver": "npm:^49.10.10"
-    "@slonik/sql-tag": "npm:^49.10.10"
-    "@slonik/utilities": "npm:^49.10.10"
+    "@slonik/driver": "npm:^49.15.0"
+    "@slonik/errors": "npm:^49.15.0"
+    "@slonik/pg-driver": "npm:^49.15.0"
+    "@slonik/sql-tag": "npm:^49.15.0"
+    "@slonik/utilities": "npm:^49.15.0"
     "@standard-schema/spec": "npm:^1.0.0"
     iso8601-duration: "npm:^2.1.3"
     p-queue: "npm:^9.3.0"
@@ -23892,7 +23882,7 @@ __metadata:
     serialize-error: "npm:^12.0.0"
     strict-event-emitter-types: "npm:^2.0.0"
     zod: "npm:^4.3.6"
-  checksum: 10c0/8909aa4066eb2b329a8bc7fedf23d137ad84fdfcb82d3bcab8b611027448dee5146a296f016652514808fe0423206f9df88da9fe95a3c74e4ab97b1c3672f972
+  checksum: 10c0/824c53ba785ec4f8cba0f96de6b03005983371bfc8a319ff6b6a45402e685c19c4c61578434b059b0cceebad9c40b98432e48b73a018ed3c9cb53359ba910ef0
   languageName: node
   linkType: hard
 
@@ -24655,15 +24645,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar-fs@npm:^2.1.4":
-  version: 2.1.5
-  resolution: "tar-fs@npm:2.1.5"
+"tar-fs@npm:^2.1.5":
+  version: 2.1.6
+  resolution: "tar-fs@npm:2.1.6"
   dependencies:
     chownr: "npm:^1.1.1"
     mkdirp-classic: "npm:^0.5.2"
     pump: "npm:^3.0.0"
     tar-stream: "npm:^2.1.4"
-  checksum: 10c0/b987429214c3ab3be1f439b4e097dc310acf449c35f355956d801f59ef4cfde3b9827797ab2d2f087ed024e459eedc9b3cd860c9190b86e356ba348ade928684
+  checksum: 10c0/c036d5e8644e40eb48c0541855f261093536a60c7458f5a6a8b49a30b815ed7bc46b1263ec4e3b4b214bbd12857c8c3f605be62e44f5897b226ff4680314ac0c
   languageName: node
   linkType: hard
 

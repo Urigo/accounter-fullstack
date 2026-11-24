@@ -66,7 +66,7 @@
     "@graphql-codegen/typescript-operations": "7.0.2",
     "@graphql-codegen/typescript-resolvers": "7.0.1",
     "@graphql-eslint/eslint-plugin": "4.4.2",
-    "@graphql-hive/cli": "0.68.6",
+    "@graphql-hive/cli": "0.68.7",
     "@graphql-inspector/cli": "7.0.8",
     "@graphql-tools/mock": "10.1.4",
     "@parcel/watcher": "2.6.0",
@@ -108,7 +108,7 @@
     "vitest": "5.1.1"
   },
   "resolutions": {
-    "@slonik/pg-driver@npm:^49.10.10": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch",
+    "@slonik/pg-driver@npm:^49.15.0": "patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch",
     "graphql": "16.15.0",
     "xlsx": "npm:@e965/xlsx@0.20.3"
   },
