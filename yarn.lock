@@ -100,7 +100,7 @@ __metadata:
     dotenv: "npm:18.0.10"
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
-    graphql: "npm:16.15.0"
+    graphql: "npm:17.1.0"
     happy-dom: "npm:21.0.4"
     html2canvas-pro: "npm:2.6.4"
     iconv-lite: "npm:0.7.3"
@@ -143,7 +143,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:26.6.6"
     dotenv: "npm:18.0.10"
-    graphql: "npm:16.15.0"
+    graphql: "npm:17.1.0"
     graphql-request: "npm:7.4.0"
     inline-css: "npm:4.0.3"
     playwright: "npm:1.65.1"
@@ -214,7 +214,7 @@ __metadata:
     "@graphql-tools/utils": "npm:13.2.2"
     "@omnigraph/json-schema": "npm:0.112.6"
     bob-the-bundler: "npm:7.0.1"
-    graphql: "npm:16.15.0"
+    graphql: "npm:17.1.0"
     rimraf: "npm:6.1.4"
   languageName: unknown
   linkType: soft
@@ -361,7 +361,7 @@ __metadata:
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.4.0"
     dotenv: "npm:18.0.10"
-    graphql: "npm:16.15.0"
+    graphql: "npm:17.1.0"
     graphql-modules: "npm:3.1.3"
     graphql-scalars: "npm:2.0.1"
     graphql-yoga: "npm:5.24.6"
@@ -11070,7 +11070,7 @@ __metadata:
     eslint-plugin-sonarjs: "npm:4.2.2"
     eslint-plugin-unicorn: "npm:80.0.0"
     globals: "npm:17.14.0"
-    graphql: "npm:16.15.0"
+    graphql: "npm:17.1.0"
     graphql-yoga: "npm:5.24.6"
     husky: "npm:9.1.7"
     lint-staged: "npm:17.6.2"
@@ -16671,10 +16671,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql@npm:16.15.0":
-  version: 16.15.0
-  resolution: "graphql@npm:16.15.0"
-  checksum: 10c0/b97c78a02dab6392cdc492e78290bca479b5881dbeeefaed79cc88128b0e9a810feea043da61c5cd086f1af645dc9c46d61ed5297995031d8542a11c94f7cd0f
+"graphql@npm:17.1.0":
+  version: 17.1.0
+  resolution: "graphql@npm:17.1.0"
+  checksum: 10c0/7bebb1c13c352577c14e10accd38ce51c642bf8e7bfb474c49790c893636f8abf7d61802c47f3ce413703b0a669220c142de9aed67b3e961da3c00d005c9cfd3
   languageName: node
   linkType: hard
 

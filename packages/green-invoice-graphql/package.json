@@ -57,7 +57,7 @@
     "@graphql-hive/logger": "1.2.0",
     "@graphql-mesh/fusion-runtime": "1.15.0",
     "@graphql-mesh/transport-rest": "0.12.5",
-    "graphql": "16.15.0"
+    "graphql": "17.1.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "8.0.0",

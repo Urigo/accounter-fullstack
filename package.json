@@ -94,7 +94,7 @@
     "eslint-plugin-sonarjs": "4.2.2",
     "eslint-plugin-unicorn": "80.0.0",
     "globals": "17.14.0",
-    "graphql": "16.15.0",
+    "graphql": "17.1.0",
     "graphql-yoga": "5.24.6",
     "husky": "9.1.7",
     "lint-staged": "17.6.2",
@@ -109,7 +109,7 @@
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^49.15.0": "patch:@slonik/pg-driver@npm%3A49.15.0#~/.yarn/patches/@slonik-pg-driver-npm-49.15.0-3dbf94ef4a.patch",
-    "graphql": "16.15.0",
+    "graphql": "17.1.0",
     "xlsx": "npm:@e965/xlsx@0.20.3"
   },
   "lint-staged": {
