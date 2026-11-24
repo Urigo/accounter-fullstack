@@ -135,6 +135,27 @@ describe('demo-seed migration check', () => {
     expect(pgState.pools[0]!.end).toHaveBeenCalledOnce();
   });
 
+  // `migration:run` reads the host and port from the shell or the root .env. A command that
+  // named only the database would migrate `accounter_test` on whatever server those name,
+  // which is not necessarily the one this run was pointed at.
+  it('names the server it checked in that command, not only the database', async () => {
+    vi.stubEnv('POSTGRES_HOST', 'localhost');
+    vi.stubEnv('POSTGRES_PORT', '5434');
+    lookup.checkLatestMigration.mockResolvedValue({
+      isLatest: false,
+      latestMigrationName: 'x',
+      errorMessage: 'Latest migration "x" not found in database',
+    });
+
+    await runSetup();
+
+    const printed = warnings.mock.calls.map(call => call.join(' ')).join('\n');
+    expect(printed).toContain(
+      'POSTGRES_HOST=localhost POSTGRES_PORT=5434 POSTGRES_DB=accounter_test yarn workspace',
+    );
+    expect(pgState.pools[0]!.config).toMatchObject({ host: 'localhost', port: 5434 });
+  });
+
   it('closes its pool when the lookup throws', async () => {
     lookup.checkLatestMigration.mockRejectedValue(new Error('boom'));
 

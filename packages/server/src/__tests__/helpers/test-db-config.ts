@@ -10,15 +10,34 @@ import {
 const loadedEnv = config({ path: [`.env`, `../../.env`] });
 
 /**
- * Shared database configuration for test environments
- * Uses environment variables with sensible defaults for local development
+ * The database the test harness owns.
+ *
+ * Every DB-backed test connects to this database, on the server `POSTGRES_HOST` / `POSTGRES_PORT`
+ * name, and never to the one `POSTGRES_DB` names. That one is the developer's own: the dev
+ * server reads and writes it. Tests commit migrations and reference data, and the demo seed
+ * test resets what it reaches, so sharing it meant a test run could change or empty dev data.
+ * It also meant the name of the database under test came from a file nobody re-reads.
+ *
+ * The vitest global setup creates this database when a local server does not have it yet, and
+ * migrates it (`ensureTestDatabase`, `runMigrationsIfNeeded`). CI's Postgres service starts
+ * with a database of the same name, so nothing changes there.
+ *
+ * The name is a constant on purpose. It carries "test", which is what lets the demo seed
+ * accept it by name (`scripts/demo-seed-guard.ts`), and no setting can point it elsewhere.
+ */
+export const TEST_DATABASE_NAME = 'accounter_test';
+
+/**
+ * Shared database configuration for test environments.
+ * The server and the credentials come from the environment, with defaults for local
+ * development. The database does not: see `TEST_DATABASE_NAME`.
  */
 export const testDbConfig: PoolConfig = {
   user: process.env.POSTGRES_USER || 'postgres',
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   host: process.env.POSTGRES_HOST || 'localhost',
   port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-  database: process.env.POSTGRES_DB || 'accounter_test',
+  database: TEST_DATABASE_NAME,
   ssl: process.env.POSTGRES_SSL === '1',
 };
 
