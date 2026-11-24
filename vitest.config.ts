@@ -42,7 +42,13 @@ export default defineConfig({
   test: {
     globals: true,
     alias,
-    exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
+    // `**/.claude/**`: Claude Code keeps its git worktrees in `.claude/worktrees/<name>/`, each a
+    // full checkout of this repo inside the repo folder. Vitest globs with `dot: true`, so
+    // without this entry every `**/*.test.ts` pattern also matches the copies in there, and a
+    // `yarn test` in the main checkout runs another branch's tests against this checkout's
+    // database. One of those copies is the demo seed test, which resets the database it is
+    // pointed at. `scripts/__tests__/vitest-collection.test.ts` holds this in place.
+    exclude: [...defaultExclude, '**/dist/**', '**/build/**', '**/.claude/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
     // `globalSetup` is deliberately NOT set here. It asserts a local Postgres and seeds it,
     // and inherited arrays are merged rather than overridden, so a project cannot opt out of
@@ -53,13 +59,24 @@ export default defineConfig({
         test: {
           name: 'unit',
           globalSetup: ['./scripts/vitest-global-setup.ts'],
-          include: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
+          // Anchored at the two directories that hold this checkout's tests. A pattern that
+          // matches at any depth (`**/*.test.ts`) also matches a second copy of the repo anywhere
+          // below the root: a git worktree, a vendored clone. `.claude/` is excluded above for
+          // every project; anchoring covers a copy that lives elsewhere, outside these two
+          // directories.
+          include: ['{packages,scripts}/**/*.{test,spec}.{ts,tsx}'],
+          // Each entry still starts with `**/`. A copy placed inside `packages/` or `scripts/`
+          // does match the include above, and these keep its database-backed, client and demo
+          // seed tests out; only its plain unit tests get through. They also mean that widening
+          // the include later cannot quietly bring another checkout's database-backed tests back.
           exclude: [
-            'packages/server/src/__tests__/**',
-            'packages/server/src/demo-fixtures/**',
+            '**/packages/server/src/__tests__/**',
+            // The demo seed test resets the database it is pointed at, and only the `demo-seed`
+            // project below runs it. Everything else under demo-fixtures is a plain unit test.
+            '**/packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts',
             '**/*.integration.test.ts',
             // Client tests live in the `client` project below, which runs without a database.
-            'packages/client/**',
+            '**/packages/client/**',
           ],
         },
       },
@@ -89,15 +106,19 @@ export default defineConfig({
             'packages/email-ingestion-gateway/src/**/*.integration.test.ts',
             'packages/scraper-app/src/**/*.integration.test.ts',
           ],
-          exclude: ['packages/server/src/demo-fixtures/**'],
+          // Root-anchored `include` patterns cannot reach a nested checkout, so this project
+          // never had the `unit` problem; the exclude is written at any depth to match it.
+          exclude: ['**/packages/server/src/demo-fixtures/**'],
         },
       },
       {
         test: {
           name: 'demo-seed',
-          globalSetup: ['./scripts/vitest-global-setup.ts'],
+          // The second entry checks that the migrations are current before the seed runs. It
+          // exports `setup()`, which vitest calls for a `globalSetup` module only. Listed under
+          // `setupFiles`, as it used to be, the file was imported and the check never ran.
+          globalSetup: ['./scripts/vitest-global-setup.ts', './scripts/vitest-demo-seed-setup.ts'],
           include: ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
-          setupFiles: ['./scripts/vitest-demo-seed-setup.ts'],
         },
       },
     ],

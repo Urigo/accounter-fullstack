@@ -14,6 +14,8 @@ import { afterAll, describe, expect, it } from 'vitest';
  * - a non-local POSTGRES_HOST is refused without ALLOW_REMOTE_DB=1
  * - so is a blank POSTGRES_HOST when PGHOST is non-local -- `pg` falls back to PGHOST
  * - an opt-in (ALLOW_DEMO_SEED / ALLOW_REMOTE_DB) found in .env is refused outright
+ * - with every opt-in on the command, a database that is not a demo database is still refused,
+ *   by its name (`scripts/demo-seed-guard.ts`), before a connection is attempted
  *
  * Isolation, so these can never reach a real database even if a guard regresses:
  * - each run gets a fresh temp cwd holding its own .env, so the repo root .env is never read
@@ -28,6 +30,8 @@ const registerEsm = join(repoRoot, 'scripts/register-esm.js');
 
 const REMOTE_HOST = 'prod.invalid';
 const UNREACHABLE_LOCAL = { POSTGRES_HOST: 'localhost', POSTGRES_PORT: '1' };
+const BOTH_OPT_INS = { ALLOW_DEMO_SEED: '1', ALLOW_REMOTE_DB: '1' };
+const DNS_FAILURE = /ENOTFOUND|EAI_AGAIN|getaddrinfo/;
 
 const tempDirs: string[] = [];
 
@@ -135,16 +139,91 @@ describe('scripts/seed-demo-data.ts guards', () => {
   });
 
   // The other direction: the staging deploy seeds a deployed database on purpose, with both
-  // opt-ins on its command line. That must still get past the guards -- here as far as the
-  // connection attempt, which fails because the host does not resolve.
-  it('lets command-line opt-ins through to the connection attempt', () => {
+  // opt-ins on its command line and a database named for what it is. That must still get past
+  // the guards -- here as far as the connection attempt, which fails because the host does not
+  // resolve.
+  it('lets command-line opt-ins through to the connection attempt for a staging database', () => {
     const { status, output } = run({
-      env: { ALLOW_DEMO_SEED: '1', ALLOW_REMOTE_DB: '1', POSTGRES_HOST: REMOTE_HOST },
+      env: { ...BOTH_OPT_INS, POSTGRES_HOST: REMOTE_HOST, POSTGRES_DB: 'accounter_staging_db' },
     });
 
     expect(status).not.toBe(0);
-    expect(output).not.toContain('Refusing to run');
-    expect(output).toMatch(/ENOTFOUND|EAI_AGAIN|getaddrinfo/);
+    expect(output).not.toContain('Refusing to');
+    expect(output).toContain('(demo-name)');
+    expect(output).toMatch(DNS_FAILURE);
+  });
+
+  // Both opt-ins are what a staging build command carries, so past them the only thing that
+  // selects the database is POSTGRES_*. The name is checked before anything connects.
+  describe('with both opt-ins on the command, by database name', () => {
+    it('refuses a production database', () => {
+      const { status, output } = run({
+        env: { ...BOTH_OPT_INS, POSTGRES_HOST: REMOTE_HOST, POSTGRES_DB: 'accounter_prod_db' },
+      });
+
+      expect(status).not.toBe(0);
+      expect(output).toContain('the database name "accounter_prod_db" says production');
+      expect(output).not.toMatch(DNS_FAILURE);
+      expect(output).not.toContain('Connected to database');
+    });
+
+    it('refuses a production database that ALLOW_DEMO_SEED_DATABASE names', () => {
+      const { status, output } = run({
+        env: {
+          ...BOTH_OPT_INS,
+          ALLOW_DEMO_SEED_DATABASE: 'accounter_prod_db',
+          POSTGRES_HOST: REMOTE_HOST,
+          POSTGRES_DB: 'accounter_prod_db',
+        },
+      });
+
+      expect(status).not.toBe(0);
+      expect(output).toContain('says production');
+      expect(output).not.toMatch(DNS_FAILURE);
+    });
+
+    it.each([
+      ['a name that says nothing', { POSTGRES_DB: 'accounter' }],
+      ['no database name at all', {}],
+    ])('refuses a remote database with %s', (_label, database) => {
+      const { status, output } = run({
+        env: { ...BOTH_OPT_INS, POSTGRES_HOST: REMOTE_HOST, ...database },
+      });
+
+      expect(status).not.toBe(0);
+      expect(output).toMatch(/nothing marks ".*" as a demo database/);
+      expect(output).not.toMatch(DNS_FAILURE);
+    });
+
+    it('refuses a local database that is not the dev database, such as a local copy of production', () => {
+      const { status, output } = run({
+        env: { ALLOW_DEMO_SEED: '1', ...UNREACHABLE_LOCAL, POSTGRES_DB: 'accounter_legacy' },
+      });
+
+      expect(status).not.toBe(0);
+      expect(output).toContain('nothing marks "accounter_legacy" as a demo database');
+      expect(output).not.toContain('ECONNREFUSED');
+    });
+
+    it('refuses ALLOW_DEMO_SEED_DATABASE set in .env', () => {
+      const { status, output } = run({
+        env: { ALLOW_DEMO_SEED: '1', ...UNREACHABLE_LOCAL, POSTGRES_DB: 'accounter_legacy' },
+        envFile: 'ALLOW_DEMO_SEED_DATABASE=accounter_legacy\n',
+      });
+
+      expect(status).not.toBe(0);
+      expect(output).toContain('ALLOW_DEMO_SEED_DATABASE is set in .env');
+      expect(output).not.toContain('ECONNREFUSED');
+    });
+  });
+
+  // A refusal is the one message that has to be read. It is printed once, without a stack.
+  it('prints a refusal once, as a message and not as a crash', () => {
+    const { output } = run({ env: { ALLOW_DEMO_SEED: '1', POSTGRES_HOST: REMOTE_HOST } });
+
+    expect(output.match(/Refusing to run the demo data seed/g)).toHaveLength(1);
+    expect(output).not.toContain('Fatal seed error');
+    expect(output).not.toMatch(/^\s+at /m);
   });
 });
 

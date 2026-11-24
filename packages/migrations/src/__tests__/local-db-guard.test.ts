@@ -5,6 +5,7 @@ import {
   ENFORCE_LOCAL_DB_ENV,
   PER_COMMAND_OPT_INS,
   assertLocalDatabase,
+  assertLocalDatabaseOnly,
   assertOptInsNotInEnvFile,
   describeDatabaseTarget,
   isLocalDatabaseHost,
@@ -153,7 +154,9 @@ describe('assertLocalDatabase', () => {
     }
     expect(message).toContain('accounter2.postgres.database.azure.com');
     expect(message).toContain(ALLOW_REMOTE_DB_ENV);
-    expect(message).toContain("grep '^POSTGRES' .env");
+    // The hint must not be one that prints POSTGRES_PASSWORD along with the rest.
+    expect(message).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
+    expect(message).not.toContain("grep '^POSTGRES' .env");
   });
 
   it('never leaks a password into the error message', () => {
@@ -173,6 +176,84 @@ describe('assertLocalDatabase', () => {
   });
 });
 
+describe('assertLocalDatabaseOnly', () => {
+  // Every call passes its own `env`, so a PGHOST exported in the shell running the suite
+  // cannot change a result.
+  const messageFor = (target: object, env: NodeJS.ProcessEnv = {}): string => {
+    try {
+      assertLocalDatabaseOnly(target as never, 'the demo seed test', env);
+    } catch (error) {
+      return (error as Error).message;
+    }
+    return '';
+  };
+
+  it('passes for a local target', () => {
+    expect(() => assertLocalDatabaseOnly(LOCAL, 'the demo seed test', {})).not.toThrow();
+  });
+
+  it('treats an absent host as local when PGHOST is unset too, like the rest of the guard', () => {
+    expect(() =>
+      assertLocalDatabaseOnly({ db: 'accounter' }, 'the demo seed test', {}),
+    ).not.toThrow();
+  });
+
+  it('throws for a non-local target and names it', () => {
+    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test', {})).toThrow(
+      'Refusing to run the demo seed test against a non-local database: ' +
+        `${REMOTE.user}@${REMOTE.host}:${REMOTE.port}/${REMOTE.db}`,
+    );
+  });
+
+  it('is not switched off by ALLOW_REMOTE_DB=1, unlike assertLocalDatabase', () => {
+    const optedIn = { [ALLOW_REMOTE_DB_ENV]: '1' };
+
+    expect(() => assertLocalDatabase(REMOTE, 'the test harness', optedIn)).not.toThrow();
+    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test', optedIn)).toThrow(
+      /non-local database/,
+    );
+  });
+
+  it('resolves a blank host through PGHOST, as assertLocalDatabase does', () => {
+    const pgHost = { PGHOST: 'prod.invalid' };
+
+    expect(messageFor({ db: 'accounter' }, pgHost)).toContain(
+      'against a non-local database: prod.invalid/accounter',
+    );
+    expect(messageFor({ host: '  ', db: 'accounter' }, pgHost)).toContain('comes from PGHOST');
+    // An explicit host wins over PGHOST, as it does in pg.
+    expect(messageFor(LOCAL, pgHost)).toBe('');
+    expect(messageFor({ db: 'accounter' }, { PGHOST: 'localhost' })).toBe('');
+    // And no opt-in gets a PGHOST target through either.
+    expect(messageFor({}, { ...pgHost, [ALLOW_REMOTE_DB_ENV]: '1' })).toContain(
+      'non-local database: prod.invalid',
+    );
+  });
+
+  it('says there is no override instead of advertising one', () => {
+    const message = messageFor(REMOTE);
+
+    expect(message).toContain(
+      `${ALLOW_REMOTE_DB_ENV} does not apply here and there is no other override`,
+    );
+    expect(message).not.toContain(`${ALLOW_REMOTE_DB_ENV}=1`);
+  });
+
+  it('points at .env without a command that would print the password', () => {
+    const message = messageFor(REMOTE);
+
+    expect(message).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
+    expect(message).not.toContain("grep '^POSTGRES' .env");
+  });
+
+  it('never leaks a password into the error message', () => {
+    const message = messageFor({ ...REMOTE, password: 'super-secret' });
+
+    expect(message).toContain('non-local database');
+    expect(message).not.toContain('super-secret');
+  });
+});
+
 describe('warnIfRemoteDatabase', () => {
   it('stays silent for a local target', () => {
     const logger = { warn: vi.fn() };
@@ -187,6 +268,15 @@ describe('warnIfRemoteDatabase', () => {
     expect(logger.warn.mock.calls[0]?.[0]).toContain(
       'accounter2.postgres.database.azure.com',
     );
+  });
+
+  it('suggests a way to inspect .env that does not print the password', () => {
+    const logger = { warn: vi.fn() };
+    warnIfRemoteDatabase(REMOTE, 'migration:run', {}, logger);
+
+    const banner = String(logger.warn.mock.calls[0]?.[0]);
+    expect(banner).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
+    expect(banner).not.toContain("grep '^POSTGRES' .env");
   });
 
   it('throws instead of warning when ENFORCE_LOCAL_DB=1', () => {
@@ -293,6 +383,14 @@ describe('assertOptInsNotInEnvFile', () => {
     // A dormant `=0` is one edit away from switching a guard off for every command.
     expect(() => assertOptInsNotInEnvFile({ [ALLOW_REMOTE_DB_ENV]: '0' }, '.env')).toThrow(
       /ALLOW_REMOTE_DB is set/,
+    );
+  });
+
+  it('shows the database-name opt-in as it is written on a command', () => {
+    expect(() =>
+      assertOptInsNotInEnvFile({ ALLOW_DEMO_SEED_DATABASE: 'accounter_perf' }, '.env'),
+    ).toThrow(
+      /ALLOW_DEMO_SEED_DATABASE is set in \.env[\s\S]*ALLOW_DEMO_SEED_DATABASE=<database name> <your command>/,
     );
   });
 

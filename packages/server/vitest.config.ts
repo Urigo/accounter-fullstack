@@ -14,7 +14,16 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
+    // The demo seed test resets the database it is pointed at. It belongs to the `demo-seed`
+    // project of the root config only (`yarn test:demo-seed`). This config is what a run
+    // started inside packages/server picks up (an editor's test runner, `yarn vitest` from
+    // this directory), and "run every test here" must not include it.
+    exclude: [
+      ...defaultExclude,
+      '**/dist/**',
+      '**/build/**',
+      '**/demo-fixtures/__tests__/seed-and-validate.test.ts',
+    ],
     setupFiles: [path.resolve(__dirname, '../../scripts/vitest-setup.ts')],
     globalSetup: [path.resolve(__dirname, '../../scripts/vitest-global-setup.ts')],
   },

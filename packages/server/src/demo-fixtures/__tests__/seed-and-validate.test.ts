@@ -2,10 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import {
-  ALLOW_DEMO_SEED_ENV,
-  ALLOW_REMOTE_DB_ENV,
-} from '../../../../migrations/src/local-db-guard.js';
+import { ALLOW_DEMO_SEED_ENV } from '../../../../migrations/src/local-db-guard.js';
+import { resolveDemoSeedTestEnv } from '../../__tests__/helpers/demo-seed-test-env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,8 +17,8 @@ const __dirname = dirname(__filename);
  * 3. End-to-end data integrity from seed to validation
  *
  * Prerequisites:
- * - Database connection available
- * - ALLOW_DEMO_SEED=1 environment variable set
+ * - A LOCAL database connection (this test resets the database it is pointed at)
+ * - ALLOW_DEMO_SEED=1 environment variable set by whoever runs it
  * - Migrations applied
  *
  * Note: This is a slow test (~10-30 seconds) and should be run separately
@@ -31,6 +29,10 @@ const __dirname = dirname(__filename);
  * plain `yarn vitest` (every project) or an IDE test run enough to wipe whatever database the
  * root .env pointed at -- production, on 2026-11-23. Now the caller's own `ALLOW_DEMO_SEED=1`
  * is required: without it the suite is skipped.
+ *
+ * It belongs to the `demo-seed` vitest project only (`scripts/__tests__/vitest-collection.test.ts`
+ * holds that), and it checks its target itself before it starts anything: the database the
+ * seed would reach has to be local, and nothing overrides that. See `resolveDemoSeedTestEnv`.
  */
 const demoSeedAllowed = process.env.ALLOW_DEMO_SEED === '1';
 
@@ -47,25 +49,16 @@ if (inCI && !demoSeedAllowed) {
   );
 }
 
-/**
- * The environment the seed and validate processes run with: the caller's, minus the
- * remote-database opt-in. This test has no reason to reach a deployed database, so the seed's
- * own guard -- the code that actually connects -- is left with no way to allow one, whatever
- * the caller exported. The seed also refuses an opt-in set in .env, so the file cannot put it
- * back.
- */
-const childEnv: NodeJS.ProcessEnv = { ...process.env };
-delete childEnv[ALLOW_REMOTE_DB_ENV];
-
 describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
   // Increase timeout for this integration test (30 seconds)
   it(
     'seeds demo data and passes validation',
     async () => {
-      // Check for stale migrations before running the test
+      // Set by scripts/vitest-demo-seed-setup.ts, the project's global setup, when the latest
+      // migration is not in the database (or could not be looked up).
       if (process.env.SKIP_DEMO_SEED_STALE_MIGRATIONS === '1') {
         throw new Error(
-          'Demo-seed test failed: migrations are stale. Run: yarn workspace @accounter/migrations migration:run',
+          'Demo-seed test failed: migrations are stale. Run: yarn workspace @accounter-helper/migrations migration:run',
         );
       }
 
@@ -76,6 +69,16 @@ describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
         'packages/server/src/demo-fixtures/validate-demo-data.ts',
       );
       const registerEsmPath = resolve(workspaceRoot, 'scripts/register-esm.js');
+
+      // The environment the seed and validate processes run with: the caller's, minus the
+      // remote-database opt-in. This test has no reason to reach a deployed database, so the
+      // seed's own guard -- the code that actually connects -- is left with no way to allow
+      // one, whatever the caller exported.
+      //
+      // Before that, and before anything is started, this throws unless the database the
+      // children would reach is local. Both children get exactly the environment that was
+      // checked.
+      const childEnv = resolveDemoSeedTestEnv(workspaceRoot);
 
       // Step 1: Run seed script
       const seedExitCode = await new Promise<number>((resolve, reject) => {

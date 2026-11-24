@@ -3,6 +3,8 @@ import pg from 'pg';
 import {
   assertLocalDatabase,
   assertOptInsNotInEnvFile,
+  describeDatabaseTarget,
+  type DatabaseTarget,
 } from '../packages/migrations/src/local-db-guard.js';
 import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
@@ -19,6 +21,11 @@ import { seedVATDefault } from '../packages/server/src/demo-fixtures/helpers/see
 import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js';
 import type { FixtureSpec } from '../packages/server/src/fixtures/fixture-spec.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
+import {
+  assertDemoSeedTarget,
+  DemoSeedRefusedError,
+  resetDemoSeedTables,
+} from './demo-seed-guard.js';
 
 const loadedEnv = config();
 
@@ -183,25 +190,35 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
   return fixture;
 }
 
+/**
+ * Run a guard that lives in another module. What it throws is a refusal, so hand it on as one:
+ * the handler at the bottom of this file prints a refusal once, as a message without a stack.
+ */
+function refusing(guard: () => void): void {
+  try {
+    guard();
+  } catch (error) {
+    throw new DemoSeedRefusedError(error instanceof Error ? error.message : String(error));
+  }
+}
+
 async function seedDemoData() {
-  // 1. Guard checks
+  // 1. Guard checks. Each refusal is thrown and printed once, at the bottom of this file.
   //
   // First, before any gate below reads its opt-in: `config()` above has already copied .env
   // into process.env, so an ALLOW_DEMO_SEED or ALLOW_REMOTE_DB left in that file would satisfy
   // those gates for every run without anyone typing it.
-  assertOptInsNotInEnvFile(loadedEnv.parsed, '.env');
+  refusing(() => assertOptInsNotInEnvFile(loadedEnv.parsed, '.env'));
   // The same for the files test-db-config.ts loaded: it is imported (via fixture-loader) before
   // the `config()` above runs, and it also loads ../../.env, which that call never parses.
-  assertOptInsNotInTestEnvFiles();
+  refusing(() => assertOptInsNotInTestEnvFiles());
 
   if (process.env.NODE_ENV === 'production') {
-    console.error('❌ Refusing to seed demo data in production environment');
-    process.exit(1);
+    throw new DemoSeedRefusedError('Refusing to seed demo data in production environment');
   }
 
   if (process.env.ALLOW_DEMO_SEED !== '1') {
-    console.error('❌ ALLOW_DEMO_SEED=1 required to run demo seed');
-    process.exit(1);
+    throw new DemoSeedRefusedError('ALLOW_DEMO_SEED=1 required to run demo seed');
   }
 
   // Neither gate above says anything about *which* database POSTGRES_* points at, and both
@@ -213,14 +230,16 @@ async function seedDemoData() {
   // (packages/server/docs/demo-staging-guide.md). A new staging or preview environment failing
   // its first deploy here is the intended cost -- a deploy that fails is recoverable; a
   // database that was truncated is not.
-  assertLocalDatabase(
-    {
-      host: process.env.POSTGRES_HOST,
-      port: process.env.POSTGRES_PORT,
-      db: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-    },
-    'the demo data seed',
+  refusing(() =>
+    assertLocalDatabase(
+      {
+        host: process.env.POSTGRES_HOST,
+        port: process.env.POSTGRES_PORT,
+        db: process.env.POSTGRES_DB,
+        user: process.env.POSTGRES_USER,
+      },
+      'the demo data seed',
+    ),
   );
 
   const client = new pg.Client({
@@ -231,6 +250,30 @@ async function seedDemoData() {
     database: process.env.POSTGRES_DB,
     ssl: process.env.POSTGRES_SSL === '1',
   });
+
+  // Constructing the client opens nothing. The target is read back from it rather than from
+  // POSTGRES_* on purpose: node-postgres fills an unset host or database from PGHOST /
+  // PGDATABASE and its own defaults, and the checks below have to judge the database this
+  // client will actually reach.
+  const target: DatabaseTarget = {
+    host: client.host,
+    port: client.port,
+    db: client.database,
+    user: client.user,
+  };
+
+  // The gates above settle whether the seed may run and whether it may leave this machine.
+  // None of them says which database it is about to empty: with both opt-ins on the command,
+  // as the staging deploy has them, every POSTGRES_* target gets this far, a production one
+  // included. And a local host is no better a clue, since a copy of production restored for
+  // measuring sits on localhost too.
+  //
+  // So refuse a database that is not a demo database, before any connection is opened. The rule
+  // (scripts/demo-seed-guard.ts) is on the database name: a name that says production is
+  // refused whatever is set, a name that says staging, demo, test or preview passes, and any
+  // other database has to be confirmed by its exact name for this one command.
+  const verdict = assertDemoSeedTarget(target, process.env);
+  console.log(`✅ Demo seed target: ${describeDatabaseTarget(target)} (${verdict.because})`);
 
   try {
     await client.connect();
@@ -262,24 +305,13 @@ async function seedDemoData() {
     // wiped rather than merely un-reseeded.
     await client.query(`SELECT accounter_schema.get_current_business_id()`);
 
-    // 2. Destructive reset (domain tables only; preserve schema/migrations/countries)
+    // 2. Destructive reset (domain tables only; preserve schema/migrations/countries).
+    //
+    // The TRUNCATE itself is in resetDemoSeedTables, which first asks the server which database
+    // this connection is on and applies the same rule to that name. Do not issue a TRUNCATE
+    // from this file: that function is the only path to one.
     console.log('🧹 Clearing existing demo data...');
-    await client.query(`
-      TRUNCATE TABLE accounter_schema.ledger_records,
-                     accounter_schema.documents,
-                     accounter_schema.transactions,
-                     accounter_schema.charges,
-                     accounter_schema.financial_accounts_tax_categories,
-                     accounter_schema.financial_accounts,
-                     accounter_schema.invitations,
-                     accounter_schema.business_users,
-                     accounter_schema.tags,
-                     accounter_schema.tax_categories,
-                     accounter_schema.businesses,
-                     accounter_schema.user_context,
-                     accounter_schema.financial_entities
-      RESTART IDENTITY CASCADE;
-    `);
+    await resetDemoSeedTables(client, target, process.env);
     console.log('✅ Domain tables cleared');
 
     // 3. Seed foundation data
@@ -369,6 +401,11 @@ async function seedDemoData() {
 
     console.log('✅ Demo data seed complete');
   } catch (error) {
+    if (error instanceof DemoSeedRefusedError) {
+      // The reset refused the connected database. Nothing was changed and nothing failed, so
+      // let it reach the handler below as the refusal it is instead of as a wrapped crash.
+      throw error;
+    }
     console.error('❌ Seed failed:');
     if (error instanceof DemoSeedError) {
       console.error('Message:', error.message);
@@ -385,17 +422,26 @@ async function seedDemoData() {
   }
 }
 
-seedDemoData().catch(error => {
-  console.error('❌ Fatal seed error');
-  console.error('Error object:', error);
-  console.error('Error type:', typeof error);
-  if (error instanceof DemoSeedError) {
-    console.error('Stack:', error.stack);
-  } else if (error instanceof Error) {
-    console.error('Message:', error.message);
-    console.error('Stack:', error.stack);
+/**
+ * The run. It starts when this file is loaded, as it always has; the promise is exported only
+ * so `scripts/__tests__/seed-demo-data.test.ts` can wait for it to finish.
+ */
+export const demoSeedRun = seedDemoData().catch(error => {
+  if (error instanceof DemoSeedRefusedError) {
+    // A refusal is an answer, not a crash: print the message and leave out the stack trace.
+    console.error(`❌ ${error.message}`);
   } else {
-    console.error('Unknown error:', error);
+    console.error('❌ Fatal seed error');
+    console.error('Error object:', error);
+    console.error('Error type:', typeof error);
+    if (error instanceof DemoSeedError) {
+      console.error('Stack:', error.stack);
+    } else if (error instanceof Error) {
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+    } else {
+      console.error('Unknown error:', error);
+    }
   }
   process.exit(1);
 });
