@@ -229,6 +229,25 @@ mean to run it against a deployed database, add `ALLOW_REMOTE_DB=1` to that one 
 Never put them in a shell profile. In a `.env` file they are refused: tests and seeds stop with an
 error until the line is removed.
 
+### Claude Code sessions
+
+`.claude/settings.json` adds three things for agent sessions in this repo, so that an agent is never
+what points a command at a deployed database:
+
+- `ENFORCE_LOCAL_DB=1` is set in the session's environment.
+- Env files cannot be read or edited. The templates can. Inside the session's own folder that is
+  every file named `.env*` or `.dev.vars*`, apart from `.env.template`, `.env.example` and
+  `.dev.vars.example`. Outside it, where a session in a git worktree finds the main checkout's
+  files, it is the usual names only: `.env`, `.env.local`, `.env.*.local`, `.env.test`,
+  `.env.development`, `.env.staging`, `.env.production` and `.dev.vars`. The rules stop Claude's
+  file tools and a shell command that names the file, such as `cat` or `grep`. They do not stop a
+  script that opens the file itself.
+- A command that sets `ALLOW_REMOTE_DB`, `ALLOW_DEMO_SEED` or `ALLOW_DEMO_SEED_DATABASE` waits for a
+  person to confirm it (`.claude/hooks/ask-before-db-opt-in.mjs`). Where nobody can be asked, as in
+  `claude -p` or `dontAsk` mode, it is refused instead.
+
+They load when a session starts, so a session that was already open keeps its earlier settings.
+
 ## Miscellaneous
 
 ### Multiple Bank Branches
