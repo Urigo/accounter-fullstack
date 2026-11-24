@@ -57,6 +57,28 @@ describe('normalizeText (SPEC §4.3)', () => {
     expect(normalizeText('a\r\nb')).toBe('a\r\nb');
   });
 
+  it.each([
+    ['trailing LF', 'abc\n'],
+    ['leading VT', '\u000Babc'],
+    ['trailing CR', 'abc\r'],
+    ['leading FF', '\u000Cabc'],
+    ['trailing BOM', 'abc\uFEFF'],
+    ['leading line separator', '\u2028abc'],
+    ['trailing em space', 'abc\u2003'],
+    ['leading ideographic space', '\u3000abc'],
+  ])('trims only spaces: keeps a %s for validation to report', (_name, value) => {
+    expect(normalizeText(value)).toBe(value);
+    expect(normalizeText(` ${value} `)).toBe(value);
+  });
+
+  it('removes bidi controls before NFC, so the result is NFC and idempotent', () => {
+    // shin, shin dot, RLM, qamats: the RLM blocked canonical reordering of the two marks.
+    const once = normalizeText('\u05E9\u05C1\u200F\u05B8');
+    expect(once).toBe('\u05E9\u05C1\u05B8'.normalize('NFC'));
+    expect(once).toBe(once.normalize('NFC'));
+    expect(normalizeText(once)).toBe(once);
+  });
+
   it('returns an empty string for whitespace-only input', () => {
     expect(normalizeText(' \t\u00A0\u200F ')).toBe('');
   });

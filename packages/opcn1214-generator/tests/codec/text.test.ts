@@ -104,6 +104,17 @@ describe('text and hebrewText', () => {
     expect(decode('text', '  a b  ', 'alphanumeric')).toBe('a b');
   });
 
+  it.each(['  abc\n', '\u000Babc  ', '  abc\u00A0', '\tabc  '])(
+    'decoding trims only spaces: %j keeps its other whitespace',
+    raw => {
+      expect(decode('text', raw, 'alphanumeric')).toBe(raw.replaceAll(/^ +| +$/g, ''));
+    },
+  );
+
+  it('whitespace other than spaces is not blank', () => {
+    expect(decode('text', '\t\t', 'alphanumeric')).toBe('\t\t');
+  });
+
   it.each<[Kind, Primitive]>([
     ['text', 'abcdefg'],
     ['hebrewText', 'אבגדהוז'],
@@ -138,11 +149,23 @@ describe('date', () => {
     expect(decode('date', ' '.repeat(10), 'alphanumeric')).toBeUndefined();
   });
 
-  it.each(['2024-12-31', '2024-02-29', '2023-01-01', '1999-11-30'])('round trip %s', value => {
-    const fieldShape = shape('date', 10, 'alphanumeric');
-    const codec = codecFor('date');
-    expect(codec.decode(codec.encode(value, fieldShape), fieldShape)).toBe(value);
-  });
+  it.each(['\t'.repeat(10), '\u00A0'.repeat(10)])(
+    'blank means spaces only: %j throws CodecDecodeError date at offset 0',
+    raw => {
+      const error = decodeError(() => decode('date', raw, 'alphanumeric'));
+      expect(error.reason).toBe('date');
+      expect(error.offset).toBe(0);
+    },
+  );
+
+  it.each(['2024-12-31', '2024-02-29', '2000-02-29', '2023-01-01', '1999-11-30'])(
+    'round trip %s',
+    value => {
+      const fieldShape = shape('date', 10, 'alphanumeric');
+      const codec = codecFor('date');
+      expect(codec.decode(codec.encode(value, fieldShape), fieldShape)).toBe(value);
+    },
+  );
 
   it.each<Primitive>([
     '2023-02-29',
@@ -165,6 +188,7 @@ describe('date', () => {
     ['2024-12-31', 2],
     ['00/00/0000', 0],
     ['29/02/2023', 0],
+    ['29/02/1900', 0],
     ['31/04/2024', 0],
     ['01/13/2024', 0],
     ['0000000000', 2],

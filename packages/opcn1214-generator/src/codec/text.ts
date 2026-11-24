@@ -4,9 +4,11 @@ import { blank, checkLength, invalid } from './numeric.js';
 import { padAlphanumeric } from './padding.js';
 import type { Codec } from './types.js';
 
+const EDGE_SPACES = /^ +| +$/g;
+
 /**
  * text, hebrewText: the value is already normalized (SPEC §4.3) and validated (first Hebrew letter,
- * charset); the codec only pads it. Decoding trims the padding spaces (SPEC §8.2 step 4).
+ * charset); the codec only pads it. Decoding trims the padding spaces (spaces only; SPEC §8.2 step 4).
  */
 const textCodec: Codec = {
   encode(value, shape) {
@@ -20,7 +22,9 @@ const textCodec: Codec = {
   },
   decode(raw, shape) {
     checkLength(raw, shape);
-    const text = raw.trim();
+    // Padding is the space character only; trim() would also drop control characters and other
+    // whitespace that validation must see.
+    const text = raw.replaceAll(EDGE_SPACES, '');
     return text === '' ? undefined : text;
   },
 };

@@ -44,7 +44,8 @@ const dateCodec: Codec = {
   },
   decode(raw, shape) {
     checkLength(raw, shape);
-    if (shape.type === 'alphanumeric' && raw.trim() === '') {
+    // Blank means spaces only (SPEC §8.2 step 4); other whitespace is not a date.
+    if (shape.type === 'alphanumeric' && raw === ' '.repeat(raw.length)) {
       return undefined;
     }
     for (let index = 0; index < FILE_DATE_PATTERN.length; index++) {
