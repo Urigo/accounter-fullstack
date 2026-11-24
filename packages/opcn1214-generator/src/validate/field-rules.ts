@@ -116,11 +116,11 @@ function valueFindings(field: FieldDef, value: Primitive, name: string): Finding
         expected: `at most ${width} characters`,
       });
     }
-    const invalid = chars.find(char => !isAllowedTextChar(char));
-    if (invalid !== undefined) {
+    const invalid = chars.findIndex(char => !isAllowedTextChar(char));
+    if (invalid !== -1) {
       findings.push({
         ruleId: 'field.charset',
-        message: `${name} contains ${codePoint(invalid)}, a control character or a character outside windows-1255.`,
+        message: `${name} contains ${codePoint(chars[invalid] ?? '')} at character ${invalid + 1}, a control character or a character outside windows-1255.`,
         expected: 'windows-1255 characters without control characters',
       });
     }

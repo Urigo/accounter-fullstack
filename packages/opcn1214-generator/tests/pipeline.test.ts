@@ -34,16 +34,50 @@ describe('runPipeline', () => {
     });
 
     it.each([
-      ['a missing tax year', { company: {} }],
-      ['a string tax year', { taxYear: '2024' }],
-      ['a non-object input', null],
-      ['a non-object input', 'report'],
-    ])('reports %s', (_, input) => {
+      ['a missing tax year', { company: {} }, 'Tax year undefined'],
+      ['a string tax year', { taxYear: '2024' }, 'Tax year "2024"'],
+      ['a non-object input', null, 'Tax year undefined'],
+      ['a non-object input', 'report', 'Tax year undefined'],
+    ])('reports %s', (_, input, shown) => {
       const { report, issues } = runPipeline(input, OPTIONS);
       expect(report).toBeUndefined();
       expect(issues).toEqual([
-        expect.objectContaining({ ruleId: 'struct.taxYear.unsupported', path: 'taxYear' }),
+        expect.objectContaining({
+          ruleId: 'struct.taxYear.unsupported',
+          path: 'taxYear',
+          message: `${shown} is not supported (supported: 2024, 2025).`,
+        }),
       ]);
+    });
+  });
+
+  describe('year stage (struct.taxYear.provisionalLayout)', () => {
+    it('warns once that a 2025 report uses the provisional 2024 layout', () => {
+      const { report, issues } = runPipeline(minimalInput({ taxYear: 2025 }), OPTIONS);
+      expect(report).toBeDefined();
+      expect(issues).toEqual([
+        {
+          ruleId: 'struct.taxYear.provisionalLayout',
+          severity: 'warning',
+          message:
+            'Tax year 2025 has no SHAAM layout of its own yet: the report uses the 2024 layout and is provisional (SPEC §14).',
+          path: 'taxYear',
+          value: 2025,
+          expected: 'a tax year with its own layout',
+        },
+      ]);
+    });
+
+    it('does not stop the other stages', () => {
+      const input = minimalInput({ taxYear: 2025, company: { registeredName: undefined } });
+      expect(runPipeline(input, OPTIONS).issues.map(issue => issue.ruleId)).toEqual([
+        'struct.taxYear.provisionalLayout',
+        'field.required',
+      ]);
+    });
+
+    it('does not warn for a year with its own layout', () => {
+      expect(runPipeline(minimalInput({ taxYear: 2024 }), OPTIONS).issues).toEqual([]);
     });
   });
 });

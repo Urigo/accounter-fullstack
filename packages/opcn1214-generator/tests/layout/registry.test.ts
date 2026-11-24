@@ -1,5 +1,5 @@
 import { Opcn1214UnsupportedYearError } from '../../src/errors.js';
-import { getLayout, supportedTaxYears } from '../../src/layout/registry.js';
+import { getLayout, provisionalBaseYear, supportedTaxYears } from '../../src/layout/registry.js';
 
 describe('layout registry', () => {
   it('supports the tax years 2024 and 2025', () => {
@@ -18,6 +18,13 @@ describe('layout registry', () => {
     expect(layout2025.records).toBe(layout2024.records);
     expect(layout2025.countries).toBe(layout2024.countries);
     expect(layout2025.limits).toBe(layout2024.limits);
+  });
+
+  it('marks 2025 as provisional on the 2024 layout, and only 2025 (SPEC §14)', () => {
+    expect(supportedTaxYears().map(taxYear => [taxYear, provisionalBaseYear(taxYear)])).toEqual([
+      [2024, undefined],
+      [2025, 2024],
+    ]);
   });
 
   it.each([2023, 2026])('throws Opcn1214UnsupportedYearError for %i', taxYear => {

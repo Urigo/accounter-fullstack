@@ -24,6 +24,14 @@ export const RULES = [
     description: 'taxYear is not one of supportedTaxYears().',
   },
   {
+    id: 'struct.taxYear.provisionalLayout',
+    severity: 'warning',
+    source: 'derived',
+    scope: 'input',
+    description:
+      "taxYear has no SHAAM layout of its own yet and reuses an earlier year's layout (2025 → 2024, SPEC §14): the report is provisional.",
+  },
+  {
     id: 'field.required',
     severity: 'error',
     source: 'spec',

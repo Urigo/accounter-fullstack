@@ -79,6 +79,16 @@ describe('errors', () => {
         'Unsupported tax year 2023: struct.taxYear.unsupported at taxYear',
       );
     });
+
+    it('formats a non-number tax year in the heading like the issue does', () => {
+      const error = new Opcn1214UnsupportedYearError('2024' as unknown as number, [2024, 2025]);
+      expect(error.message).toBe(
+        'Unsupported tax year "2024": struct.taxYear.unsupported at taxYear',
+      );
+      expect(error.issues[0]?.message).toBe(
+        'Tax year "2024" is not supported (supported: 2024, 2025).',
+      );
+    });
   });
 
   describe('Opcn1214InternalError', () => {

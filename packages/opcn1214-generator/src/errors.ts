@@ -67,7 +67,7 @@ export class Opcn1214UnsupportedYearError extends Opcn1214Error {
 
   constructor(taxYear: number, supportedYears: readonly number[], options?: ErrorOptions) {
     super(
-      `Unsupported tax year ${taxYear}`,
+      `Unsupported tax year ${showTaxYear(taxYear)}`,
       [unsupportedTaxYearIssue(taxYear, supportedYears)],
       options,
     );

@@ -168,16 +168,24 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
 
   describe('field.charset', () => {
     it.each([
-      ['an emoji', 'חברה \u{1F600} בע"מ'],
-      ['a carriage return', 'חברה\rבע"מ'],
-      ['a NUL', 'חברה\u0000'],
-    ])('reports %s in a text field', (_, registeredName) => {
+      ['an emoji', 'חברה \u{1F600} בע"מ', 'U+1F600 at character 6'],
+      ['a carriage return', 'חברה\rבע"מ', 'U+000D at character 5'],
+      ['a NUL', 'חברה\u0000', 'U+0000 at character 5'],
+    ])('reports %s in a text field, with its position', (_, registeredName, located) => {
       const input = minimalInput({ company: { registeredName } });
       expect(issuesOf(input, 'field.charset')).toEqual([
         expect.objectContaining({
           path: 'company.registeredName',
           field: { position: 175, length: 50, nameHe: 'שם רשום' },
+          message: expect.stringContaining(`contains ${located},`),
         }),
+      ]);
+    });
+
+    it('reports the first offending character only', () => {
+      const input = minimalInput({ company: { registeredName: 'א\u0001ב\u0002' } });
+      expect(issuesOf(input, 'field.charset').map(issue => issue.message)).toEqual([
+        expect.stringContaining('U+0001 at character 2,'),
       ]);
     });
 

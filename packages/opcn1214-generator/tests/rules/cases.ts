@@ -21,6 +21,12 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     pass: () => minimalInput({ taxYear: 2025 }),
     path: 'taxYear',
   },
+  'struct.taxYear.provisionalLayout': {
+    kind: 'input',
+    fail: () => minimalInput({ taxYear: 2025 }),
+    pass: () => minimalInput({ taxYear: 2024 }),
+    path: 'taxYear',
+  },
   'field.required': {
     kind: 'input',
     fail: () => minimalInput({ company: { registeredName: undefined } }),

@@ -12,6 +12,12 @@ const LAYOUTS: ReadonlyMap<number, YearLayout> = new Map<number, YearLayout>([
 
 const SUPPORTED_TAX_YEARS: readonly number[] = Object.freeze([...LAYOUTS.keys()]);
 
+/**
+ * Tax year → the year whose layout it reuses until SHAAM's own specification for it is added
+ * (SPEC §14). Reports of these years are provisional (`struct.taxYear.provisionalLayout`).
+ */
+const PROVISIONAL_BASE_YEARS: ReadonlyMap<number, number> = new Map([[2025, 2024]]);
+
 /** The tax years with a layout, ascending. */
 export function supportedTaxYears(): readonly number[] {
   return SUPPORTED_TAX_YEARS;
@@ -24,4 +30,9 @@ export function getLayout(taxYear: number): YearLayout {
     throw new Opcn1214UnsupportedYearError(taxYear, SUPPORTED_TAX_YEARS);
   }
   return layout;
+}
+
+/** The year whose layout `taxYear` reuses provisionally (SPEC §14), or undefined. */
+export function provisionalBaseYear(taxYear: number): number | undefined {
+  return PROVISIONAL_BASE_YEARS.get(taxYear);
 }
