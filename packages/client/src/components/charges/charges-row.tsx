@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { flexRender, type Row } from '@tanstack/react-table';
 import {
@@ -55,6 +55,16 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
   // refresh, but its id is stable, which is what the registry keys on.
   useRegisterChargeRefresh(row.original.id, refetchCharge);
 
+  // The expansion loads the charge's documents, ledger, etc. through a query of its own — in
+  // expand-all mode a batched one that a row refetch doesn't reach. Actions rendered in the row's
+  // cells (a drag & drop upload, the actions menu) bump this key so an open expansion refetches too.
+  // The expansion's own mutations already refetch it, so it gets the plain row refetch.
+  const [extensionRefreshKey, setExtensionRefreshKey] = useState(0);
+  const refetchChargeAndExtension = useCallback((): void => {
+    refetchCharge();
+    setExtensionRefreshKey(key => key + 1);
+  }, [refetchCharge]);
+
   const dropCharge = useCallback((): void => {
     removeCharge(row.original.id);
   }, [removeCharge, row.original.id]);
@@ -83,7 +93,7 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
   // converted row whose handlers are inert stubs, so the re-threading below has
   // to happen on every render — not just on mount.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
-  row.original.onChange = refetchCharge;
+  row.original.onChange = refetchChargeAndExtension;
   // Same threading for the delete path — the row is dropped from the table instead of refetched.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onDelete = dropCharge;
@@ -117,6 +127,7 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
                 <ChargeExtendedInfo
                   chargeID={row.original.id}
                   onChange={refetchCharge}
+                  refreshKey={extensionRefreshKey}
                   onChargeDeleted={removeCharge}
                   fetching={fetching}
                 />

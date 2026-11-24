@@ -132,7 +132,7 @@ export interface ChargeRow {
   tags: Omit<TagsProps, 'onChange'>;
   taxCategory?: TaxCategoryProps;
   businessTrip?: BusinessTripProps;
-  moreInfo: MoreInfoProps;
+  moreInfo: Omit<MoreInfoProps, 'onChange'>;
   accountantApproval: AccountantStatus;
 }
 

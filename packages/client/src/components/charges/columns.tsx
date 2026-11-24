@@ -119,7 +119,7 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ChargeRow>[] = [
   {
     accessorKey: 'moreInfo',
     header: ({ column }) => <DataTableColumnHeader column={column} title="More Info" />,
-    cell: ({ row }) => <MoreInfo {...row.original.moreInfo} />,
+    cell: ({ row }) => <MoreInfo {...row.original.moreInfo} onChange={row.original.onChange} />,
     enableSorting: false,
   },
   {

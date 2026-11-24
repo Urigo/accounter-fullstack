@@ -19,8 +19,11 @@ export const UploadDocuments = ({ chargeId, closeModal, onChange }: Props): Reac
     uploadMultipleDocuments({
       documents: value,
       chargeId,
-    }).then(() => {
-      onChange();
+    }).then(uploaded => {
+      // Failures are already toasted by the hook; only refresh when a document landed on the charge.
+      if (uploaded && uploaded.length > 0) {
+        onChange();
+      }
       closeModal();
     });
   }, [uploadMultipleDocuments, closeModal, onChange, value, chargeId]);
