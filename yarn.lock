@@ -209,7 +209,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:7.0.2"
     "@graphql-hive/logger": "npm:1.2.0"
     "@graphql-mesh/compose-cli": "npm:1.8.4"
-    "@graphql-mesh/fusion-runtime": "npm:1.14.2"
+    "@graphql-mesh/fusion-runtime": "npm:1.15.0"
     "@graphql-mesh/transport-rest": "npm:0.12.5"
     "@graphql-tools/utils": "npm:13.2.2"
     "@omnigraph/json-schema": "npm:0.112.6"
@@ -3048,9 +3048,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/fusion-runtime@npm:1.14.2":
-  version: 1.14.2
-  resolution: "@graphql-mesh/fusion-runtime@npm:1.14.2"
+"@graphql-mesh/fusion-runtime@npm:1.15.0":
+  version: 1.15.0
+  resolution: "@graphql-mesh/fusion-runtime@npm:1.15.0"
   dependencies:
     "@envelop/core": "npm:^5.4.0"
     "@envelop/instrumentation": "npm:^1.0.0"
@@ -3074,7 +3074,7 @@ __metadata:
     tslib: "npm:^2.8.1"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/4dab26c541c0aa4f7a2980a3fc723a51a632872f3df0a0d81d9e7bd9f87b7073adadef3f77739f38d81cbf1dde5cb2e1c6e73caf161e88cf5d4337d46ebb8fe8
+  checksum: 10c0/8e5606e74c5bd99ee686ad89250becc57406a591926c52722e06dcfd0e7c3fb9c9217a6dad2d40b3dca1ee9110ebe886c1b5f69bed2d6a1cbc17d6b0872de903
   languageName: node
   linkType: hard
 
