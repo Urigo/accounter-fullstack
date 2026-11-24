@@ -49,7 +49,8 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ChargeRow>[] = [
         <UpdateAccountantStatus
           chargeId={row.original.id}
           value={row.original.accountantApproval}
-          onChange={row.original.onChange}
+          // Approving changes the status alone, and the client cache writes it onto the charge.
+          onChange={row.original.onSaved}
           // Once the accountant status is set, the charge is handled — collapse its detail panel so
           // the table returns to the next charge that still needs attention.
           onStatusChange={() => row.toggleExpanded(false)}
@@ -101,7 +102,8 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ChargeRow>[] = [
   {
     accessorKey: 'tags',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tags" />,
-    cell: ({ row }) => <Tags {...row.original.tags} onChange={row.original.onChange} />,
+    // The save's result carries the row, and tags do not feed the deferred ledger validation.
+    cell: ({ row }) => <Tags {...row.original.tags} onChange={row.original.onSaved} />,
     enableSorting: false,
   },
   {

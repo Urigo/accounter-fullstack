@@ -2,6 +2,14 @@ import { useMemo, type ReactElement } from 'react';
 import { getChargeTypeIcon, getChargeTypeName, type ChargeType } from '../../../helpers/index.js';
 import { Tooltip } from '../../common/index.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableTypeFields on Charge {
+    id
+    __typename
+  }
+`;
+
 type Props = {
   type: ChargeType;
 };

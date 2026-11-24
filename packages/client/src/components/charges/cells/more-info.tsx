@@ -3,6 +3,23 @@ import type { ChargeType } from '../../../helpers/index.js';
 import { DragFile, ListCapsule } from '../../common/index.js';
 import { Indicator } from '../../ui/indicator.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableMoreInfoFields on Charge {
+    id
+    metadata {
+      transactionsCount
+      documentsCount
+      ledgerCount
+      miscExpensesCount
+      depreciationRecordsCount
+    }
+    validationData {
+      missingInfo
+    }
+  }
+`;
+
 export type MoreInfoProps = {
   chargeId: string;
   type: ChargeType;

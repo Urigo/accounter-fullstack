@@ -18,6 +18,12 @@ React SPA built with Vite, urql (GraphQL), shadcn/ui, and Tailwind CSS.
 - Queries: use `useQuery` from urql directly in components.
 - Mutations: wrap in a custom hook under `src/hooks/` that handles `useMutation`, error handling via
   `handleCommonErrors`, and toast notifications. Components consume the simplified return value.
+- Client cache: there is one, a normalized cache (Graphcache), but only for the operations listed in
+  `CACHED_OPERATIONS` in `src/providers/urql-cache.ts` (the All Charges list and the charge edits
+  made from a row). Every other operation is uncached: a query always goes to the network, and a
+  screen refetches after its own mutations. That file says what an operation needs before it is
+  added. Charge mutations return `ChargeMutationResultFields`, which is how a row updates without a
+  refetch.
 - Mutation dedupe: a mutation that creates records, reaches an external service (Green Invoice,
   Auth0, Cloudinary) or costs money (OCR) passes `dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS }`
   to `useApiMutation` (constant from `src/helpers/mutation-dedupe.ts`), so an accidental repeat with

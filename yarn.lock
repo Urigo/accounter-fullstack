@@ -86,6 +86,7 @@ __metadata:
     "@types/react-dom": "npm:19.3.0"
     "@urql/devtools": "npm:2.0.3"
     "@urql/exchange-auth": "npm:3.0.0"
+    "@urql/exchange-graphcache": "npm:9.0.2"
     "@urql/exchange-retry": "npm:2.0.0"
     "@vitejs/plugin-react": "npm:6.3.0"
     autoprefixer: "npm:10.7.0"
@@ -130,6 +131,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:8.3.8"
     vite-plugin-node-polyfills: "npm:0.28.0"
+    wonka: "npm:6.3.6"
     wrangler: "npm:4.166.0"
     zod: "npm:4.6.7"
     zustand: "npm:5.1.0"
@@ -2380,6 +2382,18 @@ __metadata:
   peerDependencies:
     graphql: ^16.0.0 || ^17.0.0
   checksum: 10c0/d456532dd243cc5d6918063b935dd58b0c1f76d6254335212bc9f185109633882b7a4d95984d2b5f5fff03f6ace6ccfdde9feca43b74e3768df162a1c2c1a1e8
+  languageName: node
+  linkType: hard
+
+"@graphql-codegen/fragment-matcher@npm:8.0.0":
+  version: 8.0.0
+  resolution: "@graphql-codegen/fragment-matcher@npm:8.0.0"
+  dependencies:
+    "@graphql-codegen/plugin-helpers": "npm:^8.0.0"
+    tslib: "npm:^2.8.0"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/7fcac433d0fdeb219386882a52ee2370731f9829ac3885a6321f16cd73519b0d9ef4691faac36a63e8a1cbbf9cb00b4e309ccb1b2c172bea202afe280852e4ba
   languageName: node
   linkType: hard
 
@@ -10791,6 +10805,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@urql/exchange-graphcache@npm:9.0.2":
+  version: 9.0.2
+  resolution: "@urql/exchange-graphcache@npm:9.0.2"
+  dependencies:
+    "@0no-co/graphql.web": "npm:^1.0.13"
+    "@urql/core": "npm:^6.0.3"
+    wonka: "npm:^6.3.2"
+  peerDependencies:
+    "@urql/core": ^6.0.0
+  checksum: 10c0/338c54b572bc277f8fa7a8f100e146f60f2bbf2e2ed3d5a7767951b19e46543703a7fd30646cff9dbb633790e82e040afff29c64d25e42d01ad4eff768eefcef
+  languageName: node
+  linkType: hard
+
 "@urql/exchange-retry@npm:2.0.0":
   version: 2.0.0
   resolution: "@urql/exchange-retry@npm:2.0.0"
@@ -11105,6 +11132,7 @@ __metadata:
     "@eslint/js": "npm:10.0.1"
     "@graphql-codegen/cli": "npm:8.0.0"
     "@graphql-codegen/client-preset": "npm:7.0.0"
+    "@graphql-codegen/fragment-matcher": "npm:8.0.0"
     "@graphql-codegen/graphql-modules-preset": "npm:7.0.0"
     "@graphql-codegen/schema-ast": "npm:7.0.0"
     "@graphql-codegen/typescript": "npm:7.0.1"
@@ -11115,6 +11143,7 @@ __metadata:
     "@graphql-hive/cli": "npm:0.68.7"
     "@graphql-inspector/cli": "npm:7.0.8"
     "@graphql-tools/mock": "npm:10.1.4"
+    "@graphql-yoga/plugin-defer-stream": "npm:3.24.6"
     "@parcel/watcher": "npm:2.6.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
@@ -26203,7 +26232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wonka@npm:>= 4.0.9, wonka@npm:^6.3.2":
+"wonka@npm:6.3.6, wonka@npm:>= 4.0.9, wonka@npm:^6.3.2":
   version: 6.3.6
   resolution: "wonka@npm:6.3.6"
   checksum: 10c0/a8887a7766cf9519b4f80b43842fe1b6575a0f5edf397c5a32c267185bd999af9d3c42d91d6d7cd86d3ec89fdc5f8909bb542004d184fcaad794d25e821ff70d

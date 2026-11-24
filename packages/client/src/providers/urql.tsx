@@ -15,6 +15,7 @@ import { retryExchange } from '@urql/exchange-retry';
 import { resetMutationDedupe } from '../helpers/mutation-dedupe.js';
 import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
+import { chargesCacheExchange } from './urql-cache.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
 export type TokenCacheMode = 'on' | 'off';
@@ -294,10 +295,11 @@ export function getUrqlClient(): Client {
           handleUrqlError(result);
         },
       }),
-      // `cacheExchange` belongs here, between the error handler and auth, when
-      // normalized caching lands. Nothing occupies the slot today: passing an
-      // explicit `exchanges` array means urql installs no cache of its own.
-
+      // The normalized cache, between the error handler and auth. It handles only the
+      // operations `urql-cache.ts` lists (the charges list, for now); every other operation
+      // passes straight through and is not cached at all, since passing an explicit
+      // `exchanges` array means urql installs no cache of its own.
+      chargesCacheExchange(),
       authExchange(async utils => {
         if (!isDevAuthEnabled) {
           const initialToken = await getAccessToken();

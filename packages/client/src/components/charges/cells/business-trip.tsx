@@ -2,6 +2,19 @@ import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableBusinessTripFields on Charge {
+    id
+    ... on BusinessTripCharge {
+      businessTrip {
+        id
+        name
+      }
+    }
+  }
+`;
+
 export type BusinessTripProps = {
   id: string;
   name: string;

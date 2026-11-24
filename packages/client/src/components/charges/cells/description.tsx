@@ -3,6 +3,17 @@ import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, SimilarChargesByIdModal } from '../../common/index.js';
 import { Indicator } from '../../ui/indicator.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableDescriptionFields on Charge {
+    id
+    userDescription
+    validationData {
+      missingInfo
+    }
+  }
+`;
+
 export type DescriptionProps = {
   chargeId: string;
   value?: string;

@@ -3,6 +3,21 @@ import { Currency } from '../../../gql/graphql.js';
 import { formatAmountWithCurrency } from '../../../helpers/index.js';
 import { Indicator } from '../../ui/indicator.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableAmountFields on Charge {
+    id
+    __typename
+    totalAmount {
+      raw
+      currency
+    }
+    ... on CreditcardBankCharge {
+      validCreditCardAmount
+    }
+  }
+`;
+
 export type AmountProps = {
   amount?: {
     value: number;

@@ -51,6 +51,14 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
     fetchCharge({ requestPolicy: 'network-only' });
   }, [fetchCharge]);
 
+  // For an edit whose mutation result already carried the row (`onSaved`). On the All Charges
+  // screen the cache holds the whole charge, the mutation's result has just updated it there,
+  // and this reads it without a request. A table whose list did not go through the cache has
+  // only what the mutation returned, without the deferred parts, so there this still fetches.
+  const readCharge = useCallback((): void => {
+    fetchCharge({ requestPolicy: 'cache-first' });
+  }, [fetchCharge]);
+
   // Publish the same refetch under this charge's id, so a batch mutation elsewhere in the tree can
   // refresh this row without holding a reference to it. `row.original` is swapped out on every
   // refresh, but its id is stable, which is what the registry keys on.
@@ -103,6 +111,8 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
   // the re-threading below has to happen on every render — not just on mount.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onChange = refetchCharge;
+  // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
+  row.original.onSaved = readCharge;
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onChangeWithExpansion = refetchChargeAndExpansion;
   // Same threading for the delete path — the row is dropped from the table instead of refetched.

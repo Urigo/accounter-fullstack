@@ -23,7 +23,8 @@ import { areFiltersEqual, decodeFilters } from '../routes.js';
  *
  * The loader doesn't wait for the result: navigation and the skeleton render as before, and the
  * screen follows the in-flight request with `subscribeAllChargesPrefetch` instead of sending its own.
- * There is no client-side cache to hand a result over through, so the hand-off is this module.
+ * The hand-off is this module, not the client cache: the screen always asks the network for its
+ * list, so a cached result would not spare it the request.
  */
 
 /** Page size of the All Charges list. */
@@ -39,7 +40,8 @@ export type AllChargesVariables = {
 export type AllChargesPrefetchOutcome =
   /**
    * The result so far, for the screen to show. The list defers some fields (`@defer`), so this
-   * arrives again, more complete, as each deferred part of the response lands.
+   * arrives again, more complete, as each deferred part of the response lands, and once more
+   * whenever a mutation changes one of its charges in the client cache.
    */
   | { kind: 'data'; data: AllChargesQuery }
   /** The request ran and failed; the error is already reported, so don't repeat it. */
@@ -119,6 +121,12 @@ function startPrefetch(variables: AllChargesVariables): Prefetch {
       .query(AllChargesDocument, variables, { requestPolicy: 'network-only' })
       .subscribe(result => {
         if (finished) {
+          // The response is complete, so anything arriving now is the client cache reading the
+          // list again after a mutation changed a charge in it. A screen that is still showing
+          // this request's rows (it has fetched nothing itself) gets its edits this way.
+          if (result.data && scope === scopeKey()) {
+            emit(current, { kind: 'data', data: result.data }, true);
+          }
           return;
         }
         if (scope === scopeKey()) {
