@@ -30,6 +30,11 @@ import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import type { IGetLedgerRecordsByDatesResult } from '../../ledger/types.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import {
+  Shaam6111SettingsProvider,
+  type Shaam6111HeaderSettings,
+} from '../providers/shaam6111-settings.provider.js';
+import { calculateDepreciationAmount } from './depreciation-report.helper.js';
+import {
   DecoratedLedgerRecord,
   decorateLedgerRecords,
   getProfitLossReportAmounts,
@@ -41,6 +46,7 @@ import {
   buildTaxAdjustmentEntries,
   countRoundedLines,
   fileEntries,
+  irsCodesByBalanceSide,
   isBalanceSheetCode,
   isCorporateRegistrationNumber,
   isProfitLossCode,
@@ -48,7 +54,9 @@ import {
   PROFIT_LOSS_SUMMARY_CODES,
   profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
+  type Shaam6111Entry,
   type Shaam6111Issue,
+  type Shaam6111TaxAdjustmentInputs,
 } from './shaam6111-computation.helper.js';
 import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
 
@@ -144,9 +152,124 @@ function mappingIssues(
   return issues;
 }
 
+/**
+ * The 6111 header fields that come from the stored settings. Fields with a conventional value
+ * fall back to it; the ones only the business can tell (industry code, description, business type,
+ * audit opinion) are left empty. Every unset field is reported, so the defaults are a choice.
+ */
+export function headerFromSettings(settings: Shaam6111HeaderSettings): {
+  header: Pick<
+    SchemaTypes.Shaam6111Header,
+    | 'industryCode'
+    | 'businessDescription'
+    | 'businessType'
+    | 'reportingMethod'
+    | 'accountingMethod'
+    | 'accountingSystem'
+    | 'softwareRegistrationNumber'
+    | 'isPartnership'
+    | 'partnershipCount'
+    | 'partnershipProfitShare'
+    | 'ifrsImplementationYear'
+    | 'ifrsReportingOption'
+    | 'currencyType'
+    | 'amountsInThousands'
+    | 'auditOpinionType'
+  >;
+  issues: Shaam6111Issue[];
+} {
+  const issues: Shaam6111Issue[] = [];
+  const settingsHint = 'Set it on the 6111 report header tab (עריכת פרטי הכותרת).';
+  const required = {
+    industryCode: 'industry code (מספר ענף)',
+    businessDescription: 'business description (תיאור העסק)',
+    businessType: 'business type (סוג עסק)',
+    auditOpinionType: "this year's audit opinion (חוות דעת)",
+  } as const;
+  for (const [field, label] of Object.entries(required)) {
+    if (settings[field as keyof typeof required] == null) {
+      issues.push({
+        severity: 'WARNING',
+        path: `header.${field}`,
+        message: `The ${label} is not set. ${settingsHint}`,
+      });
+    }
+  }
+  const defaults = {
+    reportingMethod: 'ACCRUAL',
+    accountingMethod: 'DOUBLE_ENTRY',
+    accountingSystem: 'COMPUTERIZED',
+    softwareRegistrationNumber: '99999999',
+    isPartnership: false,
+    ifrsImplementationYear: '9999',
+    ifrsReportingOption: 'NONE',
+    currencyType: 'SHEKELS',
+    amountsInThousands: false,
+  } as const;
+  const defaulted = Object.keys(defaults).filter(
+    field => settings[field as keyof typeof defaults] == null,
+  );
+  if (defaulted.length) {
+    issues.push({
+      severity: 'WARNING',
+      path: 'header',
+      message: `Header fields not set, using their defaults: ${defaulted.map(field => `${field} = ${defaults[field as keyof typeof defaults]}`).join(', ')}. ${settingsHint}`,
+    });
+  }
+  return {
+    header: {
+      industryCode: settings.industryCode ?? '',
+      businessDescription: settings.businessDescription,
+      businessType: settings.businessType as SchemaTypes.BusinessType | undefined,
+      reportingMethod: (settings.reportingMethod ??
+        defaults.reportingMethod) as SchemaTypes.ReportingMethod,
+      accountingMethod: (settings.accountingMethod ??
+        defaults.accountingMethod) as SchemaTypes.AccountingMethod,
+      accountingSystem: (settings.accountingSystem ??
+        defaults.accountingSystem) as SchemaTypes.AccountingSystem,
+      softwareRegistrationNumber:
+        settings.softwareRegistrationNumber ?? defaults.softwareRegistrationNumber,
+      isPartnership: settings.isPartnership ?? defaults.isPartnership,
+      // partnership details only describe a partnership
+      partnershipCount: settings.isPartnership ? settings.partnershipCount : undefined,
+      partnershipProfitShare: settings.isPartnership ? settings.partnershipProfitShare : undefined,
+      ifrsImplementationYear: settings.ifrsImplementationYear ?? defaults.ifrsImplementationYear,
+      ifrsReportingOption: (settings.ifrsReportingOption ??
+        defaults.ifrsReportingOption) as SchemaTypes.IfrsReportingOption,
+      currencyType: (settings.currencyType ?? defaults.currencyType) as SchemaTypes.CurrencyType,
+      amountsInThousands: settings.amountsInThousands ?? defaults.amountsInThousands,
+      auditOpinionType: settings.auditOpinionType as SchemaTypes.AuditOpinionType | undefined,
+    },
+    issues,
+  };
+}
+
+/**
+ * Tax adjustment lines with the year's manual amounts applied. A line whose amount the manual
+ * amounts changed (the overridden line itself, or a total) keeps its computed amount alongside.
+ */
+export function taxAdjustmentWithOverrides(
+  inputs: Shaam6111TaxAdjustmentInputs,
+  overrides: Record<string, number>,
+): Array<Shaam6111Entry & { computedAmount?: number }> {
+  const computed = buildTaxAdjustmentEntries(inputs);
+  const overrideMap = new Map(
+    Object.entries(overrides).map(([code, amount]) => [Number(code), amount]),
+  );
+  if (overrideMap.size === 0) {
+    return computed;
+  }
+  const computedByCode = new Map(computed.map(entry => [entry.code, entry.amount]));
+  return buildTaxAdjustmentEntries({ ...inputs, overrides: overrideMap }).map(entry => {
+    const computedAmount = computedByCode.get(entry.code) ?? 0;
+    return computedAmount === entry.amount ? entry : { ...entry, computedAmount };
+  });
+}
+
 export type Shaam6111ComputedReport = {
   reportData: SchemaTypes.Shaam6111Data;
   issues: Shaam6111Issue[];
+  taxAdjustmentOverrides: Record<string, number>;
 };
 
 export async function getShaam6111Data(
@@ -158,12 +281,18 @@ export async function getShaam6111Data(
     throw new Error(`Invalid year. Must be between 2000 and 2100. Received: ${year}`);
   }
 
-  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-  const financialEntityId = businessId || ownerId;
-  const [business, adminBusiness] = await Promise.all([
-    injector.get(BusinessesProvider).getBusinessByIdLoader.load(financialEntityId),
-    injector.get(AdminBusinessesProvider).getAdminBusinessByIdLoader.load(financialEntityId),
-  ]);
+  const sessionAdminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  const financialEntityId = businessId || sessionAdminContext.ownerId;
+  const [business, adminBusiness, businessAdminContext, settings, depreciation] = await Promise.all(
+    [
+      injector.get(BusinessesProvider).getBusinessByIdLoader.load(financialEntityId),
+      injector.get(AdminBusinessesProvider).getAdminBusinessByIdLoader.load(financialEntityId),
+      // tax categories and rates of the reported business, not the session's default one
+      injector.get(AdminContextProvider).adminContextByOwnerIdLoader.load(financialEntityId),
+      injector.get(Shaam6111SettingsProvider).getSettings(financialEntityId, year),
+      calculateDepreciationAmount(injector, year),
+    ],
+  );
 
   if (!business) {
     throw new Error('Business not found');
@@ -200,7 +329,13 @@ export async function getShaam6111Data(
       );
     }
   }
-  const irsCodeByEntity = irsCodesByEntity(financialEntities, defaultIrsCodeBySortCode);
+  const baseIrsCodeByEntity = irsCodesByEntity(financialEntities, defaultIrsCodeBySortCode);
+  const contraIrsCodeByEntity = new Map<string, number>();
+  for (const entity of financialEntities) {
+    if (entity.contra_irs_code != null) {
+      contraIrsCodeByEntity.set(entity.id, entity.contra_irs_code);
+    }
+  }
 
   const ledgerByYear = new Map<number, IGetLedgerRecordsByDatesResult[]>();
   for (const record of ledgerRecords) {
@@ -210,12 +345,20 @@ export async function getShaam6111Data(
     ledgerByYear.set(recordYear, yearRecords);
   }
 
-  // P&L for the tax year, and retained earnings from the P&L of every year up to it
+  // P&L for the tax year, and retained earnings from the P&L of every year up to it. An entity
+  // with a contra code is classified by the side of its balance: the year's for the P&L, the
+  // year-end one for the balance sheet.
+  const yearNetByEntity = netAmountsByFinancialEntity(ledgerByYear.get(year) ?? []);
   const profitAndLoss = buildProfitAndLossEntries(
-    netAmountsByFinancialEntity(ledgerByYear.get(year) ?? []),
-    irsCodeByEntity,
+    yearNetByEntity,
+    irsCodesByBalanceSide(yearNetByEntity, baseIrsCodeByEntity, contraIrsCodeByEntity),
   );
   const cumulativeNetByEntity = netAmountsByFinancialEntity(ledgerRecords);
+  const irsCodeByEntity = irsCodesByBalanceSide(
+    cumulativeNetByEntity,
+    baseIrsCodeByEntity,
+    contraIrsCodeByEntity,
+  );
   const cumulativeProfitAndLoss = buildProfitAndLossEntries(cumulativeNetByEntity, irsCodeByEntity);
   const balanceSheet = buildBalanceSheetEntries(
     cumulativeNetByEntity,
@@ -247,31 +390,39 @@ export async function getShaam6111Data(
     researchAndDevelopmentAddBack,
     taxableCumulativeResearchAndDevelopment,
     profitBeforeTax.amount,
+    businessAdminContext ?? undefined,
   );
-  const taxAdjustment = buildTaxAdjustmentEntries({
-    profitBeforeTax: profitBeforeTax.amount,
-    // rule 3.7 (100 = 6666) holds whenever the two differ only by rounding
-    profitAndLossTotal: profitAndLossMatchesBooks(profitAndLoss, profitBeforeTax.amount)
-      ? profitAndLoss.find(entry => entry.code === 6666)?.amount
-      : undefined,
-    researchAndDevelopmentAddBack,
-    researchAndDevelopmentForTax: taxAmounts.researchAndDevelopmentExpensesForTax,
-    fines: taxAmounts.fines.amount,
-    untaxableGifts: taxAmounts.untaxableGifts.amount,
-    businessTripsExcessExpenses: taxAmounts.businessTripsExcessExpensesAmount,
-    salaryExcessExpenses: taxAmounts.salaryExcessExpensesAmount,
-    reserves: taxAmounts.reserves.amount,
-    nontaxableLinkage: taxAmounts.nontaxableLinkage.amount,
-    taxableIncome: taxAmounts.taxableIncomeAmount,
-    hasPreferredTaxRate: taxAmounts.taxRate !== taxAmounts.specialTaxRate,
-  });
+  const taxAdjustment = taxAdjustmentWithOverrides(
+    {
+      profitBeforeTax: profitBeforeTax.amount,
+      // rule 3.7 (100 = 6666) holds whenever the two differ only by rounding
+      profitAndLossTotal: profitAndLossMatchesBooks(profitAndLoss, profitBeforeTax.amount)
+        ? profitAndLoss.find(entry => entry.code === 6666)?.amount
+        : undefined,
+      researchAndDevelopmentAddBack,
+      researchAndDevelopmentForTax: taxAmounts.researchAndDevelopmentExpensesForTax,
+      fines: taxAmounts.fines.amount,
+      untaxableGifts: taxAmounts.untaxableGifts.amount,
+      businessTripsExcessExpenses: taxAmounts.businessTripsExcessExpensesAmount,
+      salaryExcessExpenses: taxAmounts.salaryExcessExpensesAmount,
+      reserves: taxAmounts.reserves.amount,
+      nontaxableLinkage: taxAmounts.nontaxableLinkage.amount,
+      depreciation: depreciation.totalDepreciationYearlyAmount,
+      donations: taxAmounts.donations.amount,
+      taxableIncome: taxAmounts.taxableIncomeAmount,
+      hasPreferredTaxRate: taxAmounts.taxRate !== taxAmounts.specialTaxRate,
+    },
+    settings.taxAdjustmentOverrides,
+  );
 
+  const { header: headerSettings, issues: headerIssues } = headerFromSettings(settings.header);
   const issues: Shaam6111Issue[] = mappingIssues(
     cumulativeNetByEntity,
     financialEntitiesById,
     irsCodeByEntity,
     sortCodeNames,
   );
+  issues.push(...headerIssues);
 
   const profitLossTotal = profitAndLoss.find(entry => entry.code === 6666)?.amount ?? 0;
   const booksProfitBeforeTax = Math.round(profitBeforeTax.amount);
@@ -307,27 +458,13 @@ export async function getShaam6111Data(
     idNumber: business.vat_number,
     vatFileNumber: business.vat_number,
     withholdingTaxFileNumber,
-    industryCode: '6201', // TODO: migrate to DB
-    businessDescription: 'פיתוח פלטפורמת תוכנה', // TODO: migrate to DB
-    businessType: 'MULTIPLE', // TODO: migrate to DB
-    reportingMethod: 'ACCRUAL', // TODO: migrate to DB
-    accountingMethod: 'DOUBLE_ENTRY', // TODO: migrate to DB
-    accountingSystem: 'COMPUTERIZED',
+    ...headerSettings,
     includesProfitLoss: true,
     includesTaxAdjustment: true,
     includesBalanceSheet: true,
     profitLossEntryCount: fileEntries(profitAndLoss, 'profitAndLoss').length,
     taxAdjustmentEntryCount: fileEntries(taxAdjustment, 'taxAdjustment').length,
     balanceSheetEntryCount: fileEntries(balanceSheet, 'balanceSheet').length,
-    softwareRegistrationNumber: '99999999',
-    isPartnership: false, // TODO: migrate to DB
-    partnershipCount: undefined, // TODO: migrate to DB
-    partnershipProfitShare: undefined, // TODO: migrate to DB
-    ifrsImplementationYear: '9999', // TODO: migrate to DB
-    ifrsReportingOption: 'NONE', // TODO: migrate to DB
-    currencyType: 'SHEKELS', // TODO: migrate to DB
-    amountsInThousands: false, // TODO: migrate to DB
-    auditOpinionType: 'UNQUALIFIED', // TODO: migrate to DB
   };
 
   const reportData: SchemaTypes.Shaam6111Data = {
@@ -338,7 +475,7 @@ export async function getShaam6111Data(
     balanceSheet,
     individualOrCompany: isCompany ? 'COMPANY' : 'INDIVIDUAL',
   };
-  return { reportData, issues };
+  return { reportData, issues, taxAdjustmentOverrides: settings.taxAdjustmentOverrides };
 }
 
 /**
@@ -550,7 +687,10 @@ export function convertLocalReportDataToShaam6111ReportData(
       vatFileNumber: localReportData.header.vatFileNumber || undefined,
       withholdingTaxFileNumber: localReportData.header.withholdingTaxFileNumber || undefined,
       businessDescription: localReportData.header.businessDescription || undefined,
-      businessType: businessTypeSafeParser(localReportData.header.businessType),
+      // a missing business type is left for the SHAAM validation to report
+      businessType: (localReportData.header.businessType
+        ? businessTypeSafeParser(localReportData.header.businessType)
+        : undefined) as BusinessType,
       reportingMethod: reportingMethodSafeParser(localReportData.header.reportingMethod),
       accountingMethod: accountingMethodSafeParser(localReportData.header.accountingMethod),
       accountingSystem: accountingSystemSafeParser(localReportData.header.accountingSystem),

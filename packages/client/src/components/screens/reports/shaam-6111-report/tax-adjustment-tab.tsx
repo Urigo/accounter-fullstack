@@ -5,6 +5,7 @@ import { Shaam6111DataContentTaxAdjustmentFragmentDoc } from '../../../../gql/gr
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TabsContent } from '../../../ui/tabs.js';
 import { CodeField } from './code-field.js';
+import { ManualAmountsDialog } from './manual-amounts-dialog.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,6 +15,7 @@ import { CodeField } from './code-field.js';
       code
       amount
       label
+      computedAmount
     }
   }
 `;
@@ -72,16 +74,27 @@ const colorMap = {
   pink: { header: 'text-pink-700', sum: 'bg-pink-50 border-pink-200' },
 };
 
+/** Lines that are always computed, and so take no manual amount */
+const COMPUTED_ONLY_CODES = new Set([100, 104, 370, 400, 500]);
+
 type TaxAdjustmentTab = {
   data: FragmentType<typeof Shaam6111DataContentTaxAdjustmentFragmentDoc>;
   referenceData?: FragmentType<typeof Shaam6111DataContentTaxAdjustmentFragmentDoc>;
   showEmptyFields?: boolean;
+  businessId: string;
+  year: number;
+  overrides: { code: number; amount: number }[];
+  onOverridesSaved?: () => void;
 };
 
 export function TaxAdjustmentTab({
   data,
   referenceData,
   showEmptyFields = false,
+  businessId,
+  year,
+  overrides,
+  onOverridesSaved,
 }: TaxAdjustmentTab) {
   const { taxAdjustment } = getFragmentData(Shaam6111DataContentTaxAdjustmentFragmentDoc, data);
   const referenceReport = getFragmentData(
@@ -89,11 +102,31 @@ export function TaxAdjustmentTab({
     referenceData,
   );
   const referenceTaxAdjustment = referenceReport?.taxAdjustment || [];
+  const manualLines = codeOrder
+    .flatMap(section => section.codes)
+    .filter(code => !COMPUTED_ONLY_CODES.has(code))
+    .map(code => {
+      const entry = taxAdjustment.find(e => e.code === code);
+      return {
+        code,
+        label: entry?.label ?? '',
+        amount: entry?.computedAmount ?? entry?.amount ?? 0,
+      };
+    });
 
   return (
     <TabsContent value="taxAdjustment" className="border rounded-md p-4">
       <div className="space-y-6" dir="rtl">
-        <h3 className="text-lg font-bold border-b pb-2">נתוני דו"ח התאמה למס</h3>
+        <div className="flex justify-between items-center border-b pb-2">
+          <h3 className="text-lg font-bold">נתוני דו"ח התאמה למס</h3>
+          <ManualAmountsDialog
+            businessId={businessId}
+            year={year}
+            lines={manualLines}
+            overrides={overrides}
+            onSaved={onOverridesSaved}
+          />
+        </div>
 
         <div className="bg-emerald-50 p-4 rounded-md border-2 border-emerald-200">
           <CodeField

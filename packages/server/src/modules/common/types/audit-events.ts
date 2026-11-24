@@ -7,7 +7,8 @@ export type AuditAction =
   | 'API_KEY_REVOKED'
   | 'BUSINESS_USER_REMOVED'
   | 'USER_LOGIN'
-  | 'USER_ROLE_CHANGED';
+  | 'USER_ROLE_CHANGED'
+  | 'SHAAM6111_SETTINGS_UPDATED';
 
 export interface AuditEvent {
   ownerId?: string;

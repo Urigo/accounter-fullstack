@@ -12,6 +12,7 @@ export const CodeField = ({
     code: number;
     amount: number;
     label: string;
+    computedAmount?: number | null;
   }[];
   referenceCodes?: {
     code: number;
@@ -20,11 +21,12 @@ export const CodeField = ({
   code: number;
   showEmptyFields: boolean;
 }) => {
-  const { value, label } = useMemo(() => {
+  const { value, label, computedAmount } = useMemo(() => {
     const codeObj = codes.find(c => c.code === code);
     return {
       value: codeObj?.amount || 0,
       label: codeObj?.label || 'לא זוהה קוד',
+      computedAmount: codeObj?.computedAmount,
     };
   }, [codes, code]);
 
@@ -41,6 +43,11 @@ export const CodeField = ({
       showChange
       showEmptyFields={showEmptyFields}
       referenceValue={referenceValue}
+      note={
+        computedAmount == null
+          ? undefined
+          : `ידני (מחושב: ${formatStringifyAmount(computedAmount, 0)})`
+      }
     />
   );
 };

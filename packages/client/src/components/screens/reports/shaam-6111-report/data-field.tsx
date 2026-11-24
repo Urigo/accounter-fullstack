@@ -5,6 +5,7 @@ export const DataField = ({
   referenceValue,
   showEmptyFields,
   showChange = false,
+  note,
 }: {
   label: string;
   value: string;
@@ -12,6 +13,8 @@ export const DataField = ({
   referenceValue?: string;
   showEmptyFields: boolean;
   showChange?: boolean;
+  /** Shown after the value, e.g. the computed amount a manual amount replaced */
+  note?: string;
 }) => {
   // Helper function to determine if field should be shown
   const shouldShowField = (value: string) => {
@@ -56,6 +59,7 @@ export const DataField = ({
         <span className={`font-medium ${isEmptyValue(value) ? 'text-gray-400' : ''}`}>
           {isEmptyValue(value) ? '0' : value}
         </span>
+        {note && <span className="text-xs text-amber-700">{note}</span>}
         {change !== null && (
           <span
             className={`text-xs px-1 py-0.5 rounded ${

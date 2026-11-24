@@ -51,6 +51,12 @@ const taxReportQuery = dedupeFragments(TaxReportDocument);
           }
           ...ReportCommentaryTableFields
         }
+        donations {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
         businessTripsExcessExpensesAmount {
           formatted
         }
@@ -111,6 +117,11 @@ const taxReportQuery = dedupeFragments(TaxReportDocument);
           }
         }
         untaxableGifts {
+          amount {
+            formatted
+          }
+        }
+        donations {
           amount {
             formatted
           }
@@ -294,6 +305,19 @@ export const TaxReport = (): ReactElement => {
                     </TableRow>
                   )}
                   commentaryData={report.untaxableGifts}
+                />
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <TableRow>
+                      <TableCell>Donations</TableCell>
+                      <TableCell>{report.donations.amount.formatted}</TableCell>
+                      <TableHead>{button}</TableHead>
+                      {referenceYearsData.map(report => (
+                        <TableCell key={report.year}>{report.donations.amount.formatted}</TableCell>
+                      ))}
+                    </TableRow>
+                  )}
+                  commentaryData={report.donations}
                 />
                 <TableRow>
                   <TableCell>Business Trips Excess Expenses</TableCell>

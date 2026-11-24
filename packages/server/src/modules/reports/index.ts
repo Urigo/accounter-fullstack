@@ -3,6 +3,7 @@ import { AnnualRevenueReportProvider } from './providers/annual-revenue-report.p
 import { BalanceReportProvider } from './providers/balance-report.provider.js';
 import { DynamicReportCommentsProvider } from './providers/dynamic-report-comments.provider.js';
 import { DynamicReportProvider } from './providers/dynamic-report.provider.js';
+import { Shaam6111SettingsProvider } from './providers/shaam6111-settings.provider.js';
 import { VatReportProvider } from './providers/vat-report.provider.js';
 import { annualRevenueResolvers } from './resolvers/annual-revenue.resover.js';
 import { balanceReportResolver } from './resolvers/balance-report.resolver.js';
@@ -68,6 +69,7 @@ export const reportsModule = createModule({
     BalanceReportProvider,
     VatReportProvider,
     AnnualRevenueReportProvider,
+    Shaam6111SettingsProvider,
   ],
 });
 

@@ -3,12 +3,17 @@ import { encodeReportFile, generateReport, ValidationError } from '@accounter/sh
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { isOverridableTaxAdjustmentCode } from '../helpers/shaam6111-computation.helper.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
   getShaam6111Data,
   SHAAM_6111_FILE_NAME,
   validateShaam6111Report,
 } from '../helpers/shaam6111.helper.js';
+import {
+  Shaam6111SettingsProvider,
+  type Shaam6111HeaderSettings,
+} from '../providers/shaam6111-settings.provider.js';
 import type { ReportsModule } from '../types.js';
 
 export const shaam6111Resolvers: ReportsModule.Resolvers = {
@@ -25,13 +30,62 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         businessId = ownerId;
       }
-      const { reportData, issues } = await getShaam6111Data(injector, businessId, year);
+      const { reportData, issues, taxAdjustmentOverrides } = await getShaam6111Data(
+        injector,
+        businessId,
+        year,
+      );
 
       return {
         businessId,
         reportData,
         issues,
+        taxAdjustmentOverrides,
       };
+    },
+  },
+  Mutation: {
+    updateShaam6111: async (
+      _,
+      { year, businessId: requestedBusinessId, header, taxAdjustmentOverrides },
+      { injector },
+    ) => {
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+        throw new GraphQLError(`Invalid year: ${year}`);
+      }
+      const businessId =
+        requestedBusinessId ??
+        (await injector.get(AdminContextProvider).getVerifiedAdminContext()).ownerId;
+
+      let overrides: Record<string, number> | null = null;
+      if (taxAdjustmentOverrides) {
+        overrides = {};
+        for (const { code, amount } of taxAdjustmentOverrides) {
+          if (!isOverridableTaxAdjustmentCode(code)) {
+            throw new GraphQLError(`Tax-adjustment line ${code} can't take a manual amount`);
+          }
+          overrides[code] = amount;
+        }
+      }
+
+      let headerSettings: Shaam6111HeaderSettings | null = null;
+      if (header) {
+        // a field the input names is stored, `null` (or '') unsetting it for this year; fields it
+        // leaves out keep what the year has, or come from earlier years
+        headerSettings = Object.fromEntries(
+          Object.entries(header)
+            .filter(([, value]) => value !== undefined)
+            .map(([key, value]) => [key, value === '' ? null : value]),
+        ) as Shaam6111HeaderSettings;
+      }
+
+      await injector.get(Shaam6111SettingsProvider).updateSettings({
+        ownerId: businessId,
+        year,
+        header: headerSettings,
+        taxAdjustmentOverrides: overrides,
+      });
+      return true;
     },
   },
   Shaam6111Report: {
@@ -74,6 +128,10 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
     },
     validation: ({ reportData, issues }) => validateShaam6111Report(reportData, issues),
     year: ({ reportData }) => parseInt(reportData.header.taxYear, 10),
+    taxAdjustmentOverrides: ({ taxAdjustmentOverrides }) =>
+      Object.entries(taxAdjustmentOverrides)
+        .map(([code, amount]) => ({ code: Number(code), amount }))
+        .sort((a, b) => a.code - b.code),
   },
   Shaam6111Data: {
     id: reportData => `shaam6111-${reportData.header.idNumber}-${reportData.header.taxYear}-file`,

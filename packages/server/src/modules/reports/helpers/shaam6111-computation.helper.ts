@@ -364,6 +364,36 @@ export function isBalanceSheetCode(code: number): boolean {
   return BALANCE_SHEET_CODES.has(code);
 }
 
+/**
+ * Picks each entity's code by the side of its balance: an entity with a contra code uses it when
+ * its balance sits on the opposite side from its own code's natural one (an overdrawn bank
+ * account, a VAT refund due, tax advances larger than the tax liability). The balance decides, so
+ * each year is classified on its own.
+ */
+export function irsCodesByBalanceSide(
+  netByEntity: ReadonlyMap<string, number>,
+  irsCodeByEntity: ReadonlyMap<string, number>,
+  contraIrsCodeByEntity: ReadonlyMap<string, number>,
+): Map<string, number> {
+  const codes = new Map(irsCodeByEntity);
+  for (const [entityId, contraCode] of contraIrsCodeByEntity) {
+    const code = irsCodeByEntity.get(entityId);
+    const amount = Math.round(netByEntity.get(entityId) ?? 0);
+    if (code == null || amount === 0) {
+      continue;
+    }
+    const isDebitNatured = isProfitLossCode(code)
+      ? isDebitNaturedProfitLossCode(code)
+      : isDebitNaturedBalanceSheetCode(code);
+    // amounts are credit − debit: a debit-natured code normally holds a negative balance
+    const isOppositeSide = isDebitNatured ? amount > 0 : amount < 0;
+    if (isOppositeSide) {
+      codes.set(entityId, contraCode);
+    }
+  }
+  return codes;
+}
+
 /* ------------------------------------------------------------------------------------------------
  * Report sections
  * ---------------------------------------------------------------------------------------------- */
@@ -462,21 +492,44 @@ export type Shaam6111TaxAdjustmentInputs = {
   salaryExcessExpenses: number;
   /** Increase (decrease) in the vacation and recovery-pay provisions. */
   reserves: number;
-  /** Non-deductible linkage and financing expenses. */
+  /** Non-deductible linkage and financing expenses (financing expenses on tax debts). */
   nontaxableLinkage: number;
+  /** Book depreciation for the year (positive). Tax depreciation is taken as equal to it. */
+  depreciation?: number;
+  /** Donations booked as expenses (positive add-back). */
+  donations?: number;
+  /** Manual amounts per line, which replace the computed ones; totals are recomputed. */
+  overrides?: ReadonlyMap<number, number>;
   /** Taxable income at the company's own (possibly preferred) rate. */
   taxableIncome: number;
   /** Whether the company's rate differs from the regular corporate tax rate. */
   hasPreferredTaxRate: boolean;
 };
 
+/** Tax-adjustment lines that are always computed, and so can't take a manual amount. */
+const NON_OVERRIDABLE_TAX_ADJUSTMENT_CODES: ReadonlySet<number> = new Set([
+  100,
+  104,
+  ...TAX_ADJUSTMENT_SUMMARY_RULES.map(({ code }) => code),
+]);
+
+/** Whether a tax-adjustment line accepts a manual amount. */
+export function isOverridableTaxAdjustmentCode(code: number): boolean {
+  return code in TAX_ADJUSTMENT_CODE_NAMES && !NON_OVERRIDABLE_TAX_ADJUSTMENT_CODES.has(code);
+}
+
 /**
  * Tax adjustment section (חלק ב), in the same amounts the tax report (annual workflow step 13)
  * uses, spread over the form's lines:
  * - 110 הוצאות עודפות: fines, non-deductible gifts, excess travel and salary expenses
+ * - 120 / 130 פחת בספרים / פחת לצרכי מס: the year's depreciation; equal while the book rates
+ *   follow the tax regulations
  * - 150 עלייה/ירידה בהפרשה לחופשה והבראה: the year's change in those provisions
- * - 190 / 200 הוצאות / הכנסות אחרות לתיאום: the net section 20A R&D timing difference and
- *   non-deductible linkage expenses (an addition goes to 190, a deduction to 200)
+ * - 182 הוצאות מימון בגין חוב מס: non-deductible linkage and financing expenses
+ * - 183 הוצאות בגין תרומות: donations
+ * - 190 / 200 הוצאות / הכנסות אחרות לתיאום: the net section 20A R&D timing difference (an
+ *   addition goes to 190, a deduction to 200)
+ * - manual amounts (`overrides`) replace any of the lines above, and the totals follow
  * - 100 = 6666 when that only differs from the books by rounding; the difference joins 190 / 200
  * - 400 = 100 + 370, 500 = 400 − 430 − 480 + 490
  * - 510 הכנסה חייבת במס בשיעור מיוחד: taxable income at the preferred rate, when there is one
@@ -487,10 +540,19 @@ export function buildTaxAdjustmentEntries(inputs: Shaam6111TaxAdjustmentInputs):
     inputs.untaxableGifts +
     inputs.businessTripsExcessExpenses +
     inputs.salaryExcessExpenses;
-  let otherAdjustments =
-    inputs.researchAndDevelopmentAddBack +
-    inputs.researchAndDevelopmentForTax +
-    inputs.nontaxableLinkage;
+  let otherAdjustments = inputs.researchAndDevelopmentAddBack + inputs.researchAndDevelopmentForTax;
+  // 182 is an addition: a net credit is a deduction like any other
+  let taxDebtFinancing = inputs.nontaxableLinkage;
+  if (taxDebtFinancing < 0) {
+    otherAdjustments += taxDebtFinancing;
+    taxDebtFinancing = 0;
+  }
+  let donations = inputs.donations ?? 0;
+  if (donations < 0) {
+    otherAdjustments += donations;
+    donations = 0;
+  }
+  const depreciation = Math.round(inputs.depreciation ?? 0);
   // 110 can't be negative: a net refund of excess expenses is a deduction like any other
   if (excessExpenses < 0) {
     otherAdjustments += excessExpenses;
@@ -504,14 +566,23 @@ export function buildTaxAdjustmentEntries(inputs: Shaam6111TaxAdjustmentInputs):
   const map: CodeAmounts = new Map([
     [100, accountingProfit],
     [110, Math.round(excessExpenses)],
+    [120, depreciation],
+    [130, depreciation],
     [150, Math.round(inputs.reserves)],
+    [182, Math.round(taxDebtFinancing)],
+    [183, Math.round(donations)],
     [190, Math.max(otherAdjustmentsRounded, 0)],
     [200, Math.max(-otherAdjustmentsRounded, 0)],
   ]);
   // 2.6: with no IFRS adjustments, 104 equals 100
   map.set(104, map.get(100)!);
-  applyRules(map, TAX_ADJUSTMENT_SUMMARY_RULES);
   map.set(510, inputs.hasPreferredTaxRate ? Math.max(Math.round(inputs.taxableIncome), 0) : 0);
+  for (const [code, amount] of inputs.overrides ?? []) {
+    if (isOverridableTaxAdjustmentCode(code)) {
+      map.set(code, Math.round(amount));
+    }
+  }
+  applyRules(map, TAX_ADJUSTMENT_SUMMARY_RULES);
 
   for (const [code, amount] of map) {
     map.set(code, amount + 0);

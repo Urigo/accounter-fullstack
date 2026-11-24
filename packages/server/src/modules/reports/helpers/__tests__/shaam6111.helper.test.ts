@@ -11,7 +11,9 @@ import {
 } from '../shaam6111-computation.helper.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
+  headerFromSettings,
   irsCodesByEntity,
+  taxAdjustmentWithOverrides,
   validateShaam6111Report,
 } from '../shaam6111.helper.js';
 
@@ -178,5 +180,78 @@ describe('irsCodesByEntity', () => {
     );
     // owner-a's sort code 200 has no default: the entity stays unmapped (and gets flagged)
     expect(codes.has('unmapped')).toBe(false);
+  });
+});
+
+describe('6111 header from stored settings', () => {
+  it('warns about every unset field, and fills the conventional ones with their defaults', () => {
+    const { header, issues } = headerFromSettings({});
+    expect(header.industryCode).toBe('');
+    expect(header.businessType).toBeUndefined();
+    expect(header.auditOpinionType).toBeUndefined();
+    expect(header.reportingMethod).toBe('ACCRUAL');
+    expect(header.softwareRegistrationNumber).toBe('99999999');
+    expect(issues.map(issue => issue.path)).toEqual([
+      'header.industryCode',
+      'header.businessDescription',
+      'header.businessType',
+      'header.auditOpinionType',
+      'header',
+    ]);
+    expect(issues.every(issue => issue.severity === 'WARNING')).toBe(true);
+  });
+
+  it('uses the stored values, with no warnings once all are set', () => {
+    const { header, issues } = headerFromSettings({
+      industryCode: '6201',
+      businessDescription: 'פיתוח תוכנה',
+      businessType: 'SERVICE',
+      auditOpinionType: 'UNQUALIFIED',
+      reportingMethod: 'CASH',
+      accountingMethod: 'DOUBLE_ENTRY',
+      accountingSystem: 'COMPUTERIZED',
+      softwareRegistrationNumber: '99999999',
+      isPartnership: false,
+      ifrsImplementationYear: '9999',
+      ifrsReportingOption: 'NONE',
+      currencyType: 'SHEKELS',
+      amountsInThousands: false,
+    });
+    expect(issues).toEqual([]);
+    expect(header.businessType).toBe('SERVICE');
+    expect(header.reportingMethod).toBe('CASH');
+  });
+
+  it('fails SHAAM validation without a business type or industry code', () => {
+    const report = buildReport();
+    const { isValid } = validateShaam6111Report({
+      ...report,
+      header: { ...report.header, businessType: undefined, industryCode: '' },
+    });
+    expect(isValid).toBe(false);
+  });
+});
+
+describe('manual tax-adjustment amounts', () => {
+  const inputs = {
+    profitBeforeTax: 1000,
+    researchAndDevelopmentAddBack: 0,
+    researchAndDevelopmentForTax: 0,
+    fines: 0,
+    untaxableGifts: 0,
+    businessTripsExcessExpenses: 0,
+    salaryExcessExpenses: 0,
+    reserves: 0,
+    nontaxableLinkage: 0,
+    taxableIncome: 1000,
+    hasPreferredTaxRate: false,
+  };
+
+  it('keeps the computed amount next to every line the manual amounts changed', () => {
+    const entries = taxAdjustmentWithOverrides(inputs, { '480': 300 });
+    const byCode = (code: number) => entries.find(entry => entry.code === code);
+    expect(byCode(480)).toMatchObject({ amount: 300, computedAmount: 0 });
+    expect(byCode(500)).toMatchObject({ amount: 700, computedAmount: 1000 });
+    expect(byCode(100)?.computedAmount).toBeUndefined();
   });
 });

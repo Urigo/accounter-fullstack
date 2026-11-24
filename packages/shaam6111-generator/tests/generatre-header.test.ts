@@ -79,12 +79,14 @@ describe('generateHeaderRecord', () => {
     expect(result.substring(9, 13)).toBe('2025'); // taxYear
     expect(result.substring(13, 22)).toBe('098765431'); // idNumber
 
-    // Check the Hebrew business description and its padding
+    // The Hebrew business description is right-aligned: padded with spaces on the left
     const businessDescriptionStart = 44; // Index where business description starts
-    expect(result.substring(businessDescriptionStart, businessDescriptionStart + 6)).toBe('ניסיון');
-    expect(result.substring(businessDescriptionStart + 6, businessDescriptionStart + 50)).toMatch(
-      / +/,
-    ); // Check padding
+    expect(result.substring(businessDescriptionStart, businessDescriptionStart + 44)).toBe(
+      ' '.repeat(44),
+    );
+    expect(result.substring(businessDescriptionStart + 44, businessDescriptionStart + 50)).toBe(
+      'ניסיון',
+    );
 
     // Verify overall length is still correct
     expect(result.length).toBe(142);

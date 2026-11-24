@@ -35,6 +35,7 @@ import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js'
         name
       }
       irsCode
+      contraIrsCode
     }
   }
 `;
@@ -110,6 +111,7 @@ function EditTaxCategoryForm({
       sortCode: taxCategory.sortCode?.key,
       name: taxCategory.name,
       irsCode: taxCategory.irsCode,
+      contraIrsCode: taxCategory.contraIrsCode,
     },
   });
   const { handleSubmit } = useFormManager;
@@ -121,6 +123,10 @@ function EditTaxCategoryForm({
 
   const onSubmit: SubmitHandler<UpdateTaxCategoryInput> = data => {
     data.sortCode &&= parseInt(data.sortCode.toString());
+    // a cleared contra code comes back empty, which the server reads as "unchanged": 0 clears it
+    if (data.contraIrsCode == null && taxCategory.contraIrsCode != null) {
+      data.contraIrsCode = 0;
+    }
     updateTaxCategory({ fields: data, taxCategoryId: taxCategory.id }).then(res => {
       if (res?.id) {
         onAdd?.(res.id);

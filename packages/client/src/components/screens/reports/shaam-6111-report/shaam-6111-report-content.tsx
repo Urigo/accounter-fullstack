@@ -36,6 +36,9 @@ type Shaam6111ReportContentProps = {
   selectedBusiness: string;
   selectedYear: string;
   referenceYear?: string;
+  taxAdjustmentOverrides: { code: number; amount: number }[];
+  /** Reloads the report after its settings change */
+  onSettingsSaved?: () => void;
 };
 
 export function Shaam6111ReportContent({
@@ -46,9 +49,15 @@ export function Shaam6111ReportContent({
   selectedBusiness,
   selectedYear,
   referenceYear,
+  taxAdjustmentOverrides,
+  onSettingsSaved,
 }: Shaam6111ReportContentProps) {
   const reportData = getFragmentData(Shaam6111DataContentFragmentDoc, data);
-  const { isValid } = getFragmentData(Shaam6111ValidationIssuesFragmentDoc, validation);
+  const { isValid, issues } = getFragmentData(Shaam6111ValidationIssuesFragmentDoc, validation);
+  const headerWarnings = issues
+    .filter(issue => issue.path?.startsWith('header'))
+    .map(issue => issue.message);
+  const year = Number.parseInt(selectedYear, 10);
   const referenceReportData = getFragmentData(Shaam6111DataContentFragmentDoc, referenceData);
   const [activeTab, setActiveTab] = useState('header');
   const [showEmptyFields, setShowEmptyFields] = useState(true);
@@ -73,11 +82,7 @@ export function Shaam6111ReportContent({
           </div>
         </div>
         <div className="flex gap-2">
-          <Shaam6111DownloadButton
-            year={Number.parseInt(selectedYear, 10)}
-            businessId={selectedBusiness}
-            disabled={!isValid}
-          />
+          <Shaam6111DownloadButton year={year} businessId={selectedBusiness} disabled={!isValid} />
         </div>
       </div>
       <Shaam6111ValidationIssues validation={validation} />
@@ -89,7 +94,14 @@ export function Shaam6111ReportContent({
           <TabsTrigger value="balanceSheet">מאזן</TabsTrigger>
         </TabsList>
 
-        <HeaderTab data={reportData} businessInfo={businessInfo} />
+        <HeaderTab
+          data={reportData}
+          businessInfo={businessInfo}
+          businessId={selectedBusiness}
+          year={year}
+          warnings={headerWarnings}
+          onSettingsSaved={onSettingsSaved}
+        />
 
         <ProfitAndLossTab
           selectedYear={selectedYear}
@@ -103,6 +115,10 @@ export function Shaam6111ReportContent({
           data={reportData}
           referenceData={referenceReportData}
           showEmptyFields={showEmptyFields}
+          businessId={selectedBusiness}
+          year={year}
+          overrides={taxAdjustmentOverrides}
+          onOverridesSaved={onSettingsSaved}
         />
 
         <BalanceSheetTab
