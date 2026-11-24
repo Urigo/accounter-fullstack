@@ -646,8 +646,8 @@ describe('UserNav business scope picker', () => {
     });
 
     it('is not reopened by a later mount once closed in place', async () => {
-      // Without `OnboardingGuard` (dev auth), applying a scope remounts nothing, so the modal
-      // opens in place and must not come back on the next mount after it was closed.
+      // Should applying a scope remount nothing, the modal opens in place, and must not come back
+      // on the next mount after it was closed.
       const first = await renderUserNav(userContext);
       await toggle(first.container, 'business-2');
       await pickModal(first.container);
