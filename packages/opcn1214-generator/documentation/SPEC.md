@@ -285,10 +285,12 @@ After transmission SHAAM returns one line per report: file number (9), tax year 
 
 Values of kinds `id9` and `shareholderId` must also pass the Israeli check digit (left-pad to 9
 digits; multiply the digits alternately by 1, 2, 1, 2, … from the left; add the digits of products
-above 9; the total must be divisible by 10). The PDF does not state it, but SHAAM's structure
-checker rejects files that fail it (`field.checkDigit`, §15 A-25). The special shareholder IDs
-`999999964` and `999999998` pass it. Kind `digits` (phone numbers, bank and withholder accounts) is
-not checked.
+above 9; the total must be divisible by 10). The PDF does not state it. SHAAM's structure checker
+rejected identifiers with a wrong check digit at 1000@137 and 1010@189 (§15 A-25);
+`field.checkDigit` applies the check to the other `id9` and `shareholderId` fields by analogy, since
+real identifiers carry it. The special shareholder IDs `999999964` and `999999998` pass it. Kind
+`digits` (phone and fax numbers, the withholders' branches and accounts in 30xx records) is not
+checked.
 
 Allowed phone prefixes (p.6–7):
 `02 03 04 08 09 072 073 074 076 077 050 052 053 054 055 057 058 059`.
@@ -1689,7 +1691,7 @@ phase noted, and this table updated with the outcome.
 | A-21 | 1091 amortization amount                                       | Type alphanumeric; "0 may be entered"                                                                                              | Digits with alphanumeric padding (`amountX`); 0 is written as `0`                                                              | P1                                        |
 | A-22 | Code order in sections                                         | Not stated                                                                                                                         | Ascending code order                                                                                                           | P1                                        |
 | A-23 | Data provenance, 3051 header                                   | The PDF table on p.39 lost the position column during extraction                                                                   | Positions 137/139/142/192/193/194/224 taken from the PDF text layer and verified to chain with the lengths                     | —                                         |
-| A-24 | Breakdown of code 442 = 0                                      | A per-country code that "has a value" needs a 2200 record (p.27); 442 is the only per-country code that may be 0                   | "Has a value" = written in the 2000 section, so 442 = 0 needs a breakdown; omitted zero codes need none                        | P3 — verified (CP-3, 2026-11-17)          |
+| A-24 | Breakdown of code 442 = 0                                      | A per-country code that "has a value" needs a 2200 record (p.27); 442 is the only per-country code that may be 0                   | "Has a value" = written in the 2000 section, so 442 = 0 needs a breakdown; omitted zero codes need none                        | P3 — unverified (awaits shopcn probes)    |
 | A-25 | Identifier check digits                                        | Not stated                                                                                                                         | Every `id9`/`shareholderId` value must pass the Israeli check digit (§4.2; `field.checkDigit`, source `checker`)               | Found at CP-2/CP-3; re-verify after FIX-1 |
 | A-34 | 1000@1090 qualifying-company mark                              | p.12 gives 1090 the same name and notes as 1065 ("סימון – רכישה של \"חברה מזכה\"", 1-כן 2-לא)                                      | Inferred from 1091 (the amount): `amortizationClaimed`, amortization is claimed for the purchase                               | —                                         |
 

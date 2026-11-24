@@ -1742,8 +1742,8 @@ Done when
 > **Human checkpoint CP-3 (after F2).** Verify `related-and-rd` and `foreign` on shopcn (A-4, A-9,
 > A-14, A-16 in SPEC §15).
 
-**Outcome CP-3 (2026-11-17):** `foreign` passed (A-4, A-9, A-14, A-24 verified); `related-and-rd`
-rejected (identifier check digits, SPEC §15 A-25) → FIX-1.
+**Outcome CP-3 (2026-11-17):** `foreign` passed (A-4, A-9, A-14 verified); `related-and-rd` rejected
+(identifier check digits, SPEC §15 A-25) → FIX-1.
 
 ---
 

@@ -259,10 +259,9 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
       expect(issuesOf(tooLong, 'field.checkDigit')).toEqual([]);
     });
 
-    it('does not check digit fields of kind digits (bank account)', () => {
-      const input = minimalInput({
-        bankAccount: { bank: '12', branch: '345', account: '123456789' },
-      });
+    it('does not check digit fields of kind digits (phone number)', () => {
+      // 1000@496 is kind digits; 1234567 (001234567 once padded) fails the check digit.
+      const input = minimalInput({ company: { phone: { prefix: '03', number: '1234567' } } });
       expect(issuesOf(input, 'field.checkDigit')).toEqual([]);
     });
   });
