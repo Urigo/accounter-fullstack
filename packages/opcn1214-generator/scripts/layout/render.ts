@@ -7,10 +7,25 @@ import { parseValues } from './values.js';
 
 const DERIVED_PREFIX = '(derived) ';
 
+/**
+ * Identifies a CSV row in error messages: `record@position` for fields.csv, `record code` for
+ * codes.csv, `record` for records.csv.
+ */
+function rowLabel(row: CsvRow): string {
+  const record = row['record'] ?? '?';
+  if (row['position'] !== undefined) return `${record}@${row['position']}`;
+  if (row['code'] !== undefined) return `${record} code ${row['code']}`;
+  return record;
+}
+
+function csvError(row: CsvRow, message: string): Error {
+  return new Error(`layout CSV (${rowLabel(row)}): ${message}`);
+}
+
 function column(row: CsvRow, name: string): string {
   const value = row[name];
   if (value === undefined) {
-    throw new Error(`layout CSV: missing column "${name}"`);
+    throw csvError(row, `missing column "${name}"`);
   }
   return value;
 }
@@ -18,7 +33,7 @@ function column(row: CsvRow, name: string): string {
 function integer(row: CsvRow, name: string): number {
   const value = column(row, name);
   if (!/^\d+$/.test(value)) {
-    throw new Error(`layout CSV: column "${name}" must be a non-negative integer, got "${value}"`);
+    throw csvError(row, `column "${name}" must be a non-negative integer, got "${value}"`);
   }
   return Number(value);
 }
@@ -27,17 +42,23 @@ function oneOf<T extends string>(row: CsvRow, name: string, allowed: readonly T[
   const value = column(row, name);
   const match = allowed.find(candidate => candidate === value);
   if (match === undefined) {
-    throw new Error(
-      `layout CSV: column "${name}" must be one of ${allowed.join(', ')}, got "${value}"`,
-    );
+    throw csvError(row, `column "${name}" must be one of ${allowed.join(', ')}, got "${value}"`);
   }
   return match;
+}
+
+function rowValues(row: CsvRow): ReturnType<typeof parseValues> {
+  try {
+    return parseValues(column(row, 'values'));
+  } catch (error) {
+    throw csvError(row, error instanceof Error ? error.message : String(error));
+  }
 }
 
 function toField(row: CsvRow): Record<string, unknown> {
   const csvKey = column(row, 'key');
   const derived = csvKey.startsWith(DERIVED_PREFIX);
-  const values = parseValues(column(row, 'values'));
+  const values = rowValues(row);
   return {
     record: column(row, 'record'),
     position: integer(row, 'position'),
@@ -107,7 +128,7 @@ export async function renderLayoutModule(year: number, sources: LayoutSources): 
   const recordTypes = new Set(sources.records.map(row => column(row, 'record')));
   for (const field of sources.fields) {
     if (!recordTypes.has(column(field, 'record'))) {
-      throw new Error(`layout CSV: field of unknown record "${column(field, 'record')}"`);
+      throw csvError(field, `field of unknown record "${column(field, 'record')}"`);
     }
   }
   const records = Object.fromEntries(

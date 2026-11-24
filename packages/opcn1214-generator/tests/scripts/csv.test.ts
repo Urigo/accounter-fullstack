@@ -72,6 +72,10 @@ describe('parseCsvRecords', () => {
     expect(() => parseCsvRecords('a,b\n"x\ny",2\n1,2,3\n')).toThrow(/line 4.*expected 2.*got 3/);
   });
 
+  it('skips a leading UTF-8 BOM, so it does not prefix the first header name', () => {
+    expect(parseCsvRecords('\uFEFFa,b\n1,2\n')).toEqual([{ a: '1', b: '2' }]);
+  });
+
   it('throws on an empty file', () => {
     expect(() => parseCsvRecords('')).toThrow(/header/);
   });

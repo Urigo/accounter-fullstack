@@ -3,7 +3,7 @@
  *
  * Fields are separated by commas; a field may be wrapped in double quotes, in which case it may
  * contain commas, line breaks and doubled quotes (`""` → `"`). Rows end with CRLF or LF; a final
- * line break is optional.
+ * line break is optional. A leading UTF-8 byte order mark is skipped.
  */
 
 export type CsvRow = Record<string, string>;
@@ -20,7 +20,8 @@ function parseRows(text: string): ParsedRow[] {
   let field = '';
   let line = 1;
   let rowLine = 1;
-  let i = 0;
+  // Skip a UTF-8 BOM (Excel's "CSV UTF-8" adds one); it would otherwise prefix the first header.
+  let i = text.startsWith('\uFEFF') ? 1 : 0;
 
   const endRow = () => {
     fields.push(field);
