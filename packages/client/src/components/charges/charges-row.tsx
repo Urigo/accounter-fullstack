@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { flexRender, type Row } from '@tanstack/react-table';
 import {
@@ -11,6 +11,7 @@ import { useRegisterChargeRefresh } from '../../providers/charge-refresh.js';
 import { Card } from '../ui/card.js';
 import { TableCell, TableRow } from '../ui/table.js';
 import { ChargeExtendedInfo } from './charge-extended-info.js';
+import { BatchChargesExtendedInfoContext } from './charges-extended-info-loader.js';
 import {
   convertChargeFragmentToTableRow,
   type ChargeRow as ChargeRowType,
@@ -55,6 +56,24 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
   // refresh, but its id is stable, which is what the registry keys on.
   useRegisterChargeRefresh(row.original.id, refetchCharge);
 
+  // For actions that change what the expansion shows (documents, ledger), such as a drag & drop
+  // upload or the actions menu. In expand-all mode the expansion reads the charge from the table's
+  // batched query, which the row refetch doesn't reach, so refetch that batch too. Do it even while
+  // this row is collapsed: re-expanding the row reads from the batch rather than fetching anew. In
+  // per-row mode the open expansion follows the row refetch by itself (its `fetching` effect), and
+  // a collapsed one fetches fresh data when it mounts.
+  // Other cell edits (description, tags, accountant status) and batch actions keep the plain row
+  // refetch: the batch spans every charge on the page, with each one's ledger and its validation.
+  const { active: batchActive, refetch: refetchBatch } = useContext(
+    BatchChargesExtendedInfoContext,
+  );
+  const refetchChargeAndExpansion = useCallback((): void => {
+    refetchCharge();
+    if (batchActive) {
+      refetchBatch();
+    }
+  }, [refetchCharge, batchActive, refetchBatch]);
+
   const dropCharge = useCallback((): void => {
     removeCharge(row.original.id);
   }, [removeCharge, row.original.id]);
@@ -78,12 +97,14 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
   }, [newRow, newStringified, originalStringified, fetching, updateCharge]);
 
   // react-table's row model is mutated in place to thread this row's refetch
-  // handler onto `row.original.onChange`, which the cells read to reload the
-  // charge after an edit. `updateCharge` swaps `row.original` for a freshly
-  // converted row whose handlers are inert stubs, so the re-threading below has
-  // to happen on every render — not just on mount.
+  // handlers onto `row.original.onChange` and `row.original.onChangeWithExpansion`,
+  // which the cells read to reload the charge after an edit. `updateCharge` swaps
+  // `row.original` for a freshly converted row whose handlers are inert stubs, so
+  // the re-threading below has to happen on every render — not just on mount.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onChange = refetchCharge;
+  // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
+  row.original.onChangeWithExpansion = refetchChargeAndExpansion;
   // Same threading for the delete path — the row is dropped from the table instead of refetched.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onDelete = dropCharge;

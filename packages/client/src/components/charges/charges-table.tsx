@@ -121,6 +121,11 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
 export interface ChargeRow {
   id: string;
   onChange: () => void;
+  /**
+   * `onChange`, plus a refresh of the charge's expansion in expand-all mode. For actions that
+   * change what the expansion shows, such as a document upload.
+   */
+  onChangeWithExpansion: () => void;
   /** Drops this charge's row from the table after it was deleted on the server. */
   onDelete: () => void;
   type: ChargeType;
@@ -132,7 +137,7 @@ export interface ChargeRow {
   tags: Omit<TagsProps, 'onChange'>;
   taxCategory?: TaxCategoryProps;
   businessTrip?: BusinessTripProps;
-  moreInfo: MoreInfoProps;
+  moreInfo: Omit<MoreInfoProps, 'onChange'>;
   accountantApproval: AccountantStatus;
 }
 
@@ -150,6 +155,7 @@ export function convertChargeFragmentToTableRow(
   return {
     id: fragmentData.id,
     onChange: () => {},
+    onChangeWithExpansion: () => {},
     onDelete: () => {},
     type: fragmentData.__typename as ChargeType,
     date: getDateProps({

@@ -18,7 +18,12 @@ export const UploadPayrollFile = ({ chargeId, onDone }: Props): ReactElement => 
     uploadPayrollFile({
       file: value,
       chargeId,
-    }).then(onDone);
+    }).then(success => {
+      // A failed upload is toasted by the hook; keep the form open and don't refresh the charge.
+      if (success) {
+        onDone();
+      }
+    });
   }, [uploadPayrollFile, onDone, value, chargeId]);
 
   return (
