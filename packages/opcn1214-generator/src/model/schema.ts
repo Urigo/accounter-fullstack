@@ -180,7 +180,7 @@ const securitiesHeader = {
   soldToRelatedParty: z.boolean().optional(),
   boughtFromRelatedParty: z.boolean().optional(),
   gainFromInvestmentFund: z.boolean().optional(),
-  /** Four slots in the record (3060/3064: 146–313): a fifth withholder is input.shape. */
+  /** Four slots in the record (3060/3064: 146–313, 3065: 147–314): a fifth withholder is input.shape. */
   withholders: z.array(withholder).max(4).optional(),
   lossesCarriedForward: z.number().optional(),
 };

@@ -416,9 +416,9 @@ export interface SecuritiesAppendix {
    * A-8, cg.investmentFund.value): 3060 and 3065 `false`, 3064 `true`, or absent.
    */
   gainFromInvestmentFund?: boolean;
-  /** 30xx@146–313: at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
+  /** 3060/3064@146–313 (3065: 147–314): at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
   withholders?: Withholder[];
-  /** 30xx@314, losses carried forward, whole shekels. */
+  /** 3060/3064@314 (3065: 315), losses carried forward, whole shekels. */
   lossesCarriedForward?: number;
   /** Record 3060 code-amount section; no code of 3060 is zeroAllowed (SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<60>, number>>;
@@ -461,6 +461,10 @@ export interface NoWithholding1322Appendix extends Omit<SecuritiesAppendix, 'sym
   symbol: 65;
   /** 3065@146 "מס במקור": notWithheldFirstHalf → 2, notWithheldSecondHalf → 3, absent → 0. */
   withholdingStatus?: WithholdingStatus;
+  /** 3065@147–314: at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
+  withholders?: Withholder[];
+  /** 3065@315, losses carried forward, whole shekels. */
+  lossesCarriedForward?: number;
   /** Record 3065 code-amount section; no code of 3065 is zeroAllowed (SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<65>, number>>;
 }
