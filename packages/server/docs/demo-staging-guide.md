@@ -431,8 +431,9 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 **Cause**: `POSTGRES_HOST` is not a local host.
 
-**Solution**: First make sure that host is the database you mean to wipe: `grep '^POSTGRES' .env`.
-If it is a staging database, opt in for the command only:
+**Solution**: First make sure that host is the database you mean to wipe:
+`grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env` (this leaves the password out). If it is a staging
+database, opt in for the command only:
 
 ```bash
 ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
