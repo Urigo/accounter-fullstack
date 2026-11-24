@@ -1223,7 +1223,9 @@ included, is `parse.order`, and the 9999 counts are compared with the records be
   meaningful);
 - capital-gains appendices in emission order (grouped by record type ascending, §3.3), an empty
   `capitalGains` list removed; `withholders` as the parser reads the slots back (§7.3): trailing
-  empty withholders and an empty list removed, an empty withholder before a filled one kept as `{}`.
+  empty withholders and an empty list removed, an empty withholder before a filled one kept as `{}`;
+  `walletAddresses` likewise: trailing empty addresses and an all-empty list removed, an empty
+  address before a filled one kept as `''`; a `dates` object with no date removed.
 
 Round-trip requirements (tested, §13.6):
 

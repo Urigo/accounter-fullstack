@@ -234,8 +234,10 @@ function canonicalCapitalGains(
  * and `rdInvestments` lists, an empty `countryBreakdown` and non-zeroAllowed zero codes (of
  * `amounts`, `foreignAppendix.amounts` and the capital-gains amounts) removed, country codes
  * zero-padded, capital-gains appendices in emission order and an empty `capitalGains` list
- * removed, withholders as their slots are read back (trailing empty ones removed), amounts rounded
- * per `options.rounding`. `input` is not changed.
+ * removed, withholders as their slots are read back (trailing empty ones and an empty list removed,
+ * an empty one before a filled one kept as `{}`), wallet addresses likewise (trailing empty ones
+ * and an all-empty list removed, an empty one before a filled one kept as `''`), a `dates` object
+ * with no date removed, amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
