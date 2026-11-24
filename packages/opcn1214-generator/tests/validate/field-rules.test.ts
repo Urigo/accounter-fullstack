@@ -350,6 +350,22 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
       expect(issues).toEqual([]);
     });
 
+    // Float noise: compared as written (hundredths), like field.decimals and the encoder.
+    it.each([
+      ['14.46 + 49.59 + 35.95', 14.46 + 49.59 + 35.95, 100.00000000000001],
+      ['0.7 + 0.2 + 0.1', 0.7 + 0.2 + 0.1, 0.9999999999999999],
+    ])('accepts %s, written as an in-range value', (_, dividendRightsPercent, raw) => {
+      expect(dividendRightsPercent).toBe(raw);
+      const issues = runPipeline(withShareholder({ dividendRightsPercent }), OPTIONS).issues;
+      expect(issues).toEqual([]);
+    });
+
+    it('still reports NaN', () => {
+      expect(
+        issuesOf(withShareholder({ dividendRightsPercent: Number.NaN }), 'field.percentRange'),
+      ).toHaveLength(1);
+    });
+
     it('reports more than 2 decimals', () => {
       expect(issuesOf(withShareholder({ otherRightsPercent: 10.123 }), 'field.decimals')).toEqual([
         expect.objectContaining({
@@ -692,9 +708,12 @@ describe('fieldRules on synthetic records', () => {
         return report;
       }
 
-      it.each([1, 10.23, 100])('accepts %s', ratePercent => {
-        expect(fieldRules(withRate(ratePercent))).toEqual([]);
-      });
+      it.each([1, 10.23, 100, 14.46 + 49.59 + 35.95, 0.7 + 0.2 + 0.1])(
+        'accepts %s',
+        ratePercent => {
+          expect(fieldRules(withRate(ratePercent))).toEqual([]);
+        },
+      );
 
       it.each([
         [10.234, 'field.decimals'],

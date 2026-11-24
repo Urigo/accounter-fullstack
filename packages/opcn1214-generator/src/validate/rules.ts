@@ -100,7 +100,8 @@ export const RULES = [
     severity: 'error',
     source: 'spec',
     scope: 'report',
-    description: 'A percentage (percentX100, percentLiteral) is outside 1–100.',
+    description:
+      'A percentage (percentX100, percentLiteral) is outside 1–100, compared as written (rounded to hundredths).',
     specRef: { page: 10 },
   },
   {

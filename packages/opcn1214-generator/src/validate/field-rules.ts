@@ -146,7 +146,10 @@ function numberFindings(kind: FieldKind, value: number, width: number, name: str
       expected: 'at most 2 decimals',
     });
   }
-  if (PERCENT_KINDS.has(kind) && !(value >= 1 && value <= 100)) {
+  // Compare the value as written (× 100, like field.decimals and the encoder), so float noise
+  // such as 14.46 + 49.59 + 35.95 = 100.00000000000001 (written as 100) is in range.
+  const hundredths = Math.round(value * 100);
+  if (PERCENT_KINDS.has(kind) && !(hundredths >= 100 && hundredths <= 10_000)) {
     findings.push({
       ruleId: 'field.percentRange',
       message: `${name} must be a percentage between 1 and 100.`,
