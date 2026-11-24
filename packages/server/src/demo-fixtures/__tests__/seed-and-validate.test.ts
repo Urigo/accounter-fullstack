@@ -55,12 +55,14 @@ describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
     'seeds demo data and passes validation',
     async () => {
       // Set by scripts/vitest-demo-seed-setup.ts, the project's global setup, when the latest
-      // migration is not in the database (or could not be looked up).
+      // migration is not in the database (or could not be looked up). Its warning, printed
+      // before any test started, holds the command that migrates this database by hand. The
+      // command is not repeated here: it names the server, which only that setup knows.
       if (process.env.SKIP_DEMO_SEED_STALE_MIGRATIONS === '1') {
         throw new Error(
           'Demo-seed test failed: the test database is not at the latest migration. The test ' +
-            'setup migrates it, so see the [test-setup] output above. By hand: ' +
-            'POSTGRES_DB=accounter_test yarn workspace @accounter-helper/migrations migration:run',
+            'setup migrates it, so see the [test-setup] output above. The WARNING printed with ' +
+            'it, before the tests started, gives the command that migrates it by hand.',
         );
       }
 

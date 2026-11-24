@@ -49,9 +49,11 @@ export async function setup() {
         `  The test setup migrates "${TEST_DATABASE_NAME}" before this check runs, so it did not`,
       );
       console.warn(`  get there: see the [test-setup] lines above. To migrate it by hand:`);
-      console.warn(
-        `    POSTGRES_DB=${TEST_DATABASE_NAME} yarn workspace @accounter-helper/migrations migration:run`,
-      );
+      // The command names the server this check just used, not only the database.
+      // `migration:run` takes the host and port from the shell, or from the root .env when the
+      // shell does not set them, and this run's target may have come from neither.
+      const target = `POSTGRES_HOST=${testDbConfig.host} POSTGRES_PORT=${testDbConfig.port} POSTGRES_DB=${TEST_DATABASE_NAME}`;
+      console.warn(`    ${target} yarn workspace @accounter-helper/migrations migration:run`);
       console.warn(`  Demo-seed tests will fail.`);
 
       // Store flag to fail tests gracefully
