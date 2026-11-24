@@ -89,11 +89,19 @@ describe('property: random valid reports', () => {
       const input = randomValidInput(seed);
       const result = validate1214(input, OPTIONS);
       expect(result.errors, `seed ${seed}: randomValidInput(${seed}) has errors`).toEqual([]);
-      expect(result.warnings, `seed ${seed}: randomValidInput(${seed}) has warnings`).toEqual([]);
+      // Every 2025 report carries the provisional-layout warning (SPEC §14), and nothing else.
+      const provisional = input.taxYear === 2025 ? ['struct.taxYear.provisionalLayout'] : [];
+      expect(
+        result.warnings.map(issue => issue.ruleId),
+        `seed ${seed}: randomValidInput(${seed}) has warnings`,
+      ).toEqual(provisional);
 
       const { bytes } = generate1214(input, OPTIONS);
       const parsed = parse1214(bytes);
-      expect(parsed.issues, `seed ${seed}: the parsed file has issues`).toEqual([]);
+      expect(
+        parsed.issues.map(issue => issue.ruleId),
+        `seed ${seed}: the parsed file has issues`,
+      ).toEqual(provisional);
       expect(parsed.report, `seed ${seed}: round trip`).toEqual(canonicalize(input, OPTIONS));
     },
     TIMEOUT_MS,

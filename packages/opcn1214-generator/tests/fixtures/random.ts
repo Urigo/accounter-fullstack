@@ -518,7 +518,8 @@ function randomAppendix(
         foreignAsset: yesNo(rng),
         soldToRelatedParty: yesNo(rng),
         boughtFromRelatedParty: yesNo(rng),
-        gainFromInvestmentFund: yesNo(rng),
+        // Only the value the PDF lists for the type, or absent (cg.investmentFund.value).
+        gainFromInvestmentFund: yesNo(rng) === undefined ? undefined : symbol === 64,
         withholdingStatus: symbol === 65 ? randomStatus(rng) : undefined,
         withholders: maybe(rng, () => randomWithholders(rng), 0.7),
         lossesCarriedForward: maybe(rng, () => randomWhole(rng, 10)),

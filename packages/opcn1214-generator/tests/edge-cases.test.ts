@@ -161,10 +161,9 @@ describe('SPEC §13.7 negative and edge cases', () => {
     );
   });
 
-  it('percent 100.001 is field.decimals and field.percentRange', () => {
+  it('percent 100.001 is field.decimals, not field.percentRange (100.00 as written)', () => {
     expect(issuesOf(withShareholder({ votingRightsPercent: 100.001 }))).toEqual([
       error('field.decimals', 'shareholders[0].votingRightsPercent'),
-      error('field.percentRange', 'shareholders[0].votingRightsPercent'),
     ]);
   });
 
