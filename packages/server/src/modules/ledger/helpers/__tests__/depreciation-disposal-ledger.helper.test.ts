@@ -472,6 +472,8 @@ describe('generateDepreciationDisposalsLedger', () => {
       disposal_date: DATE,
       disposed_cost: '20000',
       id,
+      original_amount: null,
+      original_currency: null,
       owner_id: 'owner',
       proceeds: '0',
       refund_mode: 'FROM_ACTIVATION',
@@ -539,7 +541,7 @@ describe('generateDepreciationDisposalsLedger', () => {
   });
 
   it("expects nothing when an event's rows can't be built", async () => {
-    // the servers' purchase charge has no tax category, so there is no asset account to credit
+    // neither the servers' record nor its purchase charge names an asset account to credit
     stubAssets({ laptops: 'tax-category-laptops', servers: null });
 
     const ledger = await generateDepreciationDisposalsLedger(
@@ -550,7 +552,7 @@ describe('generateDepreciationDisposalsLedger', () => {
     );
 
     expect(ledger.errors).toEqual([
-      "Asset disposal servers-refund: the asset's charge has no tax category (asset account)",
+      'Asset disposal servers-refund: the asset has no account: set its asset account, or a tax category on the charge that bought it',
     ]);
     // the laptops' rows only: nothing moves the servers' refund out of the clearing account
     expect(rows(ledger.entries)).toEqual([
