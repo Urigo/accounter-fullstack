@@ -612,8 +612,8 @@ export interface OtherTransactionsAppendix {
   /** The asset bought in replacement: details (3077@417), purchase date (467) and price (477). */
   replacementAsset?: { details?: string; purchaseDate?: IsoDate; price?: number };
   /**
-   * 3077@489 and @639: one or two virtual wallet addresses, up to 150 characters each; required
-   * when code 071 = 1 (cg.virtualCurrency.wallet).
+   * 3077@489 and @639: one or two virtual wallet addresses, up to 150 characters each; the first
+   * (489) is required when code 071 = 1 (cg.virtualCurrency.wallet).
    */
   walletAddresses?: [string] | [string, string];
   /**

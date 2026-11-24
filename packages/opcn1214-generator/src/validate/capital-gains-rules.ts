@@ -128,7 +128,8 @@ function improvementCode50Amount(report: NormalizedReport): Issue[] {
 
 /**
  * cg.virtualCurrency.wallet: a 3077 appendix with code 071 = 1 needs a virtual wallet address
- * ("יש להכניס כתובת הארנק", p.57) in either slot (489, 639). Located at `walletAddresses`.
+ * in its first slot, 489 ("יש להכניס כתובת הארנק", p.57); the second slot, 639, is only for
+ * "another one" and does not satisfy it. Located at `walletAddresses`.
  */
 function virtualCurrencyWallet(report: NormalizedReport): Issue[] {
   const field = report.layout.records['3077'].fields.find(def => def.key === walletAddressKey(0));
@@ -139,7 +140,7 @@ function virtualCurrencyWallet(report: NormalizedReport): Issue[] {
     .filter(
       record =>
         record.codes.get(VIRTUAL_CURRENCY_CODE) === 1 &&
-        [0, 1].every(slot => record.values[walletAddressKey(slot)] === undefined),
+        record.values[walletAddressKey(0)] === undefined,
     )
     .map(record =>
       makeIssue('cg.virtualCurrency.wallet', {

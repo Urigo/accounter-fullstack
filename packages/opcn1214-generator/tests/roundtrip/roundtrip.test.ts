@@ -477,8 +477,9 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
             { expense: 99_999_999.99, date: '2020-03-01', code50Amount: 0.01 },
           ],
           replacementAsset: { details: ' ' },
+          // Without code 071 = 1 a wallet in the second slot only is valid (cg.virtualCurrency.wallet).
           walletAddresses: ['', ' 0xdef '],
-          amounts: { '018': 50, '092': 0, '040': 0.5, '059': 7 },
+          amounts: { '071': undefined, '018': 50, '092': 0, '040': 0.5, '059': 7 },
         }),
         sharesAppendix(),
         bettermentTaxAppendix(),

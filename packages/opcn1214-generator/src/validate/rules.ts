@@ -566,7 +566,8 @@ export const RULES = deepFreeze([
     severity: 'error',
     source: 'spec',
     scope: '3077',
-    description: 'A 3077 appendix with code 071 = 1 (virtual currency) and no wallet address.',
+    description:
+      'A 3077 appendix with code 071 = 1 (virtual currency) and no wallet address in 489 (the first slot).',
     specRef: { page: 57 },
   },
   {

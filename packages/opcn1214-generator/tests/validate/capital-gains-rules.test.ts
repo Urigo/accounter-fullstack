@@ -207,17 +207,21 @@ describe('cg.virtualCurrency.wallet (SPEC §10.6)', () => {
     ).toEqual([['cg.virtualCurrency.wallet', 'capitalGains[1].walletAddresses', '3077', 1]]);
   });
 
-  it('counts a blank address as no address, and accepts one in the second slot only', () => {
+  it('counts a blank address as no address, and requires the first slot (489, p.57)', () => {
     expect(
       issuesOf(
         minimalInput({
           capitalGains: [
             otherTransactionsAppendix({ walletAddresses: [' '] }),
             otherTransactionsAppendix({ walletAddresses: ['', '0x2'] }),
+            otherTransactionsAppendix({ walletAddresses: ['0x1', '0x2'] }),
           ],
         }),
       ),
-    ).toEqual([['cg.virtualCurrency.wallet', 'capitalGains[0].walletAddresses', '3077', 0]]);
+    ).toEqual([
+      ['cg.virtualCurrency.wallet', 'capitalGains[0].walletAddresses', '3077', 0],
+      ['cg.virtualCurrency.wallet', 'capitalGains[1].walletAddresses', '3077', 1],
+    ]);
   });
 
   it('requires nothing without code 071 or in a 3051 appendix', () => {

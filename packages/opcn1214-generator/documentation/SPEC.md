@@ -1018,7 +1018,7 @@ export interface OtherTransactionsAppendix {
     code50Amount?: number // → code 501..505, ×100
   }>
   replacementAsset?: { details?: string; purchaseDate?: IsoDate; price?: number } // 417/467/477
-  walletAddresses?: [string] | [string, string] // required when code 071 = 1
+  walletAddresses?: [string] | [string, string] // [0] (489) required when code 071 = 1
   amounts: Partial<
     Record<Exclude<CapitalGainsCode<77>, '501' | '502' | '503' | '504' | '505'>, number>
   >
@@ -1466,7 +1466,7 @@ and `values` columns.)
 | `cg.investmentFund.value`      | E   | spec    | `gainFromInvestmentFund` (30xx@145) other than the one value the PDF lists: 3060 and 3065 only `false` (2), 3064 only `true` (1); absent is allowed (§15 A-8) | p.43, 48, 50 |
 | `cg.improvements.max`          | E   | spec    | more than 5 improvements in a 3077 appendix (report the excess via 962 / reason 965 instead)                                                                  | p.10, 55     |
 | `cg.improvements.code50Amount` | W   | derived | an improvement without `code50Amount`, or a `code50Amount` with no expense/depreciation                                                                       | p.58         |
-| `cg.virtualCurrency.wallet`    | E   | spec    | 3077 with code 071 = 1 and no wallet address ("יש להכניס כתובת הארנק", p.57)                                                                                  | p.57         |
+| `cg.virtualCurrency.wallet`    | E   | spec    | 3077 with code 071 = 1 and no wallet address in 489, the first slot ("יש להכניס כתובת הארנק", p.57; 639 is for "another one")                                 | p.57         |
 
 Improvement dates (271/305/339/373/407) are covered by the slot-aware `field.required` (§9.3); the
 rate code 018 by `field.enum`. Required dates (3050 purchase date and code-15 date; 3051 code-15
