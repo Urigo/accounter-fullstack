@@ -29,15 +29,15 @@ function record(
     activation_date: IGetDepreciationRecordsByDatesResult['activation_date'];
   },
 ): IGetDepreciationRecordsByDatesResult {
+  // asserted: the row type follows the table's columns (`d.*`), which differ between stacked PRs
   return {
     category_percentage: PERCENTAGES[overrides.category],
     charge_id: `charge-${overrides.id}`,
     currency: null,
-    local_amount: null,
     owner_id: OWNER_ID,
     type: 'GENERAL_AND_MANAGEMENT',
     ...overrides,
-  };
+  } as IGetDepreciationRecordsByDatesResult;
 }
 
 function event(
