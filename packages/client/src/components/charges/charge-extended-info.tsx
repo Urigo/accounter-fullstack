@@ -476,7 +476,7 @@ export function ChargeExtendedInfo({
             )}
             {hasDepreciationDisposals && (
               <AccordionItem value="depreciationDisposals">
-                <AccordionTrigger>Asset Disposals</AccordionTrigger>
+                <AccordionTrigger>Asset Disposals & Cost Refunds</AccordionTrigger>
                 <AccordionContent>
                   <ChargeDepreciationDisposals chargeId={charge.id} onChange={onExtendedChange} />
                 </AccordionContent>

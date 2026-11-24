@@ -52,6 +52,10 @@ import { ComboBox } from '../../common/inputs/combo-box.js';
         id
         name
       }
+      depreciationCorrectionTaxCategory {
+        id
+        name
+      }
     }
   }
 `;
@@ -84,14 +88,20 @@ const SETTINGS = [
     input: 'depreciationDisposalGainTaxCategoryId',
     field: 'depreciationDisposalGainTaxCategory',
     label: 'Gain on disposal of fixed assets',
-    description:
-      'Capital gain on a sale or supplier refund. Use sort code 991 (regular tax rate) and IRS code 5210',
+    description: 'Capital gain on a sale. Use sort code 991 (regular tax rate) and IRS code 5210',
   },
   {
     input: 'depreciationDisposalLossTaxCategoryId',
     field: 'depreciationDisposalLossTaxCategory',
     label: 'Loss on disposal of fixed assets',
     description: 'Capital loss on a sale or write-off. IRS code 5310',
+  },
+  {
+    input: 'depreciationCorrectionTaxCategoryId',
+    field: 'depreciationCorrectionTaxCategory',
+    label: 'Depreciation correction (ordinary income)',
+    description:
+      'Depreciation reversed by a supplier cost refund (a cost correction, not a sale). Confirm its sort code and IRS code with your CPA',
   },
 ] as const satisfies ReadonlyArray<{
   input: keyof AdminContextInput;
@@ -109,7 +119,7 @@ type Props = {
 
 /**
  * The tenant's depreciation tax categories, including the gain and loss on disposal of fixed
- * assets. Shown only on the admin page of the single business in the active scope, and only to the
+ * assets and the depreciation correction booked for cost refunds. Shown only on the admin page of the single business in the active scope, and only to the
  * business owner (the only role allowed to update the admin context).
  */
 export function DepreciationSettingsSection({ adminBusinessId }: Props): ReactElement | null {
@@ -170,8 +180,8 @@ function DepreciationSettingsCard({ adminBusinessId }: Props): ReactElement {
           Depreciation
         </CardTitle>
         <CardDescription>
-          Tax categories used by the yearly depreciation charge and by asset disposals (sales,
-          supplier refunds, write-offs).
+          Tax categories used by the yearly depreciation charge, by asset disposals (sales and
+          write-offs) and by supplier cost refunds.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

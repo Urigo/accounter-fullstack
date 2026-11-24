@@ -24,7 +24,7 @@ type Props = {
   onChange?: () => void;
 };
 
-/** The asset disposals a sale / refund charge carries the money for */
+/** The asset disposals and cost refunds a sale / refund charge carries the money for */
 export function ChargeDepreciationDisposals({ chargeId, onChange }: Props): ReactElement {
   const [{ data, fetching }, refetch] = useQuery({
     query: ChargeDepreciationDisposalsDocument,

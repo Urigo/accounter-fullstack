@@ -5,6 +5,7 @@ import {
   DepreciationDisposalPickerDocument,
   DepreciationDisposalPreviewDocument,
   DepreciationDisposalType,
+  DepreciationRefundMode,
   type InsertDepreciationDisposalInput,
 } from '../../../gql/graphql.js';
 import { formatStringifyAmount, TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../helpers/index.js';
@@ -17,6 +18,7 @@ import { LoadingOverlay } from '../../ui/overlay.js';
 import { DatePickerInput } from '../index.js';
 import { ComboBox } from '../inputs/combo-box.js';
 import { PopUpModal } from '../modals/modal.js';
+import { depreciationCategoryLabel } from './depreciation-category-label.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,6 +36,7 @@ import { PopUpModal } from '../modals/modal.js';
       category {
         id
         name
+        percentage
       }
       charge {
         id
@@ -64,7 +67,16 @@ import { PopUpModal } from '../modals/modal.js';
         gainLoss {
           raw
         }
+        costReduction {
+          raw
+        }
+        depreciationCorrection {
+          raw
+        }
         remainingCost {
+          raw
+        }
+        remainingBookValue {
           raw
         }
       }
@@ -73,9 +85,32 @@ import { PopUpModal } from '../modals/modal.js';
 `;
 
 export const DISPOSAL_TYPE_OPTIONS = [
-  { value: DepreciationDisposalType.CostRefund, label: 'Cost refund (supplier refund)' },
+  {
+    value: DepreciationDisposalType.CostRefund,
+    label: 'Cost refund (supplier refund: a cost correction)',
+  },
   { value: DepreciationDisposalType.Sale, label: 'Sale' },
   { value: DepreciationDisposalType.WriteOff, label: 'Write-off (scrap, loss, theft)' },
+];
+
+export const REFUND_MODE_LABELS: Record<DepreciationRefundMode, string> = {
+  FROM_ACTIVATION: 'From activation',
+  FROM_REFUND_DATE: 'From refund date',
+};
+
+const REFUND_MODE_OPTIONS = [
+  {
+    value: DepreciationRefundMode.FromActivation,
+    label: `${REFUND_MODE_LABELS.FROM_ACTIVATION} (default)`,
+    explanation:
+      'A refund of the original price: the cost is corrected from day one, and the depreciation already claimed on the refunded part is recaptured as income in the refund year.',
+  },
+  {
+    value: DepreciationRefundMode.FromRefundDate,
+    label: REFUND_MODE_LABELS.FROM_REFUND_DATE,
+    explanation:
+      'A later rebate: the cost and the book value drop on the refund date; only a refund above the book value is income.',
+  },
 ];
 
 export type ExistingDisposal = {
@@ -85,6 +120,7 @@ export type ExistingDisposal = {
   disposalDate: string;
   disposedCost: number;
   proceeds: number;
+  refundMode?: DepreciationRefundMode | null;
   chargeId?: string | null;
   description?: string | null;
 };
@@ -96,6 +132,7 @@ type FormValues = {
   disposalDate: string;
   disposedCost: string;
   proceeds: string;
+  refundMode: DepreciationRefundMode;
   description: string;
 };
 
@@ -117,15 +154,15 @@ const amount = (value: number) =>
   value < 0 ? `(${formatStringifyAmount(-value, 0)})` : formatStringifyAmount(value, 0);
 
 /**
- * Proceeds to send on an edit. They are explicit for every type, so changing the type never keeps
- * the stored proceeds: a write-off has none, and a cost refund's equal the refunded cost.
+ * Proceeds to send on an edit, so changing the type never keeps a sale's stored proceeds: a
+ * write-off has none (an explicit 0), and a cost refund takes none at all (it is a cost correction).
  */
 function proceedsForUpdate(input: InsertDepreciationDisposalInput): number | null | undefined {
   switch (input.type) {
     case DepreciationDisposalType.WriteOff:
       return 0;
     case DepreciationDisposalType.CostRefund:
-      return input.disposedCost;
+      return undefined;
     default:
       return input.proceeds;
   }
@@ -147,6 +184,7 @@ export function DepreciationDisposalModal({
       disposalDate: disposal?.disposalDate ?? '',
       disposedCost: disposal ? String(disposal.disposedCost) : '',
       proceeds: disposal ? String(disposal.proceeds) : '',
+      refundMode: disposal?.refundMode ?? DepreciationRefundMode.FromActivation,
       description: disposal?.description ?? '',
     },
   });
@@ -154,6 +192,7 @@ export function DepreciationDisposalModal({
   const values = useWatch({ control });
 
   const pickAsset = !disposal && !depreciationRecordId;
+  const isRefund = values.type === DepreciationDisposalType.CostRefund;
   const validDate = TIMELESS_DATE_REGEX.test(values.disposalDate ?? '');
   const chargeIdValue = values.chargeId?.trim() ?? '';
   const chargeIdError =
@@ -168,9 +207,9 @@ export function DepreciationDisposalModal({
     () =>
       assetsData?.depreciationRecords.map(record => ({
         value: record.id,
-        label: `${record.charge.userDescription ?? 'Asset'} · ${record.category.name} · ${
-          record.activationDate
-        } · remaining ${record.remainingCost.formatted}`,
+        label: `${record.charge.userDescription ?? 'Asset'} · ${depreciationCategoryLabel(
+          record.category,
+        )} · ${record.activationDate} · remaining ${record.remainingCost.formatted}`,
       })) ?? [],
     [assetsData],
   );
@@ -193,8 +232,13 @@ export function DepreciationDisposalModal({
       type: values.type,
       disposalDate: values.disposalDate as TimelessDate,
       disposedCost,
+      // a cost refund is a cost correction: no proceeds, only a refund mode
       proceeds:
         values.type === DepreciationDisposalType.Sale ? Number(values.proceeds || 0) : undefined,
+      refundMode:
+        values.type === DepreciationDisposalType.CostRefund
+          ? (values.refundMode ?? DepreciationRefundMode.FromActivation)
+          : undefined,
       description: values.description || null,
     };
   }, [values, validDate, chargeIdValue, chargeIdError]);
@@ -207,6 +251,7 @@ export function DepreciationDisposalModal({
     pause: !input || !!disposal,
   });
   const preview = previewData?.previewDepreciationDisposal;
+  const refundYear = values.disposalDate?.slice(0, 4);
 
   const { addDepreciationDisposal, fetching: adding } = useAddDepreciationDisposal();
   const { updateDepreciationDisposal, fetching: updating } = useUpdateDepreciationDisposal();
@@ -223,6 +268,7 @@ export function DepreciationDisposalModal({
             disposalDate: input.disposalDate,
             disposedCost: input.disposedCost,
             proceeds: proceedsForUpdate(input),
+            refundMode: input.refundMode,
             chargeId: input.chargeId,
             description: input.description,
           },
@@ -238,7 +284,7 @@ export function DepreciationDisposalModal({
     <PopUpModal
       opened={opened}
       onClose={close}
-      title={disposal ? 'Edit Asset Disposal' : 'Record Asset Disposal'}
+      title={`${disposal ? 'Edit' : 'Record'} ${isRefund ? 'Cost Refund' : 'Asset Disposal'}`}
       withCloseButton
       onClick={event => event.stopPropagation()}
     >
@@ -261,9 +307,7 @@ export function DepreciationDisposalModal({
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
                 <FormLabel htmlFor="disposal-date">
-                  {values.type === DepreciationDisposalType.CostRefund
-                    ? 'Refund Date'
-                    : 'Disposal Date'}
+                  {isRefund ? 'Refund Date' : 'Disposal Date'}
                 </FormLabel>
                 <FormControl>
                   <DatePickerInput
@@ -303,9 +347,7 @@ export function DepreciationDisposalModal({
             render={({ field }): ReactElement => (
               <FormItem>
                 <FormLabel>
-                  {values.type === DepreciationDisposalType.CostRefund
-                    ? 'Refund Amount (excl. VAT, ILS)'
-                    : 'Disposed Cost (ILS)'}
+                  {isRefund ? 'Refund Amount (excl. VAT, ILS)' : 'Disposed Cost (ILS)'}
                 </FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" min="0" {...field} />
@@ -314,6 +356,40 @@ export function DepreciationDisposalModal({
               </FormItem>
             )}
           />
+          {isRefund && (
+            <Controller
+              name="refundMode"
+              control={control}
+              render={({ field }): ReactElement => (
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="mb-2 text-sm font-medium">Refund Mode</legend>
+                  {REFUND_MODE_OPTIONS.map(option => (
+                    <div key={option.value} className="flex items-start gap-2 text-sm">
+                      <input
+                        type="radio"
+                        id={`refund-mode-${option.value}`}
+                        name={field.name}
+                        value={option.value}
+                        checked={field.value === option.value}
+                        onChange={() => field.onChange(option.value)}
+                        onBlur={field.onBlur}
+                        className="mt-1"
+                      />
+                      <label
+                        htmlFor={`refund-mode-${option.value}`}
+                        className="flex flex-col font-medium"
+                      >
+                        {option.label}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {option.explanation}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </fieldset>
+              )}
+            />
+          )}
           {values.type === DepreciationDisposalType.Sale && (
             <FormField
               name="proceeds"
@@ -371,7 +447,21 @@ export function DepreciationDisposalModal({
               Could not preview the disposal: {previewError.message}
             </p>
           )}
-          {preview?.__typename === 'DepreciationDisposalComputation' && (
+          {preview?.__typename === 'DepreciationDisposalComputation' && isRefund && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm border rounded-sm p-3">
+              <span>Cost reduction</span>
+              <span className="text-right">{amount(preview.costReduction.raw)}</span>
+              <span className="font-bold">Depreciation correction (income)</span>
+              <span className="text-right font-bold">
+                {amount(preview.depreciationCorrection.raw)}
+              </span>
+              <span>New cost (end of {refundYear})</span>
+              <span className="text-right">{amount(preview.remainingCost.raw)}</span>
+              <span>Book value (end of {refundYear})</span>
+              <span className="text-right">{amount(preview.remainingBookValue.raw)}</span>
+            </div>
+          )}
+          {preview?.__typename === 'DepreciationDisposalComputation' && !isRefund && (
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm border rounded-sm p-3">
               <span>Accumulated depreciation</span>
               <span className="text-right">{amount(preview.accumulatedDepreciation.raw)}</span>

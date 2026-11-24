@@ -21,6 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { TableCell, TableRow } from '../../ui/table.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
+import { depreciationCategoryLabel } from './depreciation-category-label.js';
 import { depreciationTypes } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -91,7 +92,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
 
   const categories = categoriesData?.depreciationCategories.map(category => ({
     value: category.id,
-    label: category.name,
+    label: depreciationCategoryLabel(category),
   }));
 
   useEffect(() => {
@@ -207,9 +208,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
               )}
             />
           ) : (
-            <div>
-              {depreciationRecord.category.name} ({depreciationRecord.category.percentage}%)
-            </div>
+            <div>{depreciationCategoryLabel(depreciationRecord.category)}</div>
           )}
         </TableCell>
         <TableCell>
