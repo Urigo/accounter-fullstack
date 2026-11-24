@@ -38,8 +38,20 @@ vi.mock('../../providers/urql.js', async importOriginal => ({
   setBusinessScope: setBusinessScopeMock,
 }));
 
+// The modal stand-ins render a marker while open, with a button that closes them.
 vi.mock('../common/modals/balance-charge-modal.js', () => ({
-  BalanceChargeModal: () => null,
+  BalanceChargeModal: ({
+    open,
+    onOpenChange,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div data-slot="balance-charge-modal">
+        <button data-slot="close-modal" onClick={() => onOpenChange(false)} />
+      </div>
+    ) : null,
 }));
 
 // Stand-in for the business-scope picker, so tests can assert what it offers and drive it without
@@ -117,7 +129,12 @@ vi.mock('../ui/dropdown-menu.js', () => ({
 }));
 
 vi.mock('../common/modals/sync-green-invoice-documents-modal.js', () => ({
-  SyncDocumentsModal: () => null,
+  SyncDocumentsModal: ({ opened, close }: { opened: boolean; close: () => void }) =>
+    opened ? (
+      <div data-slot="pull-documents-modal">
+        <button data-slot="close-modal" onClick={close} />
+      </div>
+    ) : null,
 }));
 
 vi.mock('../common/tooltip.js', () => ({
@@ -571,5 +588,78 @@ describe('UserNav business scope picker', () => {
     expect(setBusinessScopeMock).toHaveBeenCalledWith([]);
 
     await cleanup();
+  });
+
+  describe.each(['balance-charge', 'pull-documents'] as const)('the %s modal', modal => {
+    const modalSelector = `[data-slot="${modal}-modal"]`;
+
+    // The menu item a user picks to open this modal. The pull-documents one is an icon button.
+    async function pickModal(container: HTMLElement): Promise<void> {
+      const button =
+        modal === 'balance-charge'
+          ? [...container.querySelectorAll('button')].find(
+              element => element.textContent?.trim() === 'Add Balance Charge',
+            )
+          : container.querySelector('svg.lucide-file-down')?.closest('button');
+      expect(button, `${modal} menu item`).toBeTruthy();
+      await act(async () => {
+        button?.click();
+        await Promise.resolve();
+      });
+    }
+
+    it('opens after the remount that applying a pending scope causes', async () => {
+      const first = await renderUserNav(userContext);
+      await toggle(first.container, 'business-2');
+      await pickModal(first.container);
+
+      expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+      expect(setBusinessScopeMock).toHaveBeenCalledWith(['business-2']);
+
+      // Radix closes the menu after an item is picked; nothing is left to apply.
+      await click(first.container, '[data-slot="close-menu"]');
+      expect(setBusinessScopeMock).toHaveBeenCalledTimes(1);
+
+      // Applying the scope swapped the urql client, which remounts the app shell and this menu.
+      await first.cleanup();
+      const second = await renderUserNav(userContext);
+      expect(second.container.querySelector(modalSelector)).toBeTruthy();
+      await second.cleanup();
+
+      // The modal was handed over once; a later mount starts closed.
+      const third = await renderUserNav(userContext);
+      expect(third.container.querySelector(modalSelector)).toBeNull();
+      await third.cleanup();
+    });
+
+    it('opens in place, applying nothing, when no scope is pending', async () => {
+      const first = await renderUserNav(userContext);
+      await pickModal(first.container);
+
+      expect(setBusinessScopeMock).not.toHaveBeenCalled();
+      expect(first.container.querySelector(modalSelector)).toBeTruthy();
+      await first.cleanup();
+
+      const second = await renderUserNav(userContext);
+      expect(second.container.querySelector(modalSelector)).toBeNull();
+      await second.cleanup();
+    });
+
+    it('is not reopened by a later mount once closed in place', async () => {
+      // Without `OnboardingGuard` (dev auth), applying a scope remounts nothing, so the modal
+      // opens in place and must not come back on the next mount after it was closed.
+      const first = await renderUserNav(userContext);
+      await toggle(first.container, 'business-2');
+      await pickModal(first.container);
+      expect(first.container.querySelector(modalSelector)).toBeTruthy();
+
+      await click(first.container, '[data-slot="close-modal"]');
+      expect(first.container.querySelector(modalSelector)).toBeNull();
+      await first.cleanup();
+
+      const second = await renderUserNav(userContext);
+      expect(second.container.querySelector(modalSelector)).toBeNull();
+      await second.cleanup();
+    });
   });
 });

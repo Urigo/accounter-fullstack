@@ -69,6 +69,8 @@ interface MultiSelectProps
   /**
    * Callback function triggered when the options popover opens or closes.
    * Lets a caller that defers acting on the selection apply it once, when the user is done.
+   * Not called if the component unmounts while the popover is open, so such a caller needs its
+   * own fallback for that case (`UserNav` uses the menu's close).
    */
   onOpenChange?: (open: boolean) => void;
 
