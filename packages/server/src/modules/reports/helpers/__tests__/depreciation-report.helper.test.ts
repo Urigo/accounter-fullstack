@@ -5,69 +5,78 @@ import { DepreciationDisposalsProvider } from '../../../depreciation/providers/d
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import type {
   IGetDepreciationDisposalsByIdsResult,
-  IGetDepreciationRecordsByIdsResult,
+  IGetDepreciationRecordsByDatesResult,
 } from '../../../depreciation/types.js';
 import { calculateDepreciationAmount } from '../depreciation-report.helper.js';
 
-/*
- * All IDs, amounts and dates below are made up.
- *
- * The asset: ₪10,000 at 25%, activated on 2020-01-01, so ₪2,500 a year. Its stored expiration date,
- * 2022-06-30, comes before the natural end (2023-12-31): 2022 is its final year, which takes the
- * whole remaining value.
- */
+/* All IDs, amounts and dates below are made up. */
 
 const OWNER_ID = 'owner-business';
 const OTHER_OWNER_ID = 'other-business';
-const CATEGORY_ID = 'category-computers';
+
+const PERCENTAGES: Record<string, string> = {
+  'category-computers': '20',
+  'category-software': '33',
+  'category-customer-relationships': '12.5',
+  'category-goodwill': '10',
+};
 
 function record(
-  overrides: Partial<IGetDepreciationRecordsByIdsResult> & { id: string },
-): IGetDepreciationRecordsByIdsResult {
+  overrides: Partial<IGetDepreciationRecordsByDatesResult> & {
+    id: string;
+    category: string;
+    amount: string;
+    activation_date: IGetDepreciationRecordsByDatesResult['activation_date'];
+  },
+): IGetDepreciationRecordsByDatesResult {
   return {
-    activation_date: '2020-01-01',
-    amount: '10000',
-    category: CATEGORY_ID,
+    category_percentage: PERCENTAGES[overrides.category],
     charge_id: `charge-${overrides.id}`,
     currency: null,
-    expiration_date: '2022-06-30',
+    local_amount: null,
     owner_id: OWNER_ID,
     type: 'GENERAL_AND_MANAGEMENT',
     ...overrides,
-  } as IGetDepreciationRecordsByIdsResult;
+  };
 }
 
-function writeOff(
-  overrides: Partial<IGetDepreciationDisposalsByIdsResult> & { id: string },
+function event(
+  overrides: Partial<IGetDepreciationDisposalsByIdsResult> & {
+    depreciation_id: string;
+    disposal_date: IGetDepreciationDisposalsByIdsResult['disposal_date'];
+    disposed_cost: string;
+  },
 ): IGetDepreciationDisposalsByIdsResult {
   return {
     charge_id: null,
-    created_at: new Date('2022-04-01T00:00:00.000Z'),
-    depreciation_id: 'asset',
+    created_at: new Date('2025-01-01T00:00:00.000Z'),
     description: null,
-    disposal_date: '2022-03-31',
-    disposed_cost: '4000',
+    id: `${overrides.depreciation_id}-event`,
     owner_id: OWNER_ID,
     proceeds: '0',
+    refund_mode: null,
     type: 'WRITE_OFF',
-    updated_at: new Date('2022-04-01T00:00:00.000Z'),
+    updated_at: new Date('2025-01-01T00:00:00.000Z'),
     ...overrides,
   };
 }
 
 function makeInjector(
-  records: IGetDepreciationRecordsByIdsResult[],
-  disposalsByRecordId: Record<string, IGetDepreciationDisposalsByIdsResult[]> = {},
+  records: IGetDepreciationRecordsByDatesResult[],
+  eventsByRecordId: Record<string, IGetDepreciationDisposalsByIdsResult[]> = {},
 ) {
-  const loadCategory = vi.fn(async (_id: string) => ({ id: CATEGORY_ID, percentage: '25' }));
+  const loadCategory = vi.fn(async (id: string) => ({ id, percentage: PERCENTAGES[id] }));
   const providers = new Map<unknown, unknown>([
     [DepreciationProvider, { getDepreciationRecordsByDates: async () => records }],
-    [DepreciationCategoriesProvider, { getDepreciationCategoriesByIdLoader: { load: loadCategory } }],
+    [
+      DepreciationCategoriesProvider,
+      { getDepreciationCategoriesByIdLoader: { load: loadCategory } },
+    ],
     [
       DepreciationDisposalsProvider,
       {
         getDisposalsByDepreciationIdLoader: {
-          load: async (id: string) => disposalsByRecordId[id] ?? [],
+          load: async (id: string) => eventsByRecordId[id] ?? [],
         },
       },
     ],
@@ -77,46 +86,133 @@ function makeInjector(
 }
 
 describe('calculateDepreciationAmount', () => {
-  it('takes the whole remaining value in the year of the stored expiration date', async () => {
-    const { injector } = makeInjector([record({ id: 'asset' })]);
+  /*
+   * ₪10,000 at 20% (₪2,000 a year), activated on 2020-04-01: depreciation ends on 2025-03-31, so
+   * 2025 is the final year. 2020 took round(2,000 × 275 / 366) = ₪1,503 and 2021-2024 ₪2,000 each,
+   * leaving ₪497.
+   */
+  const computers = record({
+    id: 'computers',
+    category: 'category-computers',
+    amount: '10000',
+    activation_date: '2020-04-01',
+  });
 
-    // 2020 and 2021 took ₪2,500 each, so 2022 takes the remaining ₪5,000
-    await expect(calculateDepreciationAmount(injector, 2022, OWNER_ID)).resolves.toEqual({
+  it('takes the whole remaining value in the final year', async () => {
+    const { injector } = makeInjector([computers]);
+
+    // not the 90 days' share, round(2,000 × 90 / 365) = ₪493
+    await expect(calculateDepreciationAmount(injector, 2025, OWNER_ID)).resolves.toEqual({
       rndDepreciationYearlyAmount: 0,
-      gnmDepreciationYearlyAmount: 5000,
+      gnmDepreciationYearlyAmount: 497,
       marketingDepreciationYearlyAmount: 0,
-      totalDepreciationYearlyAmount: 5000,
+      totalDepreciationYearlyAmount: 497,
     });
   });
 
-  it('pro-rates the year to a disposal before the expiration date', async () => {
-    const { injector } = makeInjector([record({ id: 'asset' })], {
-      asset: [writeOff({ id: 'write-off' })],
+  it('pro-rates the final year to a write-off before the end date', async () => {
+    const { injector } = makeInjector([computers], {
+      computers: [
+        event({ depreciation_id: 'computers', disposal_date: '2025-02-28', disposed_cost: '4000' }),
+      ],
     });
 
-    // to 2022-03-31: round(2,500 × 90 / 365) = ₪616 on the whole asset. The ₪4,000 slice then
-    // leaves with round(5,616 × 0.4) = ₪2,246 of the accumulated depreciation, and the remaining
-    // ₪6,000 takes its whole remaining value, 6,000 − 3,370 = ₪2,630: ₪3,246 in all
-    await expect(calculateDepreciationAmount(injector, 2022, OWNER_ID)).resolves.toEqual({
+    // to 2025-02-28: round(2,000 × 59 / 365) = ₪323 on the whole asset. The ₪4,000 slice then
+    // leaves with round(9,826 × 0.4) = ₪3,930 of the accumulated depreciation, and the remaining
+    // ₪6,000 takes its whole remaining value, 6,000 − 5,896 = ₪104: ₪427 in all
+    await expect(calculateDepreciationAmount(injector, 2025, OWNER_ID)).resolves.toEqual({
       rndDepreciationYearlyAmount: 0,
-      gnmDepreciationYearlyAmount: 3246,
+      gnmDepreciationYearlyAmount: 427,
       marketingDepreciationYearlyAmount: 0,
-      totalDepreciationYearlyAmount: 3246,
+      totalDepreciationYearlyAmount: 427,
     });
   });
 
   it("leaves out other owners' assets", async () => {
     const { injector, loadCategory } = makeInjector([
-      record({ id: 'asset' }),
-      record({ id: 'others-asset', owner_id: OTHER_OWNER_ID, type: 'MARKETING' }),
+      computers,
+      record({
+        id: 'others-computers',
+        category: 'category-computers',
+        amount: '10000',
+        activation_date: '2020-04-01',
+        owner_id: OTHER_OWNER_ID,
+        type: 'MARKETING',
+      }),
     ]);
 
-    await expect(calculateDepreciationAmount(injector, 2022, OWNER_ID)).resolves.toEqual({
+    await expect(calculateDepreciationAmount(injector, 2025, OWNER_ID)).resolves.toEqual({
       rndDepreciationYearlyAmount: 0,
-      gnmDepreciationYearlyAmount: 5000,
+      gnmDepreciationYearlyAmount: 497,
       marketingDepreciationYearlyAmount: 0,
-      totalDepreciationYearlyAmount: 5000,
+      totalDepreciationYearlyAmount: 497,
     });
     expect(loadCategory).toHaveBeenCalledTimes(1);
+  });
+
+  describe('the acquisition cost refund (spec §3)', () => {
+    /*
+     * Three assets activated on 2023-08-20 (in ILS at the cost-basis rate 3.700), and the seller's
+     * refund of 2024-04-14 split into one cost refund from activation per asset. The yearly charge
+     * books each year's depreciation as the engine computes it: 2023 as filed, 2024 on the corrected
+     * cost. The recapture is booked by the refund charge, never here.
+     */
+    const assets = [
+      record({
+        id: 'software',
+        category: 'category-software',
+        amount: '592000',
+        activation_date: '2023-08-20',
+        type: 'RESEARCH_AND_DEVELOPMENT',
+      }),
+      record({
+        id: 'customer-relationships',
+        category: 'category-customer-relationships',
+        amount: '740000',
+        activation_date: '2023-08-20',
+      }),
+      record({
+        id: 'goodwill',
+        category: 'category-goodwill',
+        amount: '222000',
+        activation_date: '2023-08-20',
+      }),
+    ];
+    const refund = (depreciationId: string, amount: string) =>
+      event({
+        depreciation_id: depreciationId,
+        disposal_date: '2024-04-14',
+        disposed_cost: amount,
+        charge_id: 'charge-refund',
+        type: 'COST_REFUND',
+        refund_mode: 'FROM_ACTIVATION',
+      });
+    const refunds = {
+      software: [refund('software', '59200')],
+      'customer-relationships': [refund('customer-relationships', '74000')],
+      goodwill: [refund('goodwill', '222000')],
+    };
+
+    it('keeps 2023 as filed after the 2024 refunds are entered', async () => {
+      const { injector } = makeInjector(assets, refunds);
+
+      await expect(calculateDepreciationAmount(injector, 2023, OWNER_ID)).resolves.toEqual({
+        rndDepreciationYearlyAmount: 71_721,
+        gnmDepreciationYearlyAmount: 33_959 + 8150,
+        marketingDepreciationYearlyAmount: 0,
+        totalDepreciationYearlyAmount: 113_830,
+      });
+    });
+
+    it('books 2024 on the corrected cost, without the recapture and with no goodwill', async () => {
+      const { injector } = makeInjector(assets, refunds);
+
+      await expect(calculateDepreciationAmount(injector, 2024, OWNER_ID)).resolves.toEqual({
+        rndDepreciationYearlyAmount: 175_824,
+        gnmDepreciationYearlyAmount: 83_250,
+        marketingDepreciationYearlyAmount: 0,
+        totalDepreciationYearlyAmount: 259_074,
+      });
+    });
   });
 });

@@ -64,6 +64,7 @@ function disposal(
     disposed_cost: '1000',
     owner_id: OWNER_ID,
     proceeds: '0',
+    refund_mode: null,
     type: 'WRITE_OFF',
     updated_at: new Date('2024-12-01T00:00:00.000Z'),
     ...overrides,
@@ -142,6 +143,7 @@ describe('generateLedgerRecordsForDepreciationExpenses', () => {
     vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
       entries: [disposalEntry(400)],
       errors: ['Loss on disposal of fixed assets tax category is not defined'],
+      expectedProceeds: null,
     });
 
     const { records, errors } = await generate(injector);

@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Injector } from 'graphql-modules';
 import { TEST_TIMEZONES, useTimezone } from '../../../../../__tests__/helpers/timezones.js';
 import { Currency } from '../../../../../shared/enums.js';
-import type { StrictLedgerProto, TimelessDateString } from '../../../../../shared/types/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import {
   calculateTotalAmount,
@@ -60,8 +64,15 @@ vi.mock('../../../helpers/common-charge-ledger.helper.js', async importOriginal 
   ledgerEntryFromDocument: vi.fn(),
 }));
 
-vi.mock('../../../helpers/depreciation-disposal-ledger.helper.js', () => ({
-  generateDepreciationDisposalsLedger: vi.fn(async () => ({ entries: [], errors: [] })),
+vi.mock('../../../helpers/depreciation-disposal-ledger.helper.js', async importOriginal => ({
+  ...(await importOriginal<
+    typeof import('../../../helpers/depreciation-disposal-ledger.helper.js')
+  >()),
+  generateDepreciationDisposalsLedger: vi.fn(async () => ({
+    entries: [],
+    errors: [],
+    expectedProceeds: null,
+  })),
 }));
 
 vi.mock('../../../helpers/cross-year-ledger.helper.js', () => ({
@@ -78,6 +89,9 @@ const OWNER_ID = 'owner-business';
 const SUPPLIER_ID = 'business-supplier';
 const PAYING_ACCOUNT_ID = 'account-paying';
 const EXPENSES_TAX_CATEGORY_ID = 'tax-category-contractors';
+const ASSET_ACCOUNT_ID = 'tax-category-software';
+const ACCUMULATED_DEPRECIATION_ID = 'tax-category-accumulated-depreciation';
+const CORRECTION_TAX_CATEGORY_ID = 'tax-category-depreciation-correction';
 
 const DAY: TimelessDateString = '2025-03-12';
 
@@ -99,6 +113,49 @@ const charge: IGetChargesByIdsResult = {
   updated_at: new Date('2025-03-14T00:00:00.000Z'),
   user_description: null,
 };
+
+/**
+ * A supplier's credit note in ILS, as `ledgerEntryFromDocument` books it: Dr supplier / Cr the
+ * charge's tax category
+ */
+function creditNoteEntry(amount: number): StrictLedgerProto {
+  return {
+    id: 'credit-note',
+    chargeId: CHARGE_ID,
+    ownerId: OWNER_ID,
+    invoiceDate: DAY,
+    valueDate: DAY,
+    currency: Currency.Ils,
+    creditAccountID1: EXPENSES_TAX_CATEGORY_ID,
+    localCurrencyCreditAmount1: amount,
+    debitAccountID1: SUPPLIER_ID,
+    localCurrencyDebitAmount1: amount,
+    description: 'credit note',
+    isCreditorCounterparty: false,
+  };
+}
+
+/** The rows of a cost refund, as `generateDepreciationDisposalsLedger` books them on the charge */
+function costRefundEntries(costReduction: number, correction: number): LedgerProto[] {
+  const row = (id: string, debit: string, credit: string, amount: number): LedgerProto => ({
+    id,
+    chargeId: CHARGE_ID,
+    ownerId: OWNER_ID,
+    invoiceDate: DAY,
+    valueDate: DAY,
+    currency: Currency.Ils,
+    currencyRate: 1,
+    isCreditorCounterparty: true,
+    debitAccountID1: debit,
+    creditAccountID1: credit,
+    localCurrencyDebitAmount1: amount,
+    localCurrencyCreditAmount1: amount,
+  });
+  return [
+    row('cost-reduction', EXPENSES_TAX_CATEGORY_ID, ASSET_ACCOUNT_ID, costReduction),
+    row('correction', ACCUMULATED_DEPRECIATION_ID, CORRECTION_TAX_CATEGORY_ID, correction),
+  ];
+}
 
 /** The supplier's invoice, as `ledgerEntryFromDocument` books it: valued at the invoice day */
 function invoiceEntry(options: {
@@ -337,6 +394,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         },
       ],
       errors: [],
+      expectedProceeds: null,
     });
     const injector = makeInjector({
       transactions: [payment({ currency: Currency.Ils, amount: '-3600' })],
@@ -363,5 +421,59 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         }),
       ]),
     );
+  });
+  describe('a cost refund charge', () => {
+    // the supplier refunds ₪20,000 of an asset's price: a credit note to the charge's tax category
+    // P and the money received; the refund's rows move the ₪20,000 from P to the asset
+    function refundInjector() {
+      vi.mocked(ledgerEntryFromDocument).mockResolvedValue(creditNoteEntry(20_000));
+      return makeInjector({
+        transactions: [payment({ currency: Currency.Ils, amount: '20000' })],
+        rates: [],
+        disposals: [{ id: 'refund', depreciation_id: 'asset', charge_id: CHARGE_ID }],
+      });
+    }
+
+    it('balances when the charge credits P with the cost reductions', async () => {
+      vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
+        entries: costRefundEntries(20_000, 1500),
+        errors: [],
+        expectedProceeds: 20_000,
+      });
+
+      const { records, balance, errors } = await generate(refundInjector());
+
+      expect(errors).toEqual([]);
+      expect(balance?.isBalanced).toBe(true);
+      expect(records.map(summarize)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            debit: EXPENSES_TAX_CATEGORY_ID,
+            credit: ASSET_ACCOUNT_ID,
+            localAmount: 20_000,
+          }),
+          expect.objectContaining({
+            debit: ACCUMULATED_DEPRECIATION_ID,
+            credit: CORRECTION_TAX_CATEGORY_ID,
+            localAmount: 1500,
+          }),
+        ]),
+      );
+    });
+
+    it('reports cost reductions that differ from what the charge credits P', async () => {
+      // the refunds entered on the assets come to ₪25,000, but the credit note is for ₪20,000
+      vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
+        entries: costRefundEntries(25_000, 1500),
+        errors: [],
+        expectedProceeds: 25_000,
+      });
+
+      const { errors } = await generate(refundInjector());
+
+      expect(errors).toEqual([
+        'Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category (-5,000.00 diff)',
+      ]);
+    });
   });
 });
