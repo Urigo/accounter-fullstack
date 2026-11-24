@@ -175,8 +175,13 @@ def diff(raw_path, layout_dir):
                 problems.append(f"{rt} code {code}: in CSV, not found in PDF extraction")
             elif not c:
                 problems.append(f"{rt} code {code}: in PDF (len {p['length']}), missing from CSV")
-            elif p['length'] != int(c['length']):
-                problems.append(f"{rt} code {code}: length PDF={p['length']} CSV={c['length']}")
+            else:
+                for col, pv, cv in [('length', p['length'], int(c['length'])),
+                                    ('required', required_of(p['required']), c['required']),
+                                    ('perCountryBreakdown', 'yes' if p['perCountry'] else 'no',
+                                     c['perCountryBreakdown'])]:
+                    if pv != cv:
+                        problems.append(f"{rt} code {code}: {col} PDF={pv} CSV={cv}")
     print('\n'.join(problems) if problems else 'No differences.')
     return 1 if problems else 0
 

@@ -54,8 +54,9 @@ foreign appendix (2000) or a capital-gains appendix (30xx).
 
 - Primary consumer: `@accounter/server` (GraphQL resolver building the 1214 for the annual-audit
   workflow, step 18 "Generate 1214 Report").
-- Runtime: Node ≥ 20 and modern browsers. **No Node-only APIs at runtime** (no `fs`, no
-  `import.meta.url` file reads) — layouts are compiled into the bundle.
+- Runtime: Node ≥ 20. **No Node-only APIs in the package's own code** (no `fs`, no `import.meta.url`
+  file reads) — layouts are compiled into the bundle. Browsers need a `buffer` polyfill:
+  `iconv-lite` (§5.5) requires Node's `buffer` module.
 - Published like the sibling generators (`bob-the-bundler`, ESM + CJS, typings).
 
 ---
@@ -75,7 +76,7 @@ foreign appendix (2000) or a capital-gains appendix (30xx).
 | R-9  | Values the spec defines as derived from other data (§7.4) are computed by the package, never taken from the caller.                                                                          |
 | R-10 | Output is deterministic: same input (including `meta.saveDate`) ⇒ identical bytes; object key order is irrelevant.                                                                           |
 | R-11 | `parse1214(generate1214(x).bytes)` equals `canonicalize(x)` for every valid `x` (§8.4).                                                                                                      |
-| R-12 | The layout used is selected by `input.taxYear`; supported years: 2024, 2025 (2025 = 2024 layout until a 2025 spec is added, §14).                                                            |
+| R-12 | The layout used is selected by `input.taxYear`; supported years: 2024, 2025 (2025 = 2024 layout, flagged provisional, until a 2025 spec is added, §14).                                      |
 | R-13 | Hebrew text is written in logical order, windows-1255, with no bidi control characters (§4.3).                                                                                               |
 | R-14 | No silent data loss: values are never truncated or rounded unless the caller opted in (§4.4, `rounding`).                                                                                    |
 
@@ -422,7 +423,7 @@ packages/opcn1214-generator/
   ```
 
 - Generated files are committed; a test regenerates in memory and fails if the committed output
-  differs (`layout-sync.test.ts`).
+  differs (`tests/layout/codegen-sync.test.ts`).
 - The Hebrew `notesHe` text is emitted as JSDoc on the code unions, so IDEs show the spec note for
   each code.
 
@@ -537,13 +538,19 @@ export interface YearLayout {
 
 ### 5.5 Dependencies
 
-| Package      | Version | Why                                           |
-| ------------ | ------- | --------------------------------------------- |
-| `zod`        | 4.6.7   | strict input shape validation (§9.2)          |
-| `iconv-lite` | 0.7.3   | windows-1255 encode/decode (same as siblings) |
-| dev: `tsx`   | 4.23.15 | run `scripts/generate-layout.ts`              |
+| Package         | Version | Why                                           |
+| --------------- | ------- | --------------------------------------------- |
+| `zod`           | 4.6.7   | strict input shape validation (§9.2)          |
+| `iconv-lite`    | 0.7.3   | windows-1255 encode/decode (same as siblings) |
+| dev: `tsx`      | 4.23.15 | run `scripts/generate-layout.ts`              |
+| dev: `prettier` | 3.10.1  | format the generated layout modules (§5.3)    |
 
 No other runtime dependencies (no `date-fns`: dates are ISO strings, handled with plain arithmetic).
+
+`iconv-lite` loads `safer-buffer`, which calls `require('buffer')`, and `iconv.encode` returns a
+`Buffer`. Node provides both; a browser bundle needs a `buffer` polyfill (Vite and webpack 5 do not
+add one), or the encoder has to be replaced by a 128-entry windows-1255 table (decoding could then
+use `TextDecoder('windows-1255')`).
 
 ---
 
@@ -635,8 +642,8 @@ export interface ResponseRecord {
 ### 6.3 Errors (details in §11)
 
 `Opcn1214Error` (base, has `issues: Issue[]`) → `Opcn1214ValidationError` (generate),
-`Opcn1214ParseError` (parse), `Opcn1214UnsupportedYearError` (`getLayout`), `Opcn1214InternalError`
-(invariant violated — a bug).
+`Opcn1214ParseError` (parse), `Opcn1214UnsupportedYearError` (`getLayout`). `Opcn1214InternalError`
+(invariant violated — a bug) extends `Error` directly, outside that hierarchy.
 
 ### 6.4 Exports
 
@@ -653,6 +660,8 @@ sub-types (§7), the code unions (§5.3), `Issue`, `RuleMeta`, `Severity`, optio
 | A new **error** rule                                           | **major**    |
 | A new **warning** rule (may become an error in the next major) | minor        |
 | A new supported tax year / layout                              | minor        |
+| A published layout's field or code definition changes          | **major**    |
+| A new `FieldKind` or `CodeKind` member                         | **major**    |
 | Message wording                                                | patch        |
 
 Golden files (§13.5) enforce the first row.
@@ -708,7 +717,7 @@ export interface Report1214Input {
     saveDate?: IsoDate // 1000@165, default options.today()
   }
   company: CompanyDetails
-  preparer?: PreparerDetails // "המסייע/ת במילוי הדו"ח" (1000@563–827)
+  preparer?: PreparerDetails // "המסייע/ת במילוי הדו"ח" (1000@563–831)
   declarations: Declarations
   otherTaxableIncome?: {
     // 1000@887/937/949, "הכנסה חייבת אחרת בארץ ובחו"ל"
@@ -1509,9 +1518,14 @@ uses the repository root as working directory.
 - `src/layout/registry.ts` maps `taxYear → YearLayout`. `supportedTaxYears()` returns the keys.
 - **2024** is generated from `documentation/layout/2024/`.
 - **2025** re-exports the 2024 layout with `taxYear: 2025` until SHAAM's 2025 specification is
-  added. Known year-sensitive text: the 3065/3066 withholding-status values describe the halves of
-  the tax year (the 2024 text says "January–June 2024"); the turnover threshold printed at 834
-  (₪256,410) is informational only (not validated).
+  added. The layout changes every year (the 2024 PDF's "שינויים ב-2024" column lists new codes, new
+  fields, a changed 9999 length and year-specific values), so a 2025 report built on it is
+  provisional and nothing in the result says so today. Until the procedure below has been run on the
+  2025 PDF, every 2025 report must carry a warning `struct.taxYear.provisionalLayout` (W, derived,
+  path `taxYear`; planned for the year stage of C3, not yet in §10.1 or `RULES`). Known
+  year-sensitive text: the 3065/3066 withholding-status values describe the halves of the tax year
+  (the 2024 text says "January–June 2024"); the turnover threshold printed at 834 (₪256,410) is
+  informational only (not validated).
 - **Adding a year** (e.g. when the 2025 PDF is published):
   1. Save the PDF to `documentation/specifications/1214-<year>.pdf`.
   2. `python3 documentation/tools/extract_layout.py extract <pdf> /tmp/raw.json`
@@ -1538,7 +1552,7 @@ phase noted, and this table updated with the outcome.
 | A-5  | Line separator                                                 | Not stated                                                                                                                         | CRLF after every record, including the last                                                                | P1        |
 | A-6  | Character encoding                                             | Not stated                                                                                                                         | windows-1255 (siblings' convention for SHAAM files)                                                        | P1        |
 | A-7  | Appendix number vs "מספר בתל"ם"; record order of capital gains | Appendix number "running number of the appendix (1,2,3…)"; תל"ם number "running number by the order the capital gains were filled" | Appendix number per symbol; תל"ם number global; records grouped by type ascending                          | P4        |
-| A-8  | 3060/3065 field 145 values                                     | Lists only "2 - no" (3064 lists "1 - yes")                                                                                         | Yes/no {1, 2} for all three                                                                                | P4        |
+| A-8  | 3060/3065 field 145 values                                     | Lists only "2 - no" (3064 lists "1 - yes")                                                                                         | Follow the PDF: 3060/3065 only `false` (2) or absent, 3064 only `true` (1) or absent (planned, G2/G3)      | P4        |
 | A-9  | 2000 section start                                             | p.27 "starts at position 1061"                                                                                                     | 1161 (137 + 1024; matches every 30xx record)                                                               | P3        |
 | A-10 | Section zero-fill side for 2000/30xx                           | 1000: zeros "on the right"; others unspecified                                                                                     | Zeros after the last entry for all sections                                                                | P3        |
 | A-11 | 3077 code 092 (length 1)                                       | No allowed values given                                                                                                            | Single digit 0–9 (`num`)                                                                                   | P4        |

@@ -1818,7 +1818,9 @@ Tests first
 1. withholders[0..3] → keys withholders[i].name/branch/account; withholder name must start with a
    Hebrew letter (field.hebrewFirstLetter fires at capitalGains[i].withholders[j].name); branch '12'
    canonicalizes to '012' (D-3); five withholders → input.shape.
-2. gainFromInvestmentFund is yes/no {1,2} for both types (A-8).
+2. gainFromInvestmentFund follows the PDF (A-8): 3060 accepts only false (2) or absent, 3064 only
+   true (1) or absent; the other value is an error (rule cg.investmentFund.value, also applied to
+   3065 in G3).
 3. Mixed appendices (63, 60, 64) are grouped by type ascending; appendix numbers per symbol; the
    sequence is not written for these types (they have no "מספר בתל"ם" field).
 4. Round trip; goldens.
