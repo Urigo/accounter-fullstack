@@ -40,7 +40,7 @@ const DECIMAL_KINDS: ReadonlySet<FieldKind> = new Set([
 ]);
 /** Kinds whose `values` are the exhaustive list of allowed values (SPEC §10.2, D-14). */
 const ENUM_KINDS: ReadonlySet<FieldKind> = new Set(['enum', 'rateX100']);
-/** Percentages, 1–100 (SPEC §10.2 field.percentRange). */
+/** Percentages, above 0 and at most 100 (SPEC §10.2 field.percentRange, §15 A-36). */
 const PERCENT_KINDS: ReadonlySet<FieldKind> = new Set(['percentX100', 'percentLiteral']);
 /** Kinds written as value × 100 (SPEC §4.2). */
 const SCALED_KINDS: ReadonlySet<FieldKind> = new Set(['amountX100', 'rateX100', 'percentX100']);
@@ -152,13 +152,14 @@ function numberFindings(kind: FieldKind, value: number, width: number, name: str
     });
   }
   // Compare the value as written (× 100, like field.decimals and the encoder), so float noise
-  // such as 14.46 + 49.59 + 35.95 = 100.00000000000001 (written as 100) is in range.
+  // such as 14.46 + 49.59 + 35.95 = 100.00000000000001 (written as 100) is in range. No 1% floor:
+  // shopcn accepted 0.5% (SPEC §15 A-36); 0, or a value written as 0, stays out of range.
   const hundredths = Math.round(value * 100);
-  if (PERCENT_KINDS.has(kind) && !(hundredths >= 100 && hundredths <= 10_000)) {
+  if (PERCENT_KINDS.has(kind) && !(hundredths > 0 && hundredths <= 10_000)) {
     findings.push({
       ruleId: 'field.percentRange',
-      message: `${name} must be a percentage between 1 and 100.`,
-      expected: '1–100',
+      message: `${name} must be a percentage above 0 and at most 100.`,
+      expected: 'above 0, at most 100',
     });
   }
   if (Number.isFinite(value) && tooManyDigits(kind, value, width)) {

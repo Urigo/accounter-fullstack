@@ -73,7 +73,7 @@ export interface Report1214Input {
     source?: string;
     /** 937. */
     amount?: number;
-    /** 949: 1–100, ≤ 2 decimals (written × 100, SPEC §15 A-2). */
+    /** 949: above 0 and at most 100, ≤ 2 decimals (written × 100, SPEC §15 A-2, A-36). */
     ratePercent?: number;
   };
   /** Numbers of certificates attached to the report, 1000@954–959. */
@@ -356,7 +356,8 @@ export interface ForeignAppendix {
   amounts: Partial<Record<ForeignAppendixCode, number>>;
   /**
    * Records 2200, one per per-country code written in `amounts` (SPEC §3.6): required for each such
-   * code (foreign.breakdown.required) and allowed only for them (foreign.breakdown.orphan).
+   * code with a value other than 0 (foreign.breakdown.required; 442 = 0 may have one or not, SPEC
+   * §15 A-24) and allowed only for written codes (foreign.breakdown.orphan).
    */
   countryBreakdown?: Partial<Record<CountryBreakdownCode, CountryBreakdown>>;
 }

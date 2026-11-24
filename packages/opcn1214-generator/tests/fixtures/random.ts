@@ -385,8 +385,9 @@ function randomForeignAppendix(rng: Rng, def: RecordDef): ForeignAppendix {
   const breakdowns: Partial<Record<CountryBreakdownCode, CountryBreakdown>> = {};
   for (const [code, value] of Object.entries(amounts)) {
     const codeDefinition = codeDef(def, code);
-    // A per-country code written in the section (0 only for the zeroAllowed 442) needs exactly one
-    // breakdown (foreign.breakdown.required / orphan, SPEC §15 A-24).
+    // A per-country code written in the section (0 only for the zeroAllowed 442) gets exactly one
+    // breakdown: required unless it is 0, and allowed for 442 = 0 (foreign.breakdown.required /
+    // orphan, SPEC §15 A-24).
     if (codeDefinition.perCountryBreakdown && (value !== 0 || codeDefinition.zeroAllowed)) {
       const breakdownCode = code as CountryBreakdownCode;
       breakdowns[breakdownCode] = compact({
