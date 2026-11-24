@@ -4,6 +4,7 @@ import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { calculateTotalAmount } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { validateDepreciationPercentage } from '../helpers/depreciation-categories.helper.js';
 import { DepreciationCategoriesProvider } from '../providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '../providers/depreciation.provider.js';
 import type { DepreciationModule } from '../types.js';
@@ -101,6 +102,10 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       }
     },
     updateDepreciationCategory: (_, { input }, { injector }) => {
+      const percentageError = validateDepreciationPercentage(input.percentage);
+      if (percentageError) {
+        return { __typename: 'CommonError', message: percentageError };
+      }
       try {
         return injector
           .get(DepreciationCategoriesProvider)
@@ -123,6 +128,10 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       }
     },
     insertDepreciationCategory: (_, { input }, { injector }) => {
+      const percentageError = validateDepreciationPercentage(input.percentage);
+      if (percentageError) {
+        return { __typename: 'CommonError', message: percentageError };
+      }
       try {
         return injector
           .get(DepreciationCategoriesProvider)

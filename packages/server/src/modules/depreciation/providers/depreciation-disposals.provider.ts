@@ -45,10 +45,12 @@ const getDepreciationDisposalsByDates = sql<IGetDepreciationDisposalsByDatesQuer
 
 const insertDepreciationDisposal = sql<IInsertDepreciationDisposalQuery>`
   INSERT INTO accounter_schema.depreciation_disposals (
-    owner_id, depreciation_id, charge_id, type, disposal_date, disposed_cost, proceeds, description
+    owner_id, depreciation_id, charge_id, type, refund_mode, disposal_date, disposed_cost, proceeds,
+    description
   )
   VALUES (
-    $ownerId, $depreciationId, $chargeId, $type, $disposalDate, $disposedCost, $proceeds, $description
+    $ownerId, $depreciationId, $chargeId, $type, $refundMode, $disposalDate, $disposedCost, $proceeds,
+    $description
   )
   RETURNING *;`;
 
@@ -57,6 +59,7 @@ const updateDepreciationDisposal = sql<IUpdateDepreciationDisposalQuery>`
   SET
     charge_id = CASE WHEN $clearChargeId::boolean THEN NULL ELSE COALESCE($chargeId, charge_id) END,
     type = COALESCE($type, type),
+    refund_mode = $refundMode,
     disposal_date = COALESCE($disposalDate, disposal_date),
     disposed_cost = COALESCE($disposedCost, disposed_cost),
     proceeds = COALESCE($proceeds, proceeds),

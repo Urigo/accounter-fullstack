@@ -42,10 +42,8 @@ const getDepreciationRecordsByDates = sql<IGetDepreciationRecordsByDatesQuery>`
   WHERE d.activation_date <= $toDate;`;
 
 const getDepreciationRecordsActivatedBy = sql<IGetDepreciationRecordsActivatedByQuery>`
-  SELECT d.*, (d.activation_date + (CONCAT((100 / dc.percentage * 365)::text, ' day'))::interval)::date as expiration_date
+  SELECT d.*
   FROM accounter_schema.depreciation d
-  LEFT JOIN accounter_schema.depreciation_categories dc
-            ON d.category = dc.id
   WHERE d.activation_date <= $date
     AND d.owner_id = $ownerId
   ORDER BY d.activation_date, d.id;`;
@@ -171,7 +169,7 @@ export class DepreciationProvider {
 
   /**
    * Every asset of the business being written to, activated on or before `date`, including fully
-   * depreciated and disposed ones
+   * depreciated and disposed ones, and those in a category that is not depreciated (0%)
    */
   public async getDepreciationRecordsActivatedBy(
     params: Omit<IGetDepreciationRecordsActivatedByParams, 'ownerId'>,

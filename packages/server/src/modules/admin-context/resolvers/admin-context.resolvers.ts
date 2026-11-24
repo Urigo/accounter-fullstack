@@ -284,6 +284,14 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
             dbAdminContext.depreciation.disposalLossTaxCategoryId,
           )
         : null,
+    depreciationCorrectionTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.depreciation.correctionTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'depreciationCorrectionTaxCategory',
+            dbAdminContext.depreciation.correctionTaxCategoryId,
+          )
+        : null,
     bankDepositInterestIncomeTaxCategory: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.bankDeposits.bankDepositInterestIncomeTaxCategoryId
         ? fetchTaxCategory(

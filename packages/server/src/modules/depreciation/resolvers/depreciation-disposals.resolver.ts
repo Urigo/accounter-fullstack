@@ -10,6 +10,8 @@ import {
   computeStoredDisposal,
   isDisposalDateLocked,
   loadAssetContext,
+  storedProceeds,
+  storedRefundMode,
   toDisposalInput,
 } from '../helpers/depreciation-disposals.helper.js';
 import { DepreciationDisposalsProvider } from '../providers/depreciation-disposals.provider.js';
@@ -64,16 +66,30 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         if (check.errors) {
           return commonError(check.errors.join('; '));
         }
-        const { result, remainingCost } = check;
-        const [disposedCost, proceeds, accumulatedDepreciation, netBookValue, gainLoss, remaining] =
-          await Promise.all([
-            localAmount(injector, result.disposedCost),
-            localAmount(injector, result.proceeds),
-            localAmount(injector, result.accumulatedDepreciation),
-            localAmount(injector, result.netBookValue),
-            localAmount(injector, result.gainLoss),
-            localAmount(injector, remainingCost),
-          ]);
+        const { result, remainingCost, remainingBookValue } = check;
+        const [
+          disposedCost,
+          proceeds,
+          accumulatedDepreciation,
+          netBookValue,
+          gainLoss,
+          costReduction,
+          depreciationCorrection,
+          remainingCostAmount,
+          remainingBookValueAmount,
+        ] = await Promise.all(
+          [
+            result.disposedCost,
+            result.proceeds,
+            result.accumulatedDepreciation,
+            result.netBookValue,
+            result.gainLoss,
+            result.costReduction,
+            result.depreciationCorrection,
+            remainingCost,
+            remainingBookValue,
+          ].map(amount => localAmount(injector, amount)),
+        );
         return {
           __typename: 'DepreciationDisposalComputation',
           disposedCost,
@@ -81,7 +97,10 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           accumulatedDepreciation,
           netBookValue,
           gainLoss,
-          remainingCost: remaining,
+          costReduction,
+          depreciationCorrection,
+          remainingCost: remainingCostAmount,
+          remainingBookValue: remainingBookValueAmount,
         };
       } catch (e) {
         console.error(e);
@@ -103,6 +122,7 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           depreciationId: input.depreciationRecordId,
           chargeId: input.chargeId ?? null,
           type: input.type,
+          refundMode: check.refundMode,
           disposalDate: input.disposalDate,
           disposedCost: input.disposedCost,
           proceeds: check.result.proceeds,
@@ -131,18 +151,26 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         const chargeId = clearChargeId ? null : (input.chargeId ?? existing.charge_id);
         const type = input.type ?? existing.type;
         const disposedCost = input.disposedCost ?? Number(existing.disposed_cost);
+        // a refund keeps its mode unless one is given (a mode given for another type is rejected)
+        const refundMode =
+          input.refundMode === undefined
+            ? type === 'COST_REFUND'
+              ? storedRefundMode(existing)
+              : null
+            : input.refundMode;
 
         const context = await loadAssetContext(injector, existing.depreciation_id);
         const check = await checkDisposal(injector, context, {
           id: existing.id,
           type,
+          refundMode,
           chargeId,
           disposalDate: input.disposalDate ?? existing.disposal_date,
           disposedCost,
           proceeds:
             input.proceeds ??
-            // a sale keeps its stored proceeds; a refund's follow its cost and a write-off has none
-            (type === 'SALE' ? Number(existing.proceeds) : null),
+            // a sale keeps its stored proceeds; a write-off and a cost refund have none
+            (type === 'SALE' ? storedProceeds(existing) : null),
         });
         if (check.errors) {
           return commonError(check.errors.join('; '));
@@ -153,6 +181,7 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           chargeId: clearChargeId ? null : (input.chargeId ?? null),
           clearChargeId,
           type: input.type ?? null,
+          refundMode: check.refundMode,
           disposalDate: input.disposalDate ?? null,
           disposedCost: input.disposedCost ?? null,
           proceeds: check.result.proceeds,
@@ -255,9 +284,10 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
       return charge;
     },
     type: disposal => disposal.type,
+    refundMode: disposal => storedRefundMode(disposal),
     disposalDate: disposal => disposal.disposal_date,
     disposedCost: (disposal, _, { injector }) => localAmount(injector, disposal.disposed_cost),
-    proceeds: (disposal, _, { injector }) => localAmount(injector, disposal.proceeds),
+    proceeds: (disposal, _, { injector }) => localAmount(injector, storedProceeds(disposal)),
     description: disposal => disposal.description,
     accumulatedDepreciation: async (disposal, _, { injector }) =>
       localAmount(
@@ -268,5 +298,12 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
       localAmount(injector, (await computeStoredDisposal(injector, disposal)).netBookValue),
     gainLoss: async (disposal, _, { injector }) =>
       localAmount(injector, (await computeStoredDisposal(injector, disposal)).gainLoss),
+    costReduction: async (disposal, _, { injector }) =>
+      localAmount(injector, (await computeStoredDisposal(injector, disposal)).costReduction),
+    depreciationCorrection: async (disposal, _, { injector }) =>
+      localAmount(
+        injector,
+        (await computeStoredDisposal(injector, disposal)).depreciationCorrection,
+      ),
   },
 };

@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
+import { getTimelessDateYear } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -12,42 +13,64 @@ import type {
   IGetDepreciationRecordsByIdsResult,
 } from '../types.js';
 import {
+  calculateAssetYear,
+  computeCostRefund,
   computeDisposal,
-  remainingAssetCost,
+  DEFAULT_COST_REFUND_MODE,
   validateAssetDisposals,
   validateDisposalKind,
   type AssetDepreciationInput,
   type AssetDisposalInput,
-  type AssetDisposalResult,
+  type CostRefundMode,
   type DepreciationDisposalKind,
 } from './asset-depreciation.helper.js';
 
 export function toAssetInput(
-  record: Pick<
-    IGetDepreciationRecordsByIdsResult,
-    'amount' | 'activation_date' | 'expiration_date'
-  >,
+  record: Pick<IGetDepreciationRecordsByIdsResult, 'amount' | 'activation_date'>,
   category: Pick<IGetAllDepreciationCategoriesResult, 'percentage'>,
 ): AssetDepreciationInput {
   return {
     cost: Number(record.amount ?? 0),
     depreciationRate: Number(category.percentage),
     activationDate: record.activation_date,
-    expirationDate: record.expiration_date ?? undefined,
   };
+}
+
+/**
+ * The refund mode of a stored event: for a cost refund, its stored mode or the default when it has
+ * none; `null` for a sale or write-off
+ */
+export function storedRefundMode(
+  disposal: Pick<IGetDepreciationDisposalsByIdsResult, 'type' | 'refund_mode'>,
+): CostRefundMode | null {
+  return disposal.type === 'COST_REFUND'
+    ? (disposal.refund_mode ?? DEFAULT_COST_REFUND_MODE)
+    : null;
+}
+
+/**
+ * The proceeds of a stored event. A cost refund has none: refunds stored before refund modes existed
+ * hold the refunded cost in `proceeds`, which is ignored.
+ */
+export function storedProceeds(
+  disposal: Pick<IGetDepreciationDisposalsByIdsResult, 'type' | 'proceeds'>,
+): number {
+  return disposal.type === 'COST_REFUND' ? 0 : Number(disposal.proceeds);
 }
 
 export function toDisposalInput(
   disposal: Pick<
     IGetDepreciationDisposalsByIdsResult,
-    'id' | 'disposal_date' | 'disposed_cost' | 'proceeds'
+    'id' | 'type' | 'refund_mode' | 'disposal_date' | 'disposed_cost' | 'proceeds'
   >,
 ): AssetDisposalInput {
   return {
     id: disposal.id,
+    kind: disposal.type,
+    refundMode: storedRefundMode(disposal),
     disposalDate: disposal.disposal_date,
     disposedCost: Number(disposal.disposed_cost),
-    proceeds: Number(disposal.proceeds),
+    proceeds: storedProceeds(disposal),
   };
 }
 
@@ -80,13 +103,74 @@ export async function loadAssetContext(
   return { record, category, asset: toAssetInput(record, category), disposals };
 }
 
+/**
+ * Computed values of one event, in local currency (costs and depreciation in whole shekels,
+ * proceeds as given):
+ * - a sale or write-off: the disposed slice, its accumulated depreciation, book value and gain or
+ *   loss; no cost reduction and no depreciation correction.
+ * - a cost refund: the cost reduction and the depreciation correction (ordinary income: the
+ *   recapture for `FROM_ACTIVATION`, the excess over book value for `FROM_REFUND_DATE`). It has no
+ *   proceeds and no gain or loss; `accumulatedDepreciation` is the depreciation the refund reverses
+ *   (the correction) and `netBookValue` is the cost reduction minus it.
+ */
+export type DisposalComputation = {
+  disposedCost: number;
+  proceeds: number;
+  accumulatedDepreciation: number;
+  netBookValue: number;
+  gainLoss: number;
+  costReduction: number;
+  depreciationCorrection: number;
+};
+
+/** Computes one event of an asset, given all of the asset's events; `null` for an unknown id */
+export function computeAssetEvent(
+  asset: AssetDepreciationInput,
+  events: readonly AssetDisposalInput[],
+  eventId: string,
+): DisposalComputation | null {
+  const event = events.find(e => e.id === eventId);
+  if (!event) {
+    return null;
+  }
+  if (event.kind === 'COST_REFUND') {
+    const refund = computeCostRefund(asset, events, eventId);
+    if (!refund) {
+      return null;
+    }
+    const correction = refund.recapture + refund.excessIncome;
+    return {
+      disposedCost: refund.costReduction,
+      proceeds: 0,
+      accumulatedDepreciation: correction,
+      netBookValue: refund.costReduction - correction,
+      gainLoss: 0,
+      costReduction: refund.costReduction,
+      depreciationCorrection: correction,
+    };
+  }
+  const disposal = computeDisposal(asset, events, eventId);
+  if (!disposal) {
+    return null;
+  }
+  return {
+    disposedCost: disposal.disposedCost,
+    proceeds: disposal.proceeds,
+    accumulatedDepreciation: disposal.accumulatedDepreciation,
+    netBookValue: disposal.netBookValue,
+    gainLoss: disposal.gainLoss,
+    costReduction: 0,
+    depreciationCorrection: 0,
+  };
+}
+
 /** Computed values of a stored disposal */
 export async function computeStoredDisposal(
   injector: Injector,
   disposal: IGetDepreciationDisposalsByIdsResult,
-): Promise<AssetDisposalResult> {
+): Promise<DisposalComputation> {
   const { asset, disposals } = await loadAssetContext(injector, disposal.depreciation_id);
-  const result = computeDisposal(asset, disposals.map(toDisposalInput), disposal.id);
+  const result = computeAssetEvent(asset, disposals.map(toDisposalInput), disposal.id);
   if (!result) {
     throw new GraphQLError(`Unable to compute depreciation disposal ${disposal.id}`);
   }
@@ -99,21 +183,33 @@ export type DisposalCandidate = {
   /** The stored disposal being edited, or undefined for a new one */
   id?: string;
   type: DepreciationDisposalKind;
+  /** For a cost refund only; a missing mode is `FROM_ACTIVATION` */
+  refundMode?: CostRefundMode | null;
   chargeId?: string | null;
   disposalDate: TimelessDateString;
   disposedCost: number;
+  /** For a sale; a write-off and a cost refund have none */
   proceeds?: number | null;
 };
 
-/** Proceeds default to the refunded cost for a cost refund, and to 0 for a write-off */
-export function resolveDisposalProceeds(candidate: DisposalCandidate): number {
-  if (candidate.type === 'COST_REFUND') {
-    return candidate.proceeds ?? candidate.disposedCost;
-  }
-  if (candidate.type === 'WRITE_OFF') {
-    return candidate.proceeds ?? 0;
-  }
+/**
+ * Proceeds default to 0, which is all a write-off or a cost refund may have (proceeds given for
+ * either are kept, so that validation rejects them)
+ */
+export function resolveDisposalProceeds(candidate: Pick<DisposalCandidate, 'proceeds'>): number {
   return candidate.proceeds ?? 0;
+}
+
+/**
+ * The mode to store: for a cost refund, the mode given or `FROM_ACTIVATION`; `null` for a sale or a
+ * write-off (validation rejects a mode given for either)
+ */
+export function resolveRefundMode(
+  candidate: Pick<DisposalCandidate, 'type' | 'refundMode'>,
+): CostRefundMode | null {
+  return candidate.type === 'COST_REFUND'
+    ? (candidate.refundMode ?? DEFAULT_COST_REFUND_MODE)
+    : null;
 }
 
 /** Whether a disposal dated `disposalDate` falls in the ledger's locked period */
@@ -137,8 +233,23 @@ export async function checkDisposal(
   context: AssetContext,
   candidate: DisposalCandidate,
 ): Promise<
-  | { errors: string[]; result?: never; remainingCost?: never }
-  | { errors?: never; result: AssetDisposalResult; remainingCost: number }
+  | {
+      errors: string[];
+      result?: never;
+      refundMode?: never;
+      remainingCost?: never;
+      remainingBookValue?: never;
+    }
+  | {
+      errors?: never;
+      result: DisposalComputation;
+      /** The refund mode to store (`null` unless a cost refund) */
+      refundMode: CostRefundMode | null;
+      /** The asset's cost at the end of the event's year, after the event */
+      remainingCost: number;
+      /** The asset's net book value at the end of the event's year, after the event */
+      remainingBookValue: number;
+    }
 > {
   const { record, asset, disposals } = context;
   const [{ defaultLocalCurrency, ledgerLock, ownerId }, charge] = await Promise.all([
@@ -149,10 +260,11 @@ export async function checkDisposal(
   ]);
 
   const proceeds = resolveDisposalProceeds(candidate);
+  const refundMode = resolveRefundMode(candidate);
   const errors = validateDisposalKind({
     type: candidate.type,
-    disposedCost: candidate.disposedCost,
     proceeds,
+    refundMode: candidate.refundMode,
     chargeId: candidate.chargeId,
   });
 
@@ -187,10 +299,12 @@ export async function checkDisposal(
   }
 
   const id = candidate.id ?? PREVIEW_DISPOSAL_ID;
-  const all = [
+  const all: AssetDisposalInput[] = [
     ...disposals.filter(disposal => disposal.id !== candidate.id).map(toDisposalInput),
     {
       id,
+      kind: candidate.type,
+      refundMode,
       disposalDate: candidate.disposalDate,
       disposedCost: candidate.disposedCost,
       proceeds,
@@ -202,9 +316,15 @@ export async function checkDisposal(
     return { errors };
   }
 
-  const result = computeDisposal(asset, all, id);
+  const result = computeAssetEvent(asset, all, id);
   if (!result) {
     return { errors: ['Unable to compute the disposal'] };
   }
-  return { result, remainingCost: remainingAssetCost(asset, all) };
+  const year = calculateAssetYear(asset, all, getTimelessDateYear(candidate.disposalDate));
+  return {
+    result,
+    refundMode,
+    remainingCost: year.closingCost,
+    remainingBookValue: year.netBookValue,
+  };
 }

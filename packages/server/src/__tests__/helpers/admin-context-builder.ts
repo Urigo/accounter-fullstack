@@ -148,6 +148,7 @@ export async function buildAdminContextFromDb(
       marketingDepreciationExpensesTaxCategoryId: null,
       disposalGainTaxCategoryId: null,
       disposalLossTaxCategoryId: null,
+      correctionTaxCategoryId: null,
     },
   };
 }
