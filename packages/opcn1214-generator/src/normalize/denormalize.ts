@@ -15,8 +15,9 @@ import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from
 /**
  * Header keys of record 1000 that are their own input path (SPEC §7.3); the enum keys hold their
  * code in the model (ENUM_INPUTS). Not listed: `taxYear`, the derived keys (832
- * `hasForeignAppendix`, read back from the presence of record 2000; 833 `declarations.hasCapitalGainsAppendix`), the declaration objects
- * marked by a presence flag (PRESENCE_OBJECTS) and the reportable positions.
+ * `hasForeignAppendix`, not read back: `foreignAppendix` comes from the 2000 record; 833
+ * `declarations.hasCapitalGainsAppendix`), the declaration objects marked by a presence flag
+ * (PRESENCE_OBJECTS) and the reportable positions.
  */
 export const MAIN_INPUT_KEYS = [
   'meta.softwareName',
