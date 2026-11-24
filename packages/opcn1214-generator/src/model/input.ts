@@ -271,7 +271,10 @@ export interface Declarations {
 export interface RelatedCompany {
   /** 1010@139, ≤ 50. */
   companyName: string;
-  /** 1010@189 "מספר תיק חברה": 1–9 digits, zero-padded to 9 when written ('12' → '000000012'). */
+  /**
+   * 1010@189 "מספר תיק חברה": 1–9 digits, zero-padded to 9 when written ('12' → '000000012'). It
+   * must pass the Israeli check digit (`field.checkDigit`, SPEC §4.2).
+   */
   companyFileNumber?: string;
   /** 1010@198 → 1..8 in this order. */
   relationType:
@@ -315,7 +318,10 @@ export interface Shareholder {
 export interface RdInvestment {
   /** 1030@138, ≤ 50. */
   companyName: string;
-  /** 1030@188 "מספר תיק חברה". */
+  /**
+   * 1030@188 "מספר תיק חברה": 1–9 digits, zero-padded to 9 when written. It must pass the Israeli
+   * check digit (`field.checkDigit`, SPEC §4.2).
+   */
   companyFileNumber?: string;
   /** 1030@197, whole shekels. */
   investmentAmount: number;
