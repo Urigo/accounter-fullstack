@@ -28,6 +28,20 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expectTypeOf<Report1214Input>().toExtend<z.input<typeof report1214InputSchema>>();
   });
 
+  it('the schema and Report1214Input declare the same properties at every depth', () => {
+    // toExtend passes when only one side declares an optional property: compare property paths.
+    type Paths<T, P extends string = ''> = T extends readonly (infer E)[]
+      ? Paths<E, `${P}[]`>
+      : T extends object
+        ? {
+            [K in keyof T & string]-?: `${P}.${K}` | Paths<NonNullable<T[K]>, `${P}.${K}`>;
+          }[keyof T & string]
+        : never;
+    expectTypeOf<Paths<z.input<typeof report1214InputSchema>>>().toEqualTypeOf<
+      Paths<Report1214Input>
+    >();
+  });
+
   describe('unknown properties', () => {
     it('reports an unknown nested property at its path', () => {
       const input = { ...minimalInput(), company: { ...minimalInput().company, faxx: 1 } };

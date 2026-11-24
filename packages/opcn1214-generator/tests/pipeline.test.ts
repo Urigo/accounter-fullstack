@@ -69,7 +69,7 @@ describe('runPipeline', () => {
     });
 
     it('does not stop the other stages', () => {
-      const input = minimalInput({ taxYear: 2025, company: { registeredName: undefined } });
+      const input = minimalInput({ taxYear: 2025, company: { registeredName: '' } });
       expect(runPipeline(input, OPTIONS).issues.map(issue => issue.ruleId)).toEqual([
         'struct.taxYear.provisionalLayout',
         'field.required',

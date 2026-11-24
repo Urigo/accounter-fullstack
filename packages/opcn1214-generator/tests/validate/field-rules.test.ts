@@ -370,10 +370,15 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
       expect(issues).toEqual([]);
     });
 
-    it('still reports NaN', () => {
+    it('leaves NaN to the shape stage', () => {
       expect(
-        issuesOf(withShareholder({ dividendRightsPercent: Number.NaN }), 'field.percentRange'),
-      ).toHaveLength(1);
+        runPipeline(withShareholder({ dividendRightsPercent: Number.NaN }), OPTIONS).issues,
+      ).toEqual([
+        expect.objectContaining({
+          ruleId: 'input.shape',
+          path: 'shareholders[0].dividendRightsPercent',
+        }),
+      ]);
     });
 
     it('reports more than 2 decimals', () => {

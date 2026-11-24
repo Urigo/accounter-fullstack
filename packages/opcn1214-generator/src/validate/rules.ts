@@ -37,7 +37,7 @@ export const RULES = [
     source: 'derived',
     scope: 'input',
     description:
-      'Wrong JavaScript type, missing required property, unknown property, null, or array too long.',
+      'Wrong JavaScript type, missing required property, unknown property, null, array too long, or a date not in YYYY-MM-DD form.',
   },
   {
     id: 'field.required',
@@ -101,7 +101,7 @@ export const RULES = [
     severity: 'error',
     source: 'spec',
     scope: 'report',
-    description: 'A date is not a real calendar date in ISO YYYY-MM-DD form.',
+    description: 'A YYYY-MM-DD date is not a real calendar date (other forms are input.shape).',
   },
   {
     id: 'field.percentRange',
