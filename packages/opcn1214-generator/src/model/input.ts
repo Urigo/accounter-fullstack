@@ -44,7 +44,10 @@ export interface Report1214Input {
   /** 1000@146; selects the layout. */
   taxYear: SupportedTaxYear;
   meta?: {
-    /** 1000@150, ≤ 15 characters, default 'ACCOUNTER'. */
+    /**
+     * 1000@150, ≤ 15 characters, default 'ACCOUNTER'; a value that is empty after text
+     * normalization (SPEC §4.3) also gets the default.
+     */
     softwareName?: string;
     /** 1000@165, default `options.today()` (SPEC §7.4). */
     saveDate?: IsoDate;
@@ -103,17 +106,24 @@ export interface Declarations {
 
 /** One shareholder, record 1020 (SPEC §7.2). */
 export interface Shareholder {
-  /** 9 digits, or 999999964 / 999999998. */
+  /** 1020@139: 9 digits, or 999999964 / 999999998. */
   idNumber: string;
-  /** Must start with a Hebrew letter. */
+  /** 1020@148, ≤ 50; must start with a Hebrew letter. */
   fullName: string;
+  /** 1020@198 (yes/no). */
   isControllingShareholder: boolean;
-  /** All shareholders must total 100. */
+  /** 1020@199, percent with up to 2 decimals (`12.5` is 12.5%); all shareholders must total 100. */
   dividendRightsPercent?: number;
+  /** 1020@204, percent with up to 2 decimals. */
   votingRightsPercent?: number;
+  /** 1020@209, percent with up to 2 decimals. */
   otherRightsPercent?: number;
+  /** 1020@214 (flag). */
   isMaterialShareholder?: boolean;
+  /** 1020@215, whole shekels. */
   salaryMonths1To9?: number;
+  /** 1020@227, whole shekels. */
   salaryMonths10To12?: number;
+  /** 1020@239, whole shekels. */
   otherPayments?: number;
 }

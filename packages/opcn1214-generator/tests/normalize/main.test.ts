@@ -141,6 +141,14 @@ describe('normalizeReport: record 1000 (skeleton)', () => {
       expect(record.values['meta.saveDate']).toBe('2025-01-02');
     });
 
+    it.each([[''], ['   '], ['\u200F'], ['\u00A0\t']])(
+      "defaults a softwareName that normalizes to empty (%j) to 'ACCOUNTER'",
+      softwareName => {
+        const record = mainRecord(minimalInput({ meta: { softwareName } }));
+        expect(record.values['meta.softwareName']).toBe('ACCOUNTER');
+      },
+    );
+
     it('takes meta values from the input when given', () => {
       const record = mainRecord(
         minimalInput({ meta: { softwareName: '  My   Soft ', saveDate: '2024-05-01' } }),

@@ -6,6 +6,7 @@ import type { ValidateOptions } from '../model/options.js';
 import { deriveCode008, deriveCode273 } from './derive.js';
 import { headerValues } from './fields.js';
 import { codeKey, pathFor } from './paths.js';
+import { normalizeText } from './text.js';
 import { todayInJerusalem } from './today.js';
 
 const DEFAULT_SOFTWARE_NAME = 'ACCOUNTER';
@@ -28,7 +29,8 @@ export function normalizeMain(
 
   const { values, paths } = headerValues(def, 0, {
     taxYear: input.taxYear,
-    'meta.softwareName': meta?.softwareName ?? DEFAULT_SOFTWARE_NAME,
+    // After normalization: a value that normalizes to '' is absent (SPEC §4.1) and gets the default.
+    'meta.softwareName': normalizeText(meta?.softwareName ?? '') || DEFAULT_SOFTWARE_NAME,
     'meta.saveDate': meta?.saveDate ?? today(),
     'company.fileNumber': company.fileNumber,
     'company.registeredName': company.registeredName,
