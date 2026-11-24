@@ -2,6 +2,7 @@
  * Record 1000 conditional requirements (SPEC §9.2 stage 4, §10.3): pure checks over the normalized
  * main record, so they run on validated input and on parsed files alike.
  */
+import { isAbsentValue } from '../codec/record.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { FieldDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -80,11 +81,19 @@ function codeIssue(
   });
 }
 
+/**
+ * Whether the header field `key` of `record` has no value, judged as the file reads it back
+ * (isAbsentValue: 0 and an all-zero digit string are absent in optional fields).
+ */
+function isAbsent(report: NormalizedReport, record: NormalizedRecord, key: string): boolean {
+  return isAbsentValue(mainField(report, key), record.values[key]);
+}
+
 /** A rule: when the flag or yes/no `condition` is true, the header field `key` must have a value. */
 function requiresField(ruleId: RuleId, condition: string, key: string, why: string): ReportRule {
   return report =>
     mainRecords(report)
-      .filter(record => record.values[condition] === true && record.values[key] === undefined)
+      .filter(record => record.values[condition] === true && isAbsent(report, record, key))
       .map(record =>
         fieldIssue(
           ruleId,
@@ -199,7 +208,7 @@ function reportablePositionsRequired(report: NormalizedReport): Issue[] {
     .filter(
       record =>
         record.values['declarations.tookReportablePosition'] === true &&
-        REPORTABLE_POSITION_KEYS.every(key => record.values[key] === undefined),
+        REPORTABLE_POSITION_KEYS.every(key => isAbsent(report, record, key)),
     )
     .map(record =>
       fieldIssue(

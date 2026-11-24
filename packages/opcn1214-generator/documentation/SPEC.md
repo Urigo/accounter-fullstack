@@ -1342,6 +1342,11 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 \* The spec text for 877 is "required in the case of a kibbutz and when field 226 is filled" (§15
 A-13).
 
+A field these rules require is missing when the file would read it back as absent (§8.4): undefined,
+or, in an optional field, 0 or an all-zero digit string. So `reportablePositions: [0]` does not
+satisfy `main.reportablePositions.required`, nor `representativeFileNumber: '000000000'`
+`main.familyCompany.fileNumber`: the input and the file parsed from it are judged alike.
+
 Spec rules that are **enforced by derivation** and therefore need no runtime rule: 834 ⇒ code 297
 (8/9); 882 ⇒ code 008 = 1; code 273 ↔ 1029/1030; 832/833 ↔ appendix records; code 028; serial and
 sequence numbers; all 9999 counts. Their correctness is covered by encoder tests, and in parse mode

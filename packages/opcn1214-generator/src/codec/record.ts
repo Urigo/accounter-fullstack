@@ -118,21 +118,27 @@ function atLineOffset<T>(start: number, context: string, decode: () => T): T {
 }
 
 /**
- * The absent value of a decoded field (SPEC §8.4): in a field that is not required, 0 and an
- * all-zero digit string mean "absent" (amountX excepted, where 0 is meaningful). Required fields
- * keep 0 so their rules can report it.
+ * Whether `value` of `field` is absent as the file reads it (SPEC §8.4): undefined, or, in a field
+ * that is not required, 0 and an all-zero digit string (amountX excepted, where 0 is meaningful).
+ * Required fields keep 0 so their rules can report it. Shared by the decoder and the rules that
+ * check a field's presence, so input and parsed files are judged alike.
  */
-function absentToUndefined(field: FieldDef, value: Primitive): Primitive {
+export function isAbsentValue(field: FieldDef, value: Primitive | undefined): boolean {
+  if (value === undefined) {
+    return true;
+  }
   if (field.required === 'yes' || field.kind === 'amountX') {
-    return value;
+    return false;
   }
-  if (value === 0) {
-    return undefined;
-  }
-  if (typeof value === 'string' && DIGIT_STRING_KINDS.has(field.kind) && ALL_ZEROS.test(value)) {
-    return undefined;
-  }
-  return value;
+  return (
+    value === 0 ||
+    (typeof value === 'string' && DIGIT_STRING_KINDS.has(field.kind) && ALL_ZEROS.test(value))
+  );
+}
+
+/** The decoded `value` of `field`, or undefined when the file writes it as absent (isAbsentValue). */
+function absentToUndefined(field: FieldDef, value: Primitive): Primitive | undefined {
+  return isAbsentValue(field, value) ? undefined : value;
 }
 
 function checkLine(def: RecordDef, line: string): void {

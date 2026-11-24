@@ -1,5 +1,7 @@
 import { generate1214 } from '../../src/api/generate.js';
 import { parse1214 } from '../../src/api/parse.js';
+import { Opcn1214ValidationError } from '../../src/errors.js';
+import { renderReport } from '../../src/file/assemble.js';
 import type { Report1214Input } from '../../src/model/input.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
@@ -235,6 +237,78 @@ describe('record 1000 conditional requirements (SPEC §10.3)', () => {
         'main.reportablePositions.max',
       ]);
       expect(report?.records[0]?.values['declarations.reportablePositions[4]']).toBe(5);
+    });
+  });
+
+  describe('values the file writes as zeros are absent, on input as in a parsed file', () => {
+    const ZERO_INPUTS: ReadonlyArray<[string, Report1214Input, RuleId, string]> = [
+      [
+        'reportablePositions [0]',
+        minimalInput({ declarations: { tookReportablePosition: true, reportablePositions: [0] } }),
+        'main.reportablePositions.required',
+        'declarations.reportablePositions',
+      ],
+      [
+        'reportablePositions [0, 0]',
+        minimalInput({
+          declarations: { tookReportablePosition: true, reportablePositions: [0, 0] },
+        }),
+        'main.reportablePositions.required',
+        'declarations.reportablePositions',
+      ],
+      [
+        "representativeFileNumber '000000000'",
+        minimalInput({
+          declarations: { familyCompany: { representativeFileNumber: '000000000' } },
+          amounts: { '080': 0 },
+        }),
+        'main.familyCompany.fileNumber',
+        'declarations.familyCompany.representativeFileNumber',
+      ],
+      [
+        "representativeFileNumber '0'",
+        minimalInput({
+          declarations: { familyCompany: { representativeFileNumber: '0' } },
+          amounts: { '080': 0 },
+        }),
+        'main.familyCompany.fileNumber',
+        'declarations.familyCompany.representativeFileNumber',
+      ],
+    ];
+
+    it.each(ZERO_INPUTS)(
+      '%s: reported on input, and generate1214 refuses it',
+      (_, input, ruleId, path) => {
+        expect(issuesOf(input, ruleId).map(issue => issue.path)).toEqual([path]);
+        expect(() => generate1214(input, OPTIONS)).toThrow(Opcn1214ValidationError);
+      },
+    );
+
+    it.each(ZERO_INPUTS)(
+      '%s: the file written without validation parses back with the same issue',
+      (_, input, ruleId) => {
+        const { report } = runPipeline(input, OPTIONS);
+        if (!report) {
+          throw new Error('expected a normalized report');
+        }
+        const parsed = parse1214(renderReport(report).text).issues;
+        const pick = (issues: readonly Issue[]) =>
+          issues.filter(issue => issue.ruleId === ruleId).map(issue => issue.path);
+        expect(pick(parsed)).toEqual(pick(issuesOf(input, ruleId)));
+        expect(pick(parsed)).toHaveLength(1);
+      },
+    );
+
+    it('a non-zero position next to a zero one satisfies the requirement', () => {
+      const input = minimalInput({
+        declarations: { tookReportablePosition: true, reportablePositions: [0, 7] },
+      });
+      expect(issuesOf(input, 'main.reportablePositions.required')).toEqual([]);
+      expect(
+        parse1214(generate1214(input, OPTIONS).text).issues.filter(
+          issue => issue.ruleId === 'main.reportablePositions.required',
+        ),
+      ).toEqual([]);
     });
   });
 });
