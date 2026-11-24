@@ -93,12 +93,23 @@ export function deriveCode008(
   return declarations.appliesAccountingStandards ? 1 : undefined;
 }
 
+/** The largest count code 028 and 1000@962 hold: both are 2 digits wide. */
+const MAX_APPENDIX_COUNT = 99;
+
 /**
- * Code 028, the number of capital-gains forms attached (SPEC §7.4): the untransmitted count when
- * greater than 0, else omitted. The transmitted appendices are added by step G1.
+ * Code 028, the number of capital-gains forms attached (SPEC §7.4): the untransmitted count when it
+ * is a valid count greater than 0 (an integer up to 99), else omitted. An invalid count is reported
+ * once, by the field rules of 1000@962, not again through 028. The transmitted appendices are added
+ * by step G1.
  */
 export function deriveCode028(summary: Report1214Input['capitalGainsSummary']): number | undefined {
-  return hasUntransmittedAppendices(summary) ? summary?.untransmittedCount : undefined;
+  const count = summary?.untransmittedCount;
+  return typeof count === 'number' &&
+    Number.isInteger(count) &&
+    count > 0 &&
+    count <= MAX_APPENDIX_COUNT
+    ? count
+    : undefined;
 }
 
 /** Whether `capitalGainsSummary.untransmittedCount` is greater than 0 (→ 833 = yes, SPEC §7.4). */

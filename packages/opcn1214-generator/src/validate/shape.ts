@@ -86,15 +86,21 @@ interface CodeMap {
   derivedSources: Readonly<Partial<Record<string, readonly string[]>>>;
 }
 
+/** `{}` or `Object.create(null)`: what zod accepts as a record (not a Map, Date or class). */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 /**
  * Checks the keys of the code map `value` against the codes of `map.record` (SPEC §9.2): a key that
  * is not a code of the record is input.unknownCode, a derived code is input.derivedCode naming the
  * input property that controls it. Returns those issues and the map without the reported keys, so
- * zod does not report them again; a value that is not a plain object is returned unchanged for zod.
+ * zod does not report them again; a value that is not a plain object (an array, a Map, a Date, a
+ * class instance) is returned unchanged for zod, which reports it as input.shape.
  */
 function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: unknown } {
   if (!isPlainObject(value)) {
@@ -128,10 +134,14 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
         }),
       );
     } else {
+      // A number key ({ 18: … }) arrives as "18"; codes are 3-digit strings (SPEC §3.5).
+      const padded = key.padStart(3, '0');
+      const hint =
+        padded !== key && codes.has(padded) ? ` Did you mean ${JSON.stringify(padded)}?` : '';
       issues.push(
         makeIssue('input.unknownCode', {
           ...details,
-          message: `${JSON.stringify(key)} is not a code of record ${map.record.type} for tax year ${map.taxYear}.`,
+          message: `${JSON.stringify(key)} is not a code of record ${map.record.type} for tax year ${map.taxYear}.${hint}`,
         }),
       );
     }

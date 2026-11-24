@@ -410,6 +410,57 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       ]);
     });
 
+    class AmountsClass {
+      '018' = 4;
+    }
+
+    it.each([
+      ['a Map', () => new Map([['018', 4]])],
+      ['a Date', () => new Date()],
+      ['a class instance', () => new AmountsClass()],
+    ])('leaves %s to zod, which reports input.shape', (_name, amounts) => {
+      expect(checkShape({ ...minimalInput(), amounts: amounts() }, 2024)).toEqual([
+        expect.objectContaining({ ruleId: 'input.shape', path: 'amounts' }),
+      ]);
+    });
+
+    it('scans a code map without a prototype (Object.create(null))', () => {
+      const amounts = Object.assign(Object.create(null) as Record<string, number>, {
+        ...minimalInput().amounts,
+        '999': 5,
+      });
+      expect(
+        checkShape({ ...minimalInput(), amounts }, 2024).map(issue => [issue.ruleId, issue.path]),
+      ).toEqual([['input.unknownCode', 'amounts["999"]']]);
+    });
+
+    it('reports an own "__proto__" key (as JSON.parse makes it) as input.unknownCode', () => {
+      const amounts: unknown = JSON.parse(
+        JSON.stringify(minimalInput().amounts).replace('{', '{"__proto__":5,'),
+      );
+      expect(Object.keys(amounts as object)).toContain('__proto__');
+      expect(
+        checkShape({ ...minimalInput(), amounts }, 2024).map(issue => [issue.ruleId, issue.path]),
+      ).toEqual([['input.unknownCode', 'amounts["__proto__"]']]);
+    });
+
+    it('suggests the 3-digit code for a number key ({ 18: … })', () => {
+      const [issue, ...rest] = checkShape(
+        { ...minimalInput(), amounts: { ...minimalInput().amounts, 18: 4 } },
+        2024,
+      );
+      expect(rest).toEqual([]);
+      expect(issue).toMatchObject({ ruleId: 'input.unknownCode', path: 'amounts["18"]' });
+      expect(issue?.message).toBe(
+        '"18" is not a code of record 1000 for tax year 2024. Did you mean "018"?',
+      );
+    });
+
+    it('gives no hint when the padded key is not a code either', () => {
+      const [issue] = checkShape({ ...minimalInput(), amounts: { 7: 1 } }, 2024);
+      expect(issue?.message).toBe('"7" is not a code of record 1000 for tax year 2024.');
+    });
+
     it('leaves an input that is not an object to zod', () => {
       expect(checkShape(null, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
         ['input.shape', ''],

@@ -829,4 +829,17 @@ describe('normalizeReport: record 1000 derived codes (SPEC §7.4)', () => {
     const input = minimalInput({ capitalGainsSummary: { untransmittedCount } });
     expect(mainRecord(input).codes.has('028')).toBe(false);
   });
+
+  it.each([2.5, 100, -1])(
+    'an invalid untransmittedCount %s derives no 028 (the 962 field rule reports it)',
+    untransmittedCount => {
+      const input = minimalInput({ capitalGainsSummary: { untransmittedCount } });
+      expect(mainRecord(input).codes.has('028')).toBe(false);
+    },
+  );
+
+  it('untransmittedCount 99, the largest that fits, → 028 = 99', () => {
+    const input = minimalInput({ capitalGainsSummary: { untransmittedCount: 99 } });
+    expect(mainRecord(input).codes.get('028')).toBe(99);
+  });
 });
