@@ -56,9 +56,12 @@ describe('generate1214', () => {
 
   it('suggests a file name from the file number and tax year', () => {
     expect(generate1214(minimalInput(), OPTIONS).fileName).toBe('1214_514000009_2024.txt');
-    expect(generate1214(minimalInput({ taxYear: 2025 }), OPTIONS).fileName).toBe(
-      '1214_514000009_2025.txt',
-    );
+    const provisional = generate1214(minimalInput({ taxYear: 2025 }), OPTIONS);
+    expect(provisional.fileName).toBe('1214_514000009_2025.txt');
+    // A 2025 report is generated on the 2024 layout with one warning (SPEC §14).
+    expect(provisional.warnings.map(issue => issue.ruleId)).toEqual([
+      'struct.taxYear.provisionalLayout',
+    ]);
   });
 
   it('uses the file number as written in the file (9 digits)', () => {
@@ -125,6 +128,14 @@ describe('generate1214', () => {
 
   it('returns the warnings of a valid report', () => {
     expect(generate1214(minimalInput(), OPTIONS).warnings).toEqual([]);
+    // An invalid fax prefix is dropped with a warning (field.phonePrefix); the fax is optional,
+    // so the report stays valid.
+    const input = minimalInput({
+      company: { fax: { prefix: '01' as PhonePrefix, number: '1234567' } },
+    });
+    const { warnings } = generate1214(input, OPTIONS);
+    expect(warnings.map(issue => issue.ruleId)).toEqual(['field.phonePrefix']);
+    expect(warnings).toEqual(validate1214(input, OPTIONS).warnings);
   });
 
   it('throws Opcn1214ValidationError carrying every error and warning', () => {

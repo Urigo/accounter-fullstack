@@ -52,6 +52,12 @@ describe('public API', () => {
     );
   });
 
+  it('exports RULES deep-frozen, so a consumer cannot change validation in place', () => {
+    expect(Object.isFrozen(api.RULES)).toBe(true);
+    expect(api.RULES.every(rule => Object.isFrozen(rule))).toBe(true);
+    expect(Object.isFrozen(api.RULES[0])).toBe(true);
+  });
+
   it('exports the public types (a missing one fails the typecheck)', () => {
     expectTypeOf<Report1214Input['company']>().toEqualTypeOf<CompanyDetails>();
     expectTypeOf<Report1214Input['declarations']>().toEqualTypeOf<Declarations>();

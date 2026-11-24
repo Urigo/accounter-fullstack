@@ -83,4 +83,16 @@ describe('validate1214', () => {
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
   });
+
+  it('warns about the provisional 2025 layout even when the shape stage fails', () => {
+    // The 'wrongly typed members' input above: a 2025 report that stops at the shape stage.
+    const result = validate1214(
+      { taxYear: 2025, company: 'x', amounts: [], shareholders: {} },
+      OPTIONS,
+    );
+    expect(result.errors.map(issue => issue.ruleId)).toContain('input.shape');
+    expect(result.warnings.map(issue => issue.ruleId)).toEqual([
+      'struct.taxYear.provisionalLayout',
+    ]);
+  });
 });

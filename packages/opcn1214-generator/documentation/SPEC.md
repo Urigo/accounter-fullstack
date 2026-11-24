@@ -594,7 +594,7 @@ export function parseResponseFile(content: string | Uint8Array): ResponseRecord[
 
 export function supportedTaxYears(): readonly number[] // [2024, 2025]
 export function getLayout(taxYear: number): YearLayout // throws for unsupported years
-export const RULES: readonly RuleMeta[] // the §10 catalogue, as data
+export const RULES: readonly RuleMeta[] // the §10 catalogue, as data (deep-frozen)
 ```
 
 ### 6.2 Options and results

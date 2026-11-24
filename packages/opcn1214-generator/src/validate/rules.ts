@@ -1,5 +1,6 @@
 /** The rule catalogue (SPEC §10) as data: metadata only, implementations live in the stages. */
 import { Opcn1214InternalError } from '../errors.js';
+import { deepFreeze } from '../layout/freeze.js';
 import type { RecordType } from '../layout/types.js';
 import type { Severity } from './issue.js';
 
@@ -14,8 +15,12 @@ interface RuleMetaInput {
   specRef?: { page: number; note?: string };
 }
 
-/** Every rule of SPEC §10, in catalogue order. */
-export const RULES = [
+/**
+ * Every rule of SPEC §10, in catalogue order. Deep-frozen: the entries are the objects ruleMeta()
+ * returns and issue severities come from them, so an edit in place would change validation for
+ * the whole process.
+ */
+export const RULES = deepFreeze([
   {
     id: 'struct.taxYear.unsupported',
     severity: 'error',
@@ -146,7 +151,7 @@ export const RULES = [
       'A phone or fax number is not exactly 7 digits (shorter numbers would be silently zero-padded).',
     specRef: { page: 6 },
   },
-] as const satisfies readonly RuleMetaInput[];
+] as const satisfies readonly RuleMetaInput[]);
 
 /** Stable rule ID (SPEC §10). */
 export type RuleId = (typeof RULES)[number]['id'];
