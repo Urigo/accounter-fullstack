@@ -3,6 +3,7 @@
  * checks over the normalized main record, so they run on validated input and on parsed files alike.
  */
 import { isAbsentValue } from '../codec/record.js';
+import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { FieldDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -291,8 +292,11 @@ function reportablePositionsUnexpected(report: NormalizedReport): Issue[] {
 /** Code 165: the total of the investments in R&D companies, detailed in records 1030 (p.17). */
 const RD_TOTAL_CODE = '165';
 
-/** The amount a field or code holds in whole shekels, as the file holds it; 0 when not a number. */
-function wholeShekels(value: Primitive): number {
+/**
+ * The amount a field or code holds in whole shekels, as the file holds it; 0 when absent or not a
+ * number.
+ */
+function wholeShekels(value: Primitive | undefined): number {
   return typeof value === 'number' ? Math.round(value) : 0;
 }
 
@@ -302,7 +306,7 @@ function rdRecords(report: NormalizedReport): Issue[] {
     return [];
   }
   return mainRecords(report)
-    .filter(record => isPositive(record.codes.get(RD_TOTAL_CODE)))
+    .filter(record => wholeShekels(record.codes.get(RD_TOTAL_CODE)) > 0)
     .map(record =>
       codeIssue(
         'main.rd.records',
@@ -316,8 +320,9 @@ function rdRecords(report: NormalizedReport): Issue[] {
 
 /**
  * main.rd.total: the investment amounts of the 1030 records do not add up to code 165 (p.17),
- * compared in whole shekels (each amount rounded as it is written). Checked only when code 165 and
- * at least one 1030 record are present: code 165 without records is main.rd.records.
+ * compared in whole shekels (each amount rounded as it is written). An absent code 165 is 0 (it is
+ * not zeroAllowed), so investments without it are reported. Checked only when there is at least one
+ * 1030 record: code 165 without records is main.rd.records.
  */
 function rdTotal(report: NormalizedReport): Issue[] {
   const investments = report.records.filter(record => record.recordType === '1030');
@@ -329,10 +334,7 @@ function rdTotal(report: NormalizedReport): Issue[] {
     0,
   );
   return mainRecords(report)
-    .filter(record => {
-      const code = record.codes.get(RD_TOTAL_CODE);
-      return code !== undefined && wholeShekels(code) !== total;
-    })
+    .filter(record => wholeShekels(record.codes.get(RD_TOTAL_CODE)) !== total)
     .map(record => {
       const code = wholeShekels(record.codes.get(RD_TOTAL_CODE));
       return {

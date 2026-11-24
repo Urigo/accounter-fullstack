@@ -1328,7 +1328,7 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                | p.11     |
 | `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                     | p.11     |
 | `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                     | p.17     |
-| `main.rd.total`                             | W   | derived | sum of 1030 investment amounts ≠ code 165, in whole shekels; checked when both are present           | p.17     |
+| `main.rd.total`                             | W   | derived | 1030 records present and the sum of their amounts ≠ code 165 (absent is 0), in whole shekels         | p.17     |
 | `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                | p.7      |
 | `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                      | p.10–11  |
 | `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                       | p.10–11  |

@@ -575,17 +575,31 @@ describe('R&D investments and code 165 (SPEC §10.3)', () => {
     expect(issuesOf(withRd(3, total), 'main.rd.total')).toEqual([]);
   });
 
-  it('main.rd.total: not checked without code 165', () => {
-    expect(issuesOf(withRd(2), 'main.rd.total')).toEqual([]);
+  it('main.rd.total: investments without code 165 do not add up to it (absent is 0)', () => {
+    const total = rdInvestmentsTotal(2);
+    expect(issuesOf(withRd(2), 'main.rd.total')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'amounts["165"]',
+        code: '165',
+        value: 0,
+        expected: String(total),
+      }),
+    ]);
+    expect(issuesOf(withRd(2), 'main.rd.records')).toEqual([]);
+    // Investments that are all 0 add up to an absent code 165.
+    const zeros = minimalInput({ rdInvestments: [{ companyName: 'א', investmentAmount: 0 }] });
+    expect(issuesOf(zeros, 'main.rd.total')).toEqual([]);
   });
 
   it('main.rd.total: compared in whole shekels, each amount rounded as it is written', () => {
     const input = minimalInput({
       rdInvestments: [
-        { companyName: 'א', investmentAmount: 1000.4 },
-        { companyName: 'ב', investmentAmount: 999.6 },
+        { companyName: 'א', investmentAmount: 1000.5 },
+        { companyName: 'ב', investmentAmount: 999.5 },
       ],
-      amounts: { '165': 2000.2 },
+      // Rounded one by one as written: 1001 + 1000 = 2001; rounding the sum would give 2000.
+      amounts: { '165': 2001 },
     });
     const issues = runPipeline(input, { ...OPTIONS, rounding: 'halfUp' }).issues;
     expect(issues.filter(issue => issue.ruleId === 'main.rd.total')).toEqual([]);

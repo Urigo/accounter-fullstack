@@ -329,7 +329,7 @@ export const RULES = deepFreeze([
     source: 'derived',
     scope: '1000',
     description:
-      'The R&D investment amounts (1030) do not add up to code 165, compared in whole shekels.',
+      'The R&D investment amounts (1030) do not add up to code 165 (absent is 0), compared in whole shekels.',
     specRef: { page: 17 },
   },
   {
