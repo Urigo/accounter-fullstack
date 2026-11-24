@@ -1,4 +1,4 @@
-import { useContext, useState, type JSX } from 'react';
+import { useContext, useEffect, useState, type JSX } from 'react';
 import { CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
@@ -23,11 +23,28 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 
+/** Same businesses in the same order. Order counts: the server picks the write target by it. */
+function sameBusinessIds(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+type UserNavModal = 'balance-charge' | 'pull-documents';
+
+/**
+ * A modal picked by the same click that applied a pending business scope. Applying the scope
+ * remounts this component (see `applyPendingBusinessScope`), which would drop the modal with the
+ * old instance's state, so the next mount opens it from here instead.
+ */
+let modalAwaitingRemount: UserNavModal | null = null;
+
 export function UserNav(): JSX.Element | null {
   const { userContext } = useContext(UserContext);
   const { isAuthenticated, user } = useAuth0();
-  const [pullDocumentsOpened, setPullDocumentsOpened] = useState(false);
-  const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
+  const [openModal, setOpenModal] = useState<UserNavModal | null>(() => modalAwaitingRemount);
+  useEffect(() => {
+    // This mount has taken over any modal handed down across a scope change.
+    modalAwaitingRemount = null;
+  }, []);
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(getBusinessScopeIds);
   // Scope-independent: `userContext.memberships` is fetched under the active
   // business scope, so it names only the in-scope businesses — leaving the rest
@@ -87,14 +104,43 @@ export function UserNav(): JSX.Element | null {
     description: m.businessId,
   }));
 
-  function handleBusinessScopeChange(ids: string[]): void {
-    setSelectedBusinessIds(ids);
-    setBusinessScope(ids);
+  // Toggling a business only edits `selectedBusinessIds`. Applying the scope swaps the urql
+  // client, which refetches every query — including the one `OnboardingGuard` holds the whole app
+  // shell back on, so this menu unmounts with it. Applied on each toggle, that closed the menu
+  // after every click; instead the scope is applied once, when the picker or the menu closes.
+  // Returns whether it applied anything.
+  function applyPendingBusinessScope(): boolean {
+    if (sameBusinessIds(selectedBusinessIds, getBusinessScopeIds())) {
+      return false;
+    }
+    setBusinessScope(selectedBusinessIds);
+    return true;
+  }
+
+  function applyBusinessScopeOnClose(open: boolean): void {
+    if (!open) {
+      applyPendingBusinessScope();
+    }
+  }
+
+  // Picking a modal closes the menu, and a pending scope applied then would remount this component
+  // and drop the modal. Applied here first, the modal is handed to the next mount instead.
+  function showModal(modal: UserNavModal): void {
+    setOpenModal(modal);
+    if (applyPendingBusinessScope()) {
+      modalAwaitingRemount = modal;
+    }
+  }
+
+  function closeModal(): void {
+    setOpenModal(null);
+    modalAwaitingRemount = null;
   }
 
   return (
     <>
-      <DropdownMenu>
+      {/* Closing the menu can unmount an open picker before it reports its own close. */}
+      <DropdownMenu onOpenChange={applyBusinessScopeOnClose}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8 items-center flex flex-row justify-center">
@@ -121,7 +167,8 @@ export function UserNav(): JSX.Element | null {
                 <MultiSelect
                   options={businessOptions}
                   defaultValue={selectedBusinessIds}
-                  onValueChange={handleBusinessScopeChange}
+                  onValueChange={setSelectedBusinessIds}
+                  onOpenChange={applyBusinessScopeOnClose}
                   placeholder="All businesses"
                   maxCount={2}
                   className="text-xs"
@@ -152,7 +199,7 @@ export function UserNav(): JSX.Element | null {
             </>
           )}
           <DropdownMenuItem asChild>
-            <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
+            <Button variant="ghost" onClick={() => showModal('balance-charge')}>
               Add Balance Charge
             </Button>
           </DropdownMenuItem>
@@ -162,7 +209,7 @@ export function UserNav(): JSX.Element | null {
                 variant="ghost"
                 size="icon"
                 className="size-7.5"
-                onClick={() => setPullDocumentsOpened(true)}
+                onClick={() => showModal('pull-documents')}
               >
                 <FileDown className="size-5" />
               </Button>
@@ -183,15 +230,11 @@ export function UserNav(): JSX.Element | null {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <SyncDocumentsModal
-        close={() => setPullDocumentsOpened(false)}
-        opened={pullDocumentsOpened}
-      />
+      <SyncDocumentsModal close={closeModal} opened={openModal === 'pull-documents'} />
 
       <BalanceChargeModal
-        open={balanceChargeModalOpen}
-        onOpenChange={setBalanceChargeModalOpen}
-        onClose={() => setBalanceChargeModalOpen(false)}
+        open={openModal === 'balance-charge'}
+        onOpenChange={open => (open ? setOpenModal('balance-charge') : closeModal())}
       />
     </>
   );

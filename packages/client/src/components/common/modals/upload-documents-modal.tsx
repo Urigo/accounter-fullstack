@@ -6,7 +6,10 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUploadDocumentsFromGoogleDrive } from '../../../hooks/use-upload-documents-from-google-drive.js';
-import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
+import {
+  useUploadMultipleDocuments,
+  type UploadedDocuments,
+} from '../../../hooks/use-upload-multiple-documents.js';
 import { Button } from '../../ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card.js';
 import { Checkbox } from '../../ui/checkbox.js';
@@ -106,7 +109,7 @@ export function UploadDocumentsModal({
 
   const onSubmit = useCallback(
     async (data: z.infer<typeof FormSchema>) => {
-      let uploadExecution: Promise<unknown> = Promise.resolve();
+      let uploadExecution: Promise<UploadedDocuments | void> | undefined;
       switch (data.method) {
         case 'local-files':
           if (data.documents) {
@@ -131,9 +134,16 @@ export function UploadDocumentsModal({
           }
           break;
       }
+      if (!uploadExecution) {
+        return;
+      }
       try {
-        await uploadExecution;
-        onChange?.();
+        // The upload hooks report failures with a toast of their own and resolve to nothing, so
+        // only refresh the charge when at least one document actually landed on it.
+        const uploaded = await uploadExecution;
+        if (uploaded && uploaded.length > 0) {
+          onChange?.();
+        }
         onOpenChange(false);
       } catch (error) {
         form.setError('root', {

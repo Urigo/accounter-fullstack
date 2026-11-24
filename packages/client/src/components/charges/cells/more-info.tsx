@@ -16,6 +16,8 @@ export type MoreInfoProps = {
     depreciationRecordsCount: number;
     invalidLedger?: 'VALID' | 'DIFF' | 'INVALID';
   };
+  /** Refreshes the charge once documents dropped on the cell have uploaded. */
+  onChange?: () => void;
 };
 
 export const MoreInfo = ({
@@ -24,6 +26,7 @@ export const MoreInfo = ({
   isTransactionsMissing,
   isDocumentsMissing,
   info,
+  onChange,
 }: MoreInfoProps): ReactElement => {
   const shouldHaveDocuments = useMemo((): boolean => {
     switch (type) {
@@ -127,7 +130,7 @@ export const MoreInfo = ({
   }
 
   return (
-    <DragFile chargeId={chargeId}>
+    <DragFile chargeId={chargeId} onChange={onChange}>
       <ListCapsule items={list} />
     </DragFile>
   );

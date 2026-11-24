@@ -84,4 +84,50 @@ describe('test-db-config import safety', () => {
 
     expect(() => mod.assertTestDatabaseIsLocal()).not.toThrow();
   });
+
+  // The harness has a database of its own. POSTGRES_DB names the developer's dev database, or in
+  // a root .env that should not exist a deployed one, and must not be able to move the tests.
+  it('connects to its own database, whatever POSTGRES_DB names', async () => {
+    process.env.POSTGRES_HOST = 'localhost';
+    vi.stubEnv('POSTGRES_DB', 'accounter_prod_db');
+
+    try {
+      const mod = await loadFreshConfig();
+
+      expect(mod.TEST_DATABASE_NAME).toBe('accounter_test');
+      expect(mod.testDbConfig.database).toBe('accounter_test');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('connects to its own database when POSTGRES_DB is not set at all', async () => {
+    process.env.POSTGRES_HOST = 'localhost';
+    vi.stubEnv('POSTGRES_DB', undefined);
+
+    try {
+      const mod = await loadFreshConfig();
+
+      expect(mod.testDbConfig.database).toBe('accounter_test');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  // An opt-in in .env reaches process.env through this module's own dotenv load, where it is
+  // indistinguishable from one the caller typed -- and the global setup's import of this module
+  // hands it to every test worker. Importing must still be safe; connecting must refuse.
+  it('refuses at connect time when a .env file sets ALLOW_REMOTE_DB', async () => {
+    process.env.POSTGRES_HOST = 'localhost';
+    vi.doMock('dotenv', () => ({ config: () => ({ parsed: { ALLOW_REMOTE_DB: '1' } }) }));
+
+    try {
+      const mod = await loadFreshConfig();
+
+      expect(typeof mod.qualifyTable).toBe('function');
+      expect(() => mod.assertTestDatabaseIsLocal()).toThrow(/ALLOW_REMOTE_DB is set in a \.env/);
+    } finally {
+      vi.doUnmock('dotenv');
+    }
+  });
 });

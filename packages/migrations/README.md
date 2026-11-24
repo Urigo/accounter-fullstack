@@ -1,4 +1,4 @@
-# `@accounter/migrations`
+# `@accounter-helper/migrations`
 
 Service for creating, managing and running database migrations.
 

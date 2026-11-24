@@ -39,8 +39,44 @@ Use-Case Registry → Seed Orchestrator → Validation Layer
 ### Prerequisites
 
 - Docker Compose Postgres running locally
-- Migrations applied: `yarn workspace @accounter/migrations migration:run`
+- Migrations applied: `yarn workspace @accounter-helper/migrations migration:run`
 - Environment variables configured (see `.env.example`)
+
+### Safety guards
+
+The seed starts with a `TRUNCATE ... CASCADE` of every domain table: run against a database whose
+data matters, it destroys it. Every one of these must now hold, or the seed refuses before touching
+anything:
+
+| Guard                                              | Satisfied by                                         |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| No `ALLOW_DEMO_SEED` / `ALLOW_REMOTE_DB` in `.env` | Remove them from the file; pass them per command     |
+| `ALLOW_DEMO_SEED=1`                                | The caller, per command. No test or script sets it.  |
+| `NODE_ENV` is not `production`                     | —                                                    |
+| The host is local                                  | Or `ALLOW_REMOTE_DB=1` for the command (staging)     |
+| The database is a demo database                    | Its name. Nothing satisfies it for a production name |
+
+"The host" is `POSTGRES_HOST`, or `PGHOST` when `POSTGRES_HOST` is unset or blank, the same fallback
+`pg` uses. ".env" means every env file the seed loads, including the `../../.env` that
+`test-db-config.ts` reads. `ALLOW_DEMO_SEED_DATABASE` (below) is refused in `.env` as well.
+
+"A demo database" goes by the database name (`scripts/demo-seed-guard.ts`), on a local host as well
+as a remote one, since both opt-ins together still say nothing about which database is about to be
+emptied:
+
+- a name carrying `prod`, `production`, `prd` or `live` is refused, and nothing overrides that;
+- a name carrying `staging`, `stage`, `demo`, `test`, `testing`, `preview`, `sandbox`, `e2e` or
+  `local` is accepted;
+- on a local host, the dev container's `accounter` is accepted;
+- any other database has to be confirmed by its exact name for that one command, with
+  `ALLOW_DEMO_SEED_DATABASE`. That includes a local copy of production under another name.
+
+The name is checked before connecting, and again against the name the server reports right before
+the `TRUNCATE`.
+
+The demo-seed E2E test (`yarn test:demo-seed`) is skipped unless `ALLOW_DEMO_SEED=1` is already set,
+so a plain `yarn vitest` run or an IDE test run cannot start the seed. It also strips
+`ALLOW_REMOTE_DB` from the seed's environment, so it only ever runs against a local database.
 
 ### Local Seed & Validate
 
@@ -60,6 +96,7 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 **Seed Script** (successful run):
 
 ```
+✅ Demo seed target: postgres@localhost:5432/accounter (local-dev-database)
 ✅ Connected to database
 🧹 Clearing existing demo data...
 ✅ Domain tables cleared
@@ -390,6 +427,48 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 ---
 
+#### Error: "Refusing to run the demo data seed against a non-local database"
+
+**Cause**: `POSTGRES_HOST` is not a local host.
+
+**Solution**: First make sure that host is the database you mean to wipe:
+`grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env` (this leaves the password out). If it is a staging
+database, opt in for the command only:
+
+```bash
+ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+---
+
+#### Error: "Refusing to seed demo data into …"
+
+**Cause**: The seed starts by truncating the domain tables, so it checks which database it is about
+to reset (`scripts/demo-seed-guard.ts`) before it connects, and again against the name the server
+reports right before the `TRUNCATE`. Neither `ALLOW_DEMO_SEED=1` nor `ALLOW_REMOTE_DB=1` says which
+database it is, so with both set the name still decides.
+
+- **"the database name … says production"**: the name carries `prod`, `production`, `prd` or `live`.
+  This is refused on any host and nothing overrides it. If `POSTGRES_*` was not meant to point
+  there, fix the environment (most often the root `.env`, which must only hold local credentials).
+  Check it without printing the password: `grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env`
+- **"nothing marks … as a demo database"**: the seed only runs when the database name carries
+  `staging`, `stage`, `demo`, `test`, `testing`, `preview`, `sandbox`, `e2e` or `local` (and does
+  not contain `prod`), or, on a local host, when the database is the dev container's `accounter`.
+  Being reachable on `localhost` is not enough: a local copy of production under another name is
+  refused too.
+
+**Solution**: For a new demo environment, put one of those words in its database name. If the name
+cannot change, confirm the reset by naming the database exactly, on the command (for a deploy, in
+the build command; never in a `.env` file, where it is refused). With a remote database called
+`accounter_uat`:
+
+```bash
+ALLOW_DEMO_SEED_DATABASE=accounter_uat ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+---
+
 #### Error: "Foreign key violation on business_id"
 
 **Cause**: Use-case references a business that doesn't exist in fixtures.
@@ -501,12 +580,12 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo 2>&1 | grep -i "admin"
 
 1. Check for seed errors (scroll up in terminal output)
 2. Verify all use-cases registered in `use-cases/index.ts`
-3. Re-run seed with clean DB:
+3. Re-run the seed. It clears the domain tables before it inserts, so there is nothing to reset
+   first; bringing the schema up to date is enough:
 
 ```bash
-# Reset DB (if needed)
-yarn workspace @accounter/migrations db:reset
-yarn workspace @accounter/migrations migration:run
+# Apply any migration the database is missing
+yarn workspace @accounter-helper/migrations migration:run
 
 # Re-seed
 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
@@ -578,8 +657,8 @@ docker ps | grep postgres
 # Start if not running
 docker-compose -f docker/docker-compose.dev.yml up -d
 
-# Verify env vars
-cat .env | grep POSTGRES
+# Verify where the env vars point (this leaves the password out)
+grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env
 ```
 
 ---
@@ -593,8 +672,8 @@ cat .env | grep POSTGRES
 ```bash
 yarn install \
   && yarn build \
-  && yarn workspace @accounter/migrations migration:run \
-  && ALLOW_DEMO_SEED=1 yarn seed:staging-demo \
+  && yarn workspace @accounter-helper/migrations migration:run \
+  && ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo \
   && yarn validate:demo
 ```
 
@@ -602,8 +681,9 @@ yarn install \
 
 1. `yarn install` - Install dependencies
 2. `yarn build` - Compile TypeScript
-3. `yarn workspace @accounter/migrations migration:run` - Apply schema migrations
-4. `ALLOW_DEMO_SEED=1 yarn seed:staging-demo` - Seed demo data (with safety flag)
+3. `yarn workspace @accounter-helper/migrations migration:run` - Apply schema migrations
+4. `ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo` - Seed demo data (with safety flags;
+   the staging database is remote, so the local-host guard needs the explicit opt-in)
 5. `yarn validate:demo` - Verify data integrity (fails deploy if validation errors)
 
 ### Environment Variables
@@ -621,11 +701,16 @@ POSTGRES_SSL=1
 
 # Environment
 NODE_ENV=staging
-ALLOW_DEMO_SEED=1
 
 # Auth (set manually in dashboard)
 AUTHORIZED_USERS=demo@accounter.local,admin@accounter.local
 ```
+
+`POSTGRES_DB` matters to the seed step. The seed resets a remote database only when its name marks
+it as a demo environment, and `accounter_staging` does. For an environment whose database name
+carries none of the accepted words, also put `ALLOW_DEMO_SEED_DATABASE`, set to that exact name, on
+the seed step of the build command (see the "Refusing to seed demo data into …" entry under
+Troubleshooting).
 
 ### Deployment Workflow
 
