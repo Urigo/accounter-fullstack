@@ -214,7 +214,10 @@ zeros on the left; alphanumeric fields are padded with spaces on the left".
 ### 3.9 Response file `shumot.shg` (p.61–62)
 
 After transmission SHAAM returns one line per report: file number (9), tax year (4), response code
-(2), optionally followed by a field description for codes 08/33. Codes:
+(2), all three numeric (p.62). Codes 08 and 33 come with a "field detail" (פרוט השדה) whose place
+and form p.62 does not give; neither does it give the file's encoding or line separator. The
+defaults the parser uses for these are recorded in §15 A-35, unverified until a real `shumot.shg` is
+seen. Codes:
 
 | Code  | Meaning (translated)                                        |
 | ----- | ----------------------------------------------------------- |
@@ -599,10 +602,14 @@ export function parse1214(content: string | Uint8Array, options?: ParseOptions):
 export function parse1214Batch(content: string | Uint8Array, options?: ParseOptions): ParseResult[]
 
 /** Parses SHAAM's response file shumot.shg (§3.9): one ResponseRecord per non-blank line, in file
- *  order. Bytes decode as windows-1255; CRLF or LF; blank lines are skipped; an empty file gives [].
- *  Lines shorter than 15 characters (parse.lineLength) or with a non-digit file number or tax year
- *  (parse.numeric) throw Opcn1214ParseError carrying every such line. Any 2-character code is
- *  accepted; an unlisted one means 'General error; notify SHAAM'. */
+ *  order. Bytes decode as windows-1255; CRLF or LF; blank lines are skipped (A-35, unverified).
+ *  Lines shorter than 15 characters (parse.lineLength) or with a non-digit file number, tax year or
+ *  response code (parse.numeric; all three are numeric on p.62) throw Opcn1214ParseError carrying
+ *  every such line. A file with no non-blank line throws parse.empty (line 1, column 1), as
+ *  parse1214 does. A 2-digit code that §3.9 does not list means 'General error; notify SHAAM'.
+ *  A file in another encoding is not detected (UTF-8 or CP862 Hebrew decodes to valid but wrong
+ *  characters): decode it yourself and pass a string. Undecodable bytes in the detail come back as
+ *  U+FFFD; parse.encoding is not raised. */
 export function parseResponseFile(content: string | Uint8Array): ResponseRecord[]
 
 export function supportedTaxYears(): readonly number[] // [2024, 2025]
@@ -663,7 +670,8 @@ export interface ResponseRecord {
   code: string // '00', '05', …
   meaning: string // English text from §3.9
   accepted: boolean // code === '00'
-  detail?: string // trailing text for codes 08 / 33, trailing spaces trimmed; absent when empty
+  detail?: string // text after column 15, any code (A-35): trailing spaces trimmed, leading kept;
+  //                 absent when empty
   line: number
 }
 ```
@@ -1750,12 +1758,23 @@ phase noted, and this table updated with the outcome.
 | A-25 | Identifier check digits                                        | Not stated                                                                                                                         | Every `id9`/`shareholderId` value must pass the Israeli check digit (§4.2; `field.checkDigit`, source `checker`)               | Found at CP-2/CP-3; re-verify after FIX-1 |
 | A-26 | Batch summary                                                  | Not stated                                                                                                                         | `mainCodePairs`: the most of any report (61 is per report); `omittedZeroCodes` carry `reportIndex`                             | —                                         |
 | A-34 | 1000@1090 qualifying-company mark                              | p.12 gives 1090 the same name and notes as 1065 ("סימון – רכישה של \"חברה מזכה\"", 1-כן 2-לא)                                      | Inferred from 1091 (the amount): `amortizationClaimed`, amortization is claimed for the purchase                               | —                                         |
+| A-35 | Response file `shumot.shg` format                              | p.61–62: file name, three numeric fields, code table; no encoding, separator or 08/33 detail place                                 | windows-1255; CRLF or LF; `detail` = text after column 15, any code (see below)                                                | Verify: first real `shumot.shg`           |
 
 A-25 was found on shopcn, which validates identifier check digits and stops at the first error:
 `kibbutz` (1000@137 = 570000001) was rejected with "שגיאה בקובץ, ספרת בקורת שגויה", `main-full`
 (1000@225) with "הערך '940000001' אינו תקין במילוי 'תיק ניכויים'" and `related-and-rd` (1010@189)
 with "הערך '510000001' אינו תקין במילוי 'חברות קשורות: תיק חברה'". The fixtures were given valid
 identifiers and regenerated in FIX-1.
+
+A-35: section 18 of the PDF (p.61–62) gives only the file name, the three numeric fields (9 + 4 + 2)
+and the code table. The parser's defaults for the rest: bytes decode as windows-1255 (A-6 covers our
+upload, not what SHAAM sends back); lines end with CRLF or LF; the text after column 15 is `detail`
+for any code, trailing spaces trimmed and leading spaces kept (so a left-padded fixed-width field
+keeps its padding). A file in another encoding is not detected: UTF-8 or CP862 Hebrew decodes as
+windows-1255 to valid but wrong characters (`שדה` in UTF-8 becomes `׳©׳“׳”`), so callers with such a
+file decode it themselves and pass a string. Undecodable bytes in the detail come back as U+FFFD;
+`parse.encoding` is not raised for them, since the likely wrong encodings would almost never trigger
+it. Every test sample is synthetic; confirm all of this on the first real `shumot.shg`.
 
 ---
 

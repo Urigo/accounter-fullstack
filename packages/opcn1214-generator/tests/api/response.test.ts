@@ -19,6 +19,9 @@ function parseErrorIssues(run: () => unknown): readonly Issue[] {
 
 const HEBREW_DETAIL = 'שדה 150 שם התוכנה';
 
+// Every sample below is synthetic, built from p.61–62 of the PDF: no real shumot.shg has been seen
+// yet (SPEC §15 A-35).
+
 describe('parseResponseFile', () => {
   it('parses one record per line with the SPEC §3.9 meaning; only 00 is accepted', () => {
     const file = [
@@ -78,7 +81,7 @@ describe('parseResponseFile', () => {
     ]);
   });
 
-  it.each(['02', '42', 'AB'])('an unknown code %s means a general error', code => {
+  it.each(['02', '42', '50'])('an unknown code %s means a general error', code => {
     expect(parseResponseFile(`1234567892024${code}`)).toEqual([
       expect.objectContaining({ code, meaning: 'General error; notify SHAAM', accepted: false }),
     ]);
@@ -109,14 +112,37 @@ describe('parseResponseFile', () => {
     expect(parseResponseFile(encodeWindows1255(text))).toEqual(fromText);
   });
 
-  it('returns no records for an empty file', () => {
-    expect(parseResponseFile('')).toEqual([]);
-    expect(parseResponseFile(new Uint8Array())).toEqual([]);
-    expect(parseResponseFile('\r\n\r\n')).toEqual([]);
+  it.each([
+    ['an empty string', ''],
+    ['no bytes', new Uint8Array()],
+    ['blank lines only', '\r\n   \r\n'],
+  ])('throws parse.empty at line 1, column 1 for %s', (_, content) => {
+    const issues = parseErrorIssues(() => parseResponseFile(content));
+    expect(issues.map(({ ruleId, line, column }) => ({ ruleId, line, column }))).toEqual([
+      { ruleId: 'parse.empty', line: 1, column: 1 },
+    ]);
   });
 
   it('omits detail when only spaces follow the code', () => {
     expect(parseResponseFile('123456789202400     ')[0]).not.toHaveProperty('detail');
+  });
+
+  it('keeps the leading spaces of the detail and trims the trailing ones, for any code', () => {
+    expect(parseResponseFile('123456789202433   field 150  ')[0]?.detail).toBe('   field 150');
+    expect(parseResponseFile('123456789202400 note')[0]?.detail).toBe(' note');
+  });
+
+  it('returns undecodable windows-1255 bytes of the detail as U+FFFD without an issue', () => {
+    const bytes = new Uint8Array([...encodeWindows1255('123456789202433ab'), 0x81, 0x63]);
+    expect(parseResponseFile(bytes)[0]?.detail).toBe('ab\uFFFDc');
+  });
+
+  it('does not detect UTF-8 detail text: it decodes as windows-1255 to other characters', () => {
+    const bytes = new TextEncoder().encode('123456789202408שדה');
+    const [record] = parseResponseFile(bytes);
+    expect(record?.code).toBe('08');
+    expect(record?.detail).not.toBe('שדה');
+    expect(record?.detail).not.toContain('\uFFFD');
   });
 
   it('throws Opcn1214ParseError with every malformed line, by line and column', () => {
@@ -127,6 +153,8 @@ describe('parseResponseFile', () => {
       '1234567892O2400',
       '',
       '12A45',
+      '1234567892024AB',
+      '1234567892024 5',
     ].join('\n');
     const issues = parseErrorIssues(() => parseResponseFile(file));
     expect(
@@ -143,6 +171,8 @@ describe('parseResponseFile', () => {
       { ruleId: 'parse.numeric', severity: 'error', line: 4, column: 11, value: '2O24' },
       { ruleId: 'parse.numeric', severity: 'error', line: 6, column: 3, value: '12A45' },
       { ruleId: 'parse.lineLength', severity: 'error', line: 6, column: 6, value: undefined },
+      { ruleId: 'parse.numeric', severity: 'error', line: 7, column: 14, value: 'AB' },
+      { ruleId: 'parse.numeric', severity: 'error', line: 8, column: 14, value: ' 5' },
     ]);
     expect(issues.every(issue => issue.path === '')).toBe(true);
     expect(issues[0]?.message).toBe(

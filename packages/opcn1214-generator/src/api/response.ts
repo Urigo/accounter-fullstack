@@ -1,4 +1,8 @@
-/** parseResponseFile (SPEC §6.1): SHAAM's response file shumot.shg (SPEC §3.9). */
+/**
+ * parseResponseFile (SPEC §6.1): SHAAM's response file shumot.shg (SPEC §3.9). p.61–62 give only the
+ * three numeric fields and the code table; the encoding, the line separator and the place of the
+ * 08/33 field detail are unverified defaults (SPEC §15 A-35).
+ */
 import { Opcn1214ParseError } from '../errors.js';
 import { splitFile } from '../file/split.js';
 import { responseMeaning } from '../response/codes.js';
@@ -16,7 +20,11 @@ export interface ResponseRecord {
   meaning: string;
   /** code === '00' */
   accepted: boolean;
-  /** Trailing text after the code (codes 08 / 33), trailing spaces trimmed; absent when empty. */
+  /**
+   * The text after the code (columns 16 onward, for any code; p.62 names it for 08 / 33 only), trailing
+   * spaces trimmed and leading spaces kept; absent when empty. Bytes that do not decode as
+   * windows-1255 come back as U+FFFD (no issue is raised; SPEC §15 A-35).
+   */
   detail?: string;
   /** 1-based line number in the file. */
   line: number;
@@ -54,6 +62,7 @@ function lineIssues(text: string, lineNumber: number): Issue[] {
   const issues = [
     numericIssue(text, lineNumber, FILE_NUMBER, 'File number'),
     numericIssue(text, lineNumber, TAX_YEAR, 'Tax year'),
+    numericIssue(text, lineNumber, CODE, 'Response code'),
   ].filter(issue => issue !== undefined);
   if (text.length < CODE.end) {
     issues.push(
@@ -84,9 +93,17 @@ function responseRecord(text: string, line: number): ResponseRecord {
 /**
  * Parses SHAAM's response file shumot.shg (SPEC §3.9): one ResponseRecord per non-blank line, in
  * file order. Bytes are decoded as windows-1255; lines end with CRLF or LF; blank lines are
- * skipped and an empty file gives []. A line shorter than 15 characters (parse.lineLength) or with
- * a non-digit in its file number or tax year (parse.numeric) throws Opcn1214ParseError carrying
- * the problems of every such line, sorted by line and column.
+ * skipped (SPEC §15 A-35: unverified defaults). A line shorter than 15 characters
+ * (parse.lineLength) or with a non-digit in its file number, tax year or response code
+ * (parse.numeric; p.62 makes all three numeric) throws Opcn1214ParseError carrying the problems of
+ * every such line, sorted by line and column. A file without any non-blank line throws parse.empty
+ * (line 1, column 1), as parse1214 does: SHAAM answers every upload with at least one line. A
+ * 2-digit code that p.62 does not list means 'General error; notify SHAAM'.
+ *
+ * A file in another encoding (UTF-8, CP862) is not detected: its Hebrew decodes as windows-1255 to
+ * valid but wrong characters. Decode such a file yourself and pass the string. Bytes that do not
+ * decode as windows-1255 come back as U+FFFD in `detail` (and fail parse.numeric in the numeric
+ * fields); parse.encoding is not raised.
  */
 export function parseResponseFile(content: string | Uint8Array): ResponseRecord[] {
   const records: ResponseRecord[] = [];
@@ -102,6 +119,9 @@ export function parseResponseFile(content: string | Uint8Array): ResponseRecord[
     } else {
       records.push(responseRecord(text, line));
     }
+  }
+  if (records.length === 0 && issues.length === 0) {
+    issues.push(parseIssue('parse.empty', 'The file has no records.', { line: 1, column: 1 }));
   }
   if (issues.length > 0) {
     throw new Opcn1214ParseError(issues);
