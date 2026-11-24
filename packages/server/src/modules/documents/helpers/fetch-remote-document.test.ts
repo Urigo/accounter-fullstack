@@ -66,15 +66,20 @@ describe('isBlockedIp', () => {
     '169.254.169.254',
     '0.0.0.0',
     '100.64.0.1',
+    '::',
     '::1',
     'fd00::1',
     'fe80::1',
     '::ffff:127.0.0.1',
+    // IPv4-mapped addresses as the URL parser writes them: in hex, not dotted.
+    '::ffff:7f00:1',
+    '::ffff:a9fe:a9fe',
+    '::ffff:a00:5',
   ])('blocks %s', address => {
     expect(isBlockedIp(address)).toBe(true);
   });
 
-  it.each(['8.8.8.8', '1.1.1.1', '2606:4700::1111'])('allows %s', address => {
+  it.each(['8.8.8.8', '1.1.1.1', '2606:4700::1111', '::ffff:808:808'])('allows %s', address => {
     expect(isBlockedIp(address)).toBe(false);
   });
 });
@@ -85,6 +90,14 @@ describe('assertFetchableUrl', () => {
       RemoteDocumentError,
     );
   });
+
+  it.each(['http://[::ffff:127.0.0.1]:4000/', 'http://[::ffff:169.254.169.254]/latest/'])(
+    'refuses an IPv6 literal that embeds a private IPv4 address: %s',
+    rawUrl => {
+      // The parser hands the check `::ffff:7f00:1`, not the dotted form typed here.
+      expect(() => assertFetchableUrl(rawUrl)).toThrow(/private or loopback/);
+    },
+  );
 
   it('refuses localhost by name as well as by address', () => {
     expect(() => assertFetchableUrl('http://localhost:4000/graphql')).toThrow(RemoteDocumentError);
@@ -126,6 +139,20 @@ describe('fetchRemoteDocument', () => {
       /private or loopback/,
     );
     // The second hop was never attempted.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a redirect to an IPv6 literal that embeds a private IPv4 address', async () => {
+    const fetchMock = vi.fn(async (url: URL) =>
+      String(url).includes('example.com')
+        ? response({ status: 302, headers: { location: 'http://[::ffff:10.0.0.5]/a.pdf' } })
+        : response(),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchRemoteDocument('https://example.com/invoice.pdf')).rejects.toThrow(
+      /private or loopback/,
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

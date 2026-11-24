@@ -1,6 +1,6 @@
 import type { LookupAddress } from 'node:dns';
 import { lookup } from 'node:dns/promises';
-import { isIP } from 'node:net';
+import { BlockList, isIP } from 'node:net';
 
 /**
  * Fetch a document from a caller-supplied URL, safely.
@@ -109,35 +109,41 @@ export function sniffDocumentType(bytes: Uint8Array): AllowedRemoteMimeType | nu
 export class RemoteDocumentError extends Error {}
 
 /**
- * Whether a literal IP address belongs to a range that must never be reachable
- * through this helper: loopback, private, link-local (which includes the cloud
- * metadata address 169.254.169.254), carrier-grade NAT, and the IPv6
- * equivalents.
+ * Ranges that must never be reachable through this helper: loopback, private,
+ * link-local (which includes the cloud metadata address 169.254.169.254),
+ * carrier-grade NAT, multicast and reserved, and the IPv6 equivalents.
+ *
+ * A `BlockList` compares addresses, not their spelling, and one address has
+ * several. The URL parser, for one, writes an IPv4-mapped IPv6 literal in hex
+ * (`[::ffff:127.0.0.1]` becomes `[::ffff:7f00:1]`); the IPv4 rules below match
+ * a mapped address in either form.
  */
+const BLOCKED_ADDRESSES = new BlockList();
+for (const [network, prefix] of [
+  ['0.0.0.0', 8],
+  ['10.0.0.0', 8],
+  ['100.64.0.0', 10], // carrier-grade NAT
+  ['127.0.0.0', 8],
+  ['169.254.0.0', 16],
+  ['172.16.0.0', 12],
+  ['192.168.0.0', 16],
+  ['224.0.0.0', 3], // multicast and reserved: 224.0.0.0 and up
+] as const) {
+  BLOCKED_ADDRESSES.addSubnet(network, prefix, 'ipv4');
+}
+BLOCKED_ADDRESSES.addAddress('::', 'ipv6');
+BLOCKED_ADDRESSES.addAddress('::1', 'ipv6');
+BLOCKED_ADDRESSES.addSubnet('fc00::', 7, 'ipv6'); // unique-local
+BLOCKED_ADDRESSES.addSubnet('fe80::', 10, 'ipv6'); // link-local
+
+/** Whether a literal IP address falls in one of the blocked ranges above. */
 export function isBlockedIp(address: string): boolean {
-  const version = isIP(address);
-  if (version === 4) {
-    const octets = address.split('.').map(Number);
-    const [a, b] = octets as [number, number, number, number];
-    if (a === 0 || a === 10 || a === 127) return true;
-    if (a === 169 && b === 254) return true;
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 100 && b >= 64 && b <= 127) return true;
-    if (a >= 224) return true;
+  const bare = address.replace(/^\[|\]$/g, '');
+  const version = isIP(bare);
+  if (version === 0) {
     return false;
   }
-  if (version === 6) {
-    const lower = address.toLowerCase().replace(/^\[|\]$/g, '');
-    if (lower === '::' || lower === '::1') return true;
-    // Unique-local (fc00::/7) and link-local (fe80::/10).
-    if (/^f[cd]/.test(lower) || /^fe[89ab]/.test(lower)) return true;
-    // IPv4-mapped (::ffff:127.0.0.1) — recurse on the embedded address.
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
-    if (mapped) return isBlockedIp(mapped[1]);
-    return false;
-  }
-  return false;
+  return BLOCKED_ADDRESSES.check(bare, version === 4 ? 'ipv4' : 'ipv6');
 }
 
 /**
