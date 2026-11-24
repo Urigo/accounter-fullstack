@@ -94,23 +94,28 @@ export interface CompanyDetails {
 
 /** The person or office that helped fill in the report (SPEC §7.2), 1000@563–831. */
 export interface PreparerDetails {
-  /** 1000@563. */
+  /** 1000@563, ≤ 50 characters. */
   officeName?: string;
-  /** 1000@613. */
+  /** 1000@613, ≤ 50 characters. */
   contactName?: string;
-  /** 1000@663. */
+  /** 1000@663, ≤ 50 characters. */
   name?: string;
-  /** 1000@713. */
+  /** 1000@713, ≤ 50 characters. */
   profession?: string;
-  /** 1000@763 "מספר עוסק מורשה (מסייע)". */
+  /** 1000@763 "מספר עוסק מורשה (מסייע)": up to 9 digits, written zero-padded to 9. */
   licensedDealerNumber?: string;
-  /** 1000@772. */
+  /** 1000@772, ≤ 50 characters. */
   address?: string;
   /** 1000@822/825. */
   phone?: Phone;
 }
 
-/** Declarations of record 1000 (SPEC §7.2). */
+/**
+ * Declarations of record 1000 (SPEC §7.2). The required members and those marked (yes/no) are
+ * yes/no fields: `true` writes 1, `false` writes 2 and an absent optional one writes 0. The other
+ * optional booleans, except `hasCapitalGainsAppendix`, are flags: `true` writes 1, while `false`
+ * and absent both write 0 (a parsed file reads them back as absent).
+ */
 export interface Declarations {
   /** 878. */
   hasTaxPlanningAction: boolean;
@@ -132,7 +137,10 @@ export interface Declarations {
   form6111Obligation?: 'obliged' | 'notObliged' | 'notRelevant';
   /** 835. */
   financialStatementsAttached?: boolean;
-  /** 836 + 837 (+ code 080 required). */
+  /**
+   * 836 + 837 (+ code 080 required). `representativeFileNumber`: up to 9 digits, written
+   * zero-padded to 9.
+   */
   familyCompany?: { representativeFileNumber: string };
   /** 846 (+ code 084 required). */
   isHouseCompany?: boolean;
@@ -156,7 +164,7 @@ export interface Declarations {
   consolidatedReport?: 'consolidatedUnderSection23' | 'consolidatesWithParent' | 'notRelevant';
   /** 876. */
   partnerInPartnership?: boolean;
-  /** 877. */
+  /** 877 (+ code 226 required; the only case where `shareholders` may be empty). */
   isKibbutz?: boolean;
   /** 883 (yes/no). */
   requestsAdvancePayments?: boolean;

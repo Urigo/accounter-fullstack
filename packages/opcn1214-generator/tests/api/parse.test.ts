@@ -320,3 +320,32 @@ describe('parse1214', () => {
     }
   });
 });
+
+describe('parse1214: declarations rebuilt from their flags (SPEC §7.3)', () => {
+  const { text: declared } = generate1214(
+    minimalInput({
+      declarations: {
+        tookReportablePosition: true,
+        reportablePositions: [12, 7, 5],
+        familyCompany: { representativeFileNumber: '300000007' },
+      },
+      amounts: { '080': 0 },
+    }),
+    OPTIONS,
+  );
+
+  it('drops a member whose flag is not marked (836 = 0, 837 filled)', () => {
+    const { report } = parse1214(tamper(declared, 1, 836, '0'));
+    expect(report.declarations).not.toHaveProperty('familyCompany');
+  });
+
+  it('keeps a marked object whose member is written as absent (837 = 0)', () => {
+    const { report } = parse1214(tamper(declared, 1, 837, '000000000'));
+    expect(report.declarations.familyCompany).toEqual({});
+  });
+
+  it('reads the reportable positions as the non-zero values in field order', () => {
+    const { report } = parse1214(tamper(declared, 1, 1037, '000'));
+    expect(report.declarations.reportablePositions).toEqual([12, 5]);
+  });
+});
