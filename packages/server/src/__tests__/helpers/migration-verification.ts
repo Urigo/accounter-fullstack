@@ -17,19 +17,20 @@ export async function checkLatestMigration(
   clientOrPool: Pool | PoolClient | Client,
   schema = 'accounter_schema',
 ): Promise<MigrationCheckResult> {
-  let client: PoolClient | Client;
+  let client: PoolClient | Client | undefined;
   let shouldRelease = false;
 
-  if (clientOrPool instanceof Pool) {
-    const poolClient = await clientOrPool.connect();
-    client = poolClient;
-    shouldRelease = true;
-  } else {
-    // It's already a Client or PoolClient
-    client = clientOrPool;
-  }
-
   try {
+    if (clientOrPool instanceof Pool) {
+      // Inside the try: a pool that cannot connect is a failed check to report, like a failed
+      // query. Thrown from here it would escape a vitest global setup and stop the whole run.
+      client = await clientOrPool.connect();
+      shouldRelease = true;
+    } else {
+      // It's already a Client or PoolClient
+      client = clientOrPool;
+    }
+
     const result = await client.query(
       `SELECT 1 FROM ${schema}.migration WHERE name = $1 LIMIT 1`,
       [LATEST_MIGRATION_NAME],
@@ -44,13 +45,19 @@ export async function checkLatestMigration(
         : `Latest migration "${LATEST_MIGRATION_NAME}" not found in database`,
     };
   } catch (error) {
+    // A refused connection to `localhost` is an AggregateError with an empty message; its code
+    // still says what happened.
+    const reason =
+      error instanceof Error && error.message !== ''
+        ? error.message
+        : ((error as { code?: unknown } | null)?.code ?? String(error));
     return {
       isLatest: false,
       latestMigrationName: LATEST_MIGRATION_NAME,
-      errorMessage: `Failed to check migrations: ${error instanceof Error ? error.message : String(error)}`,
+      errorMessage: `Failed to check migrations: ${reason}`,
     };
   } finally {
-    if (shouldRelease && 'release' in client) {
+    if (shouldRelease && client && 'release' in client) {
       await client.release();
     }
   }
@@ -68,7 +75,7 @@ export async function assertLatestMigrationApplied(
   if (!result.isLatest) {
     throw new Error(
       result.errorMessage ||
-        `Migration check failed for ${result.latestMigrationName}. Run: yarn workspace @accounter/migrations migration:run`,
+        `Migration check failed for ${result.latestMigrationName}. Run: yarn workspace @accounter-helper/migrations migration:run`,
     );
   }
 }

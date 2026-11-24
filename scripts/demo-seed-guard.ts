@@ -27,6 +27,7 @@
 import {
   ALLOW_DEMO_SEED_DATABASE_ENV,
   describeDatabaseTarget,
+  INSPECT_ENV_COMMAND,
   isLocalDatabaseHost,
   sanitizeForDisplay,
   stripQuotesAndTrim,
@@ -180,7 +181,7 @@ const WHERE_THE_TARGET_CAME_FROM = [
   'If POSTGRES_* was not meant to point there, it most likely comes from the repo root .env,',
   'which must only ever hold local credentials. Check it without printing the password:',
   '',
-  "  grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env",
+  `  ${INSPECT_ENV_COMMAND}`,
 ];
 
 function buildRefusal(

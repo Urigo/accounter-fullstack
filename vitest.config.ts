@@ -59,14 +59,21 @@ export default defineConfig({
         test: {
           name: 'unit',
           globalSetup: ['./scripts/vitest-global-setup.ts'],
-          include: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
-          // Every entry starts with `**/` on purpose. The `include` above matches at any depth,
-          // so an exclude anchored at the repo root only covers this checkout: a second copy of
-          // the repo anywhere below it (a git worktree, a vendored clone) would have its
-          // database-backed and demo seed tests collected here as "unit" tests.
+          // Anchored at the two directories that hold this checkout's tests. A pattern that
+          // matches at any depth (`**/*.test.ts`) also matches a second copy of the repo anywhere
+          // below the root: a git worktree, a vendored clone. `.claude/` is excluded above for
+          // every project; anchoring covers a copy that lives elsewhere, outside these two
+          // directories.
+          include: ['{packages,scripts}/**/*.{test,spec}.{ts,tsx}'],
+          // Each entry still starts with `**/`. A copy placed inside `packages/` or `scripts/`
+          // does match the include above, and these keep its database-backed, client and demo
+          // seed tests out; only its plain unit tests get through. They also mean that widening
+          // the include later cannot quietly bring another checkout's database-backed tests back.
           exclude: [
             '**/packages/server/src/__tests__/**',
-            '**/packages/server/src/demo-fixtures/**',
+            // The demo seed test resets the database it is pointed at, and only the `demo-seed`
+            // project below runs it. Everything else under demo-fixtures is a plain unit test.
+            '**/packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts',
             '**/*.integration.test.ts',
             // Client tests live in the `client` project below, which runs without a database.
             '**/packages/client/**',
@@ -107,9 +114,11 @@ export default defineConfig({
       {
         test: {
           name: 'demo-seed',
-          globalSetup: ['./scripts/vitest-global-setup.ts'],
+          // The second entry checks that the migrations are current before the seed runs. It
+          // exports `setup()`, which vitest calls for a `globalSetup` module only. Listed under
+          // `setupFiles`, as it used to be, the file was imported and the check never ran.
+          globalSetup: ['./scripts/vitest-global-setup.ts', './scripts/vitest-demo-seed-setup.ts'],
           include: ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
-          setupFiles: ['./scripts/vitest-demo-seed-setup.ts'],
         },
       },
     ],

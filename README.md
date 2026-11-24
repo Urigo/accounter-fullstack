@@ -170,10 +170,11 @@ If migrations are stale, demo-seed tests fail gracefully with instructions to ru
 
 No vitest project collects anything under `.claude/`. Claude Code keeps git worktrees (complete
 copies of the repo) in `.claude/worktrees/`, and their test files would otherwise run against this
-checkout's database. A second checkout anywhere else inside the repo folder never contributes its
-database-backed, client or demo seed tests, but its plain unit tests are still collected, so keep
-other checkouts outside the repo folder. `scripts/__tests__/vitest-collection.test.ts` fails if any
-of this stops being true.
+checkout's database. The `unit` project only looks under `packages/` and `scripts/`, so a second
+checkout elsewhere inside the repo folder contributes nothing either. One placed under `packages/`
+or `scripts/` would still contribute its plain unit tests (never its database-backed ones), so keep
+other checkouts out of those two. `scripts/__tests__/vitest-collection.test.ts` fails if any of this
+stops being true.
 
 See [`packages/server/README.md`](packages/server/README.md) for detailed test harness
 documentation.
