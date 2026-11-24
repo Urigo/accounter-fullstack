@@ -11,6 +11,7 @@ import { getChargeTransactionsMeta } from '../../charges/helpers/common.helper.j
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import {
   calculateAssetYear,
+  type AssetDepreciationInput,
   type AssetYearResult,
 } from '../../depreciation/helpers/asset-depreciation.helper.js';
 import {
@@ -87,11 +88,19 @@ function nullableRound(value?: number | null) {
 }
 
 /**
- * True when the asset had nothing on the books during the year: it was fully refunded or disposed
- * of before the year started, so it gets no row
+ * True when an asset with a cost was closed by its events (fully disposed of or refunded) before
+ * the year started, so it had nothing on the books during the year and gets no row. An asset
+ * without a cost (a missing amount) is not closed: its zero row is the cue to fill it in.
  */
-function isClosedBeforeYear(yearResult: AssetYearResult) {
+function isClosedBeforeYear(
+  asset: AssetDepreciationInput,
+  events: readonly Pick<IGetDepreciationDisposalsByIdsResult, 'disposal_date'>[],
+  yearStart: TimelessDateString,
+  yearResult: AssetYearResult,
+) {
   return (
+    asset.cost > 0 &&
+    events.some(event => event.disposal_date < yearStart) &&
     yearResult.openingCost === 0 &&
     yearResult.additions === 0 &&
     yearResult.disposals.length === 0 &&
@@ -183,12 +192,9 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
-          const yearResult = calculateAssetYear(
-            toAssetInput(record, depreciationCategory.category),
-            disposals.map(toDisposalInput),
-            year,
-          );
-          if (isClosedBeforeYear(yearResult)) {
+          const asset = toAssetInput(record, depreciationCategory.category);
+          const yearResult = calculateAssetYear(asset, disposals.map(toDisposalInput), year);
+          if (isClosedBeforeYear(asset, disposals, startOfTimelessYear(year), yearResult)) {
             return;
           }
           const yearDisposalIds = new Set(yearResult.disposals.map(disposal => disposal.id));

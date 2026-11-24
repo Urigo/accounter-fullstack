@@ -81,10 +81,10 @@ const refundsByRecordId: Record<string, IGetDepreciationDisposalsByIdsResult[]> 
   trademarks: [costRefund('trademarks', 14_800)],
 };
 
-function makeInjector() {
+function makeInjector(assetRecords: IGetDepreciationRecordsByDatesResult[]) {
   const providers = new Map<unknown, unknown>([
     [AdminContextProvider, { getVerifiedAdminContext: async () => ({ ownerId: OWNER_ID }) }],
-    [DepreciationProvider, { getDepreciationRecordsByDates: async () => records }],
+    [DepreciationProvider, { getDepreciationRecordsByDates: async () => assetRecords }],
     [DepreciationCategoriesProvider, { getAllDepreciationCategories: async () => categories }],
     [
       DepreciationDisposalsProvider,
@@ -128,13 +128,16 @@ type ReportResult = {
 };
 type AnyResolver = (parent: unknown, args: unknown, context: unknown, info: unknown) => unknown;
 
-async function runReport(year: number): Promise<ReportResult> {
+async function runReport(
+  year: number,
+  assetRecords: IGetDepreciationRecordsByDatesResult[] = records,
+): Promise<ReportResult> {
   const resolver = (depreciationReportResolvers.Query as Record<string, AnyResolver>)
     .depreciationReport;
   return (await resolver(
     {},
     { filters: { year, financialEntityId: OWNER_ID } },
-    { injector: makeInjector() },
+    { injector: makeInjector(assetRecords) },
     {},
   )) as ReportResult;
 }
@@ -245,6 +248,27 @@ describe('depreciationReport with cost refunds', () => {
       pastYearsAccumulatedDepreciation: 354_186,
       reportYearDepreciationCorrection: 0,
     });
+  });
+
+  it('keeps an asset without an amount on the report as a row of zeros', async () => {
+    const missingAmount = {
+      ...asset('missing-amount', 'category-software', 0),
+      amount: null,
+    };
+
+    for (const year of [2023, 2024, 2025]) {
+      const report = await runReport(year, [...records, missingAmount]);
+      expect(recordById(report, 'missing-amount')).toMatchObject({
+        originalCost: 0,
+        reportYearDelta: 0,
+        totalDepreciableCosts: 0,
+        reportYearClaimedDepreciation: 0,
+        totalDepreciation: 0,
+        netValue: 0,
+        disposals: [],
+        costRefunds: [],
+      });
+    }
   });
 
   it('leaves the year before the refund as filed', async () => {
