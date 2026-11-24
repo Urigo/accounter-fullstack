@@ -2,11 +2,13 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { ACME, GLOBEX, MERGEABLE, PAGE_SIZE } from './data.js';
 import {
   chargesUrl,
+  errorToasts,
   expectCharges,
   groupFilter,
   isAllCharges,
   pageOf,
   paginationOf,
+  recordErrorToasts,
   requestDone,
   settle,
   shownCharges,
@@ -26,9 +28,16 @@ import {
 const ACME_FILTER = groupFilter(ACME);
 const GLOBEX_FILTER = groupFilter(GLOBEX);
 
-// A failed operation surfaces as an error toast, even when the rows under test look right.
+// A failed operation surfaces as an error toast, even when the rows under test look right. Every
+// error toast shown during the test is recorded, so one that has already closed (the app's close
+// after 5 s) still fails it; checking the screen at the end would miss those, and a retrying
+// `toHaveCount(0)` would pass by waiting the last one out.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(recordErrorToasts);
+});
+
 test.afterEach(async ({ page }) => {
-  await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0);
+  expect(await errorToasts(page)).toEqual([]);
 });
 
 /**
@@ -253,25 +262,31 @@ test('an out-of-range page in the URL still shows the page count', async ({ page
   expect(urlState(page).page).toBe(0);
 });
 
-test('the list refreshes after merging two charges', async ({ page }) => {
-  const calls = trackAllCharges(page);
-  await page.goto(chargesUrl(groupFilter(MERGEABLE)));
-  await expectCharges(page, MERGEABLE.descriptions);
-  await settle(page);
-  const before = calls.length;
+test.describe(() => {
+  // The merge can't be undone and the database is seeded once per run (a retry gets the same web
+  // servers), so a retry would find one charge and fail for that instead of the real reason.
+  test.describe.configure({ retries: 0 });
 
-  for (const checkbox of await page.getByRole('checkbox', { name: 'Select row' }).all()) {
-    await checkbox.check();
-  }
-  // The merge button is a tooltip trigger inside the dialog trigger; click the outermost.
-  await page.locator('[data-slot="dialog-trigger"]:has(svg.lucide-merge)').click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('heading', { name: 'Merge Charges' })).toBeVisible();
-  // Keep the first charge, and its description.
-  await dialog.getByRole('checkbox').first().click();
-  await dialog.getByRole('button', { name: 'Accept' }).click();
-  await expect(dialog).toBeHidden();
+  test('the list refreshes after merging two charges', async ({ page }) => {
+    const calls = trackAllCharges(page);
+    await page.goto(chargesUrl(groupFilter(MERGEABLE)));
+    await expectCharges(page, MERGEABLE.descriptions);
+    await settle(page);
+    const before = calls.length;
 
-  await expectCharges(page, [MERGEABLE.descriptions[0]!]);
-  expect(calls.length).toBeGreaterThan(before);
+    for (const checkbox of await page.getByRole('checkbox', { name: 'Select row' }).all()) {
+      await checkbox.check();
+    }
+    // The merge button is a tooltip trigger inside the dialog trigger; click the outermost.
+    await page.locator('[data-slot="dialog-trigger"]:has(svg.lucide-merge)').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Merge Charges' })).toBeVisible();
+    // Keep the first charge, and its description.
+    await dialog.getByRole('checkbox').first().click();
+    await dialog.getByRole('button', { name: 'Accept' }).click();
+    await expect(dialog).toBeHidden();
+
+    await expectCharges(page, [MERGEABLE.descriptions[0]!]);
+    expect(calls.length).toBeGreaterThan(before);
+  });
 });

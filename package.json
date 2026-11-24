@@ -47,6 +47,7 @@
     "test": "vitest run --project unit --project client",
     "test:client": "vitest run --project client",
     "test:demo-seed": "vitest run --project demo-seed",
+    "test:e2e": "yarn workspace @accounter/client e2e",
     "test:integration": "vitest run --project unit --project client --project integration",
     "validate:demo": "tsx packages/server/src/demo-fixtures/validate-demo-data.ts"
   },

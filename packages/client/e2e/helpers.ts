@@ -68,13 +68,34 @@ export function isAllCharges(request: Request): boolean {
   return graphqlOperation(request)?.operationName === 'AllCharges';
 }
 
+/** GraphQL traffic on a page: how many requests are open, and when that last changed. */
+type GraphQLActivity = { inFlight: number; lastChange: number };
+
+const activityByPage = new WeakMap<Page, GraphQLActivity>();
+
 /**
  * Records every AllCharges request the page sends from now on. Read the array at any point; it
- * keeps growing.
+ * keeps growing. Also starts the GraphQL activity count `settle` waits on, so call it before the
+ * first navigation.
  */
 export function trackAllCharges(page: Page): AllChargesCall[] {
   const calls: AllChargesCall[] = [];
+  const activity: GraphQLActivity = { inFlight: 0, lastChange: Date.now() };
+  activityByPage.set(page, activity);
+  const isGraphQL = (request: Request) => new URL(request.url()).pathname.endsWith('/graphql');
+  const ended = (request: Request) => {
+    if (isGraphQL(request)) {
+      activity.inFlight -= 1;
+      activity.lastChange = Date.now();
+    }
+  };
+
   page.on('request', request => {
+    if (!isGraphQL(request)) {
+      return;
+    }
+    activity.inFlight += 1;
+    activity.lastChange = Date.now();
     const operation = graphqlOperation(request);
     if (operation?.operationName === 'AllCharges') {
       calls.push({
@@ -83,6 +104,8 @@ export function trackAllCharges(page: Page): AllChargesCall[] {
       });
     }
   });
+  page.on('requestfinished', ended);
+  page.on('requestfailed', ended);
   return calls;
 }
 
@@ -99,12 +122,30 @@ export async function expectCharges(page: Page, expected: string[]): Promise<voi
   await expect.poll(() => shownCharges(page), { timeout: 15_000 }).toEqual(expected);
 }
 
+/** How long GraphQL traffic must stay quiet before `settle` returns. */
+const QUIET_MS = 500;
+
 /**
- * Waits for the network to go quiet, so a test can assert that a request was *not* sent: anything
- * the page was going to send has been sent by then.
+ * Waits until no GraphQL request is open and none has started or ended for `QUIET_MS`, so a test
+ * can assert that a request was *not* sent: anything the page was going to send has been sent by
+ * then. Needs `trackAllCharges` on the page.
+ *
+ * Not `waitForLoadState('networkidle')`: that state is per document and is reached once, so after a
+ * page's first quiet spell it returns at once, and paging, filtering and history moves here are all
+ * same-document navigations.
  */
 export async function settle(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle');
+  const activity = activityByPage.get(page);
+  if (!activity) {
+    throw new Error('settle() needs trackAllCharges(page) to have been called first.');
+  }
+  await expect
+    .poll(() => activity.inFlight === 0 && Date.now() - activity.lastChange >= QUIET_MS, {
+      intervals: [100],
+      timeout: 15_000,
+      message: 'GraphQL traffic did not go quiet',
+    })
+    .toBe(true);
 }
 
 /**
@@ -118,6 +159,37 @@ export function requestDone(page: Page, request: Request): Promise<unknown> {
     page.waitForEvent('requestfinished', { predicate: r => r === request, timeout: 0 }),
     page.waitForEvent('requestfailed', { predicate: r => r === request, timeout: 0 }),
   ]);
+}
+
+declare global {
+  interface Window {
+    __e2eErrorToasts?: string[];
+  }
+}
+
+/**
+ * Page init script (`page.addInitScript`): records the text of every error toast (sonner,
+ * `data-type="error"`) the page shows, in `window.__e2eErrorToasts`. Runs in the browser, so it
+ * must not reference anything outside itself.
+ */
+export function recordErrorToasts(): void {
+  const seen = new WeakSet<Element>();
+  const found: string[] = [];
+  window.__e2eErrorToasts = found;
+  const scan = () => {
+    for (const toast of document.querySelectorAll('[data-sonner-toast][data-type="error"]')) {
+      if (!seen.has(toast)) {
+        seen.add(toast);
+        found.push(toast.textContent?.trim() ?? '');
+      }
+    }
+  };
+  new MutationObserver(scan).observe(document, { childList: true, subtree: true });
+}
+
+/** The error toasts recorded by `recordErrorToasts` since the page loaded. */
+export async function errorToasts(page: Page): Promise<string[]> {
+  return page.evaluate(() => window.__e2eErrorToasts ?? []);
 }
 
 /** The current URL's page index and filter, as the app reads them. */

@@ -1,4 +1,4 @@
-import { assertLocalDatabase } from '../../migrations/src/local-db-guard.js';
+import { assertLocalDatabaseOnly } from '../../migrations/src/local-db-guard.js';
 
 /**
  * Everything the e2e run points at, in one place.
@@ -10,27 +10,27 @@ import { assertLocalDatabase } from '../../migrations/src/local-db-guard.js';
  */
 export const e2eDatabase = {
   host: process.env.E2E_POSTGRES_HOST || 'localhost',
-  port: Number(process.env.E2E_POSTGRES_PORT || 5434),
+  port: Number(process.env.E2E_POSTGRES_PORT || 5432),
   user: process.env.E2E_POSTGRES_USER || 'postgres',
   password: process.env.E2E_POSTGRES_PASSWORD || 'postgres',
   database: process.env.E2E_POSTGRES_DB || 'accounter_e2e',
 };
 
 /**
- * Refuses anything but a local, e2e-only database. The seed drops and recreates it, so on top of
- * the shared local-host guard (with `ALLOW_REMOTE_DB` deliberately not honoured) the name must say
- * it is disposable.
+ * Refuses anything but a local, e2e-only database. The seed drops and recreates it, so it takes the
+ * no-override local guard (`assertLocalDatabaseOnly`: `ALLOW_REMOTE_DB` does not apply), and on top
+ * of that the name must say it is disposable.
  */
 export function assertE2eDatabase(): void {
-  assertLocalDatabase(
+  assertLocalDatabaseOnly(
     {
       host: e2eDatabase.host,
       port: e2eDatabase.port,
       db: e2eDatabase.database,
       user: e2eDatabase.user,
     },
-    'the e2e suite',
-    {},
+    // The suite reads `E2E_POSTGRES_*`, not the `POSTGRES_*` the guard's message suggests.
+    'the e2e suite (E2E_POSTGRES_*)',
   );
   if (!/_e2e$/.test(e2eDatabase.database)) {
     throw new Error(

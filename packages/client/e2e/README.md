@@ -13,19 +13,19 @@ Each run:
 4. runs `*.e2e.ts` in Chromium.
 
 Nothing reads the root `.env` (which may point at production): the database comes from `E2E_*`
-variables or local defaults, it must be local (`assertLocalDatabase`, with `ALLOW_REMOTE_DB` not
-honoured), and its name must end in `_e2e`, since the seed drops it.
+variables or local defaults, it must be local (`assertLocalDatabaseOnly`: `ALLOW_REMOTE_DB` does not
+apply), and its name must end in `_e2e`, since the seed drops it.
 
 ## Running locally
 
-Prerequisites: a local Postgres (by default `localhost:5434`, user and password `postgres`), and the
+Prerequisites: a local Postgres (by default `localhost:5432`, user and password `postgres`), and the
 Chromium Playwright uses (`yarn workspace @accounter/client playwright install chromium`).
 
 Generate and build once, and again after changing the server (any migrated local database works for
 codegen; never the root `.env` one):
 
 ```bash
-POSTGRES_HOST=localhost POSTGRES_PORT=5434 POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres POSTGRES_DB=accounter_test POSTGRES_SSL=0 yarn generate
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres POSTGRES_DB=accounter_test POSTGRES_SSL=0 yarn generate
 ```
 
 ```bash
@@ -35,7 +35,7 @@ yarn build:tools && yarn workspace @accounter/server build
 Then run the suite:
 
 ```bash
-yarn workspace @accounter/client e2e
+yarn test:e2e
 ```
 
 Ports 4000 (server) and 4183 (client) must be free: neither server is reused, so a dev server
@@ -45,8 +45,7 @@ Useful while iterating:
 
 - `E2E_SKIP_CLIENT_BUILD=1` serves the last `dist-e2e` build instead of building again (rebuild
   after changing the client).
-- `yarn workspace @accounter/client e2e -g "back and forward"` runs matching tests; `--headed` or
-  `--ui` shows the browser.
+- `yarn test:e2e -g "back and forward"` runs matching tests; `--headed` or `--ui` shows the browser.
 - `E2E_POSTGRES_HOST`, `E2E_POSTGRES_PORT`, `E2E_POSTGRES_USER`, `E2E_POSTGRES_PASSWORD`,
   `E2E_POSTGRES_DB` point at another local database; `E2E_CLIENT_PORT` moves the client.
 
@@ -54,8 +53,8 @@ Useful while iterating:
 
 - Name the rows a test expects through `data.ts` (`pageOf(ACME, 1)`), and wait for them with
   `expectCharges`.
-- Count requests with `trackAllCharges`, and call `settle` before asserting a request was _not_
-  sent.
+- Count requests with `trackAllCharges`, and call `settle` before asserting a request was _not_ sent
+  (it waits for GraphQL traffic to stay quiet for 500 ms, so it needs `trackAllCharges`).
 - The database is seeded once per run. A test that writes must only touch its own data (as the merge
   test does with the `MERGEABLE` group).
 - `startHoldingProxy` holds a deferred (`@defer`) response after its first part, for tests that

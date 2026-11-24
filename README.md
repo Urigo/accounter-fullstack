@@ -143,6 +143,9 @@ The test suite is organized into three projects for efficiency:
 - **Integration tests** (`yarn test:integration`): DB-backed tests. They need a local PostgreSQL and
   bring their own database
 - **Demo seed E2E** (`yarn test:demo-seed`): Full seed-and-validate pipeline (slow, ~10-30s)
+- **Client browser E2E** (`yarn test:e2e`): Playwright against a production client build, the real
+  server and its own seeded local database (`accounter_e2e`). Needs the server built and ports 4000
+  and 4183 free; see [`packages/client/e2e/README.md`](packages/client/e2e/README.md)
 
 ### Running Tests
 
@@ -155,6 +158,9 @@ yarn test:integration
 
 # Demo seed E2E (requires a local Postgres + ALLOW_DEMO_SEED=1)
 ALLOW_DEMO_SEED=1 yarn test:demo-seed
+
+# Client browser E2E (requires a local Postgres and the server built)
+yarn test:e2e
 ```
 
 ### Prerequisites for Integration/Demo Tests
@@ -199,6 +205,7 @@ The tooling also checks its target, as a second line of defence. The checks are 
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | DB-backed tests, the vitest global setup, `yarn seed:production` | Refused, unless `ALLOW_REMOTE_DB=1` is set for that one command.                                   |
 | `yarn test:demo-seed`                                            | Refused. Nothing overrides it.                                                                     |
+| `yarn test:e2e`                                                  | Refused. Nothing overrides it. It also only runs against a database named `*_e2e`.                 |
 | `yarn seed:staging-demo`                                         | Refused, unless `ALLOW_REMOTE_DB=1` is set for that one command and it is a demo database (below). |
 | `migration:run`                                                  | Warns and proceeds, because deploys run it. Refused with `ENFORCE_LOCAL_DB=1`.                     |
 | `yarn generate`                                                  | Not checked. It only reads.                                                                        |
