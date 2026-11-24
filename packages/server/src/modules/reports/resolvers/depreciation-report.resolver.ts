@@ -9,7 +9,10 @@ import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { calculateAssetYear } from '../../depreciation/helpers/asset-depreciation.helper.js';
+import {
+  calculateAssetYear,
+  type AssetYearResult,
+} from '../../depreciation/helpers/asset-depreciation.helper.js';
 import {
   toAssetInput,
   toDisposalInput,
@@ -81,6 +84,21 @@ function addToSummary(summary: Summary, record: Summary) {
 
 function nullableRound(value?: number | null) {
   return value ? Math.round(value) : null;
+}
+
+/**
+ * True when the asset had nothing on the books during the year: it was fully refunded or disposed
+ * of before the year started, so it gets no row
+ */
+function isClosedBeforeYear(yearResult: AssetYearResult) {
+  return (
+    yearResult.openingCost === 0 &&
+    yearResult.additions === 0 &&
+    yearResult.disposals.length === 0 &&
+    yearResult.costRefunds.length === 0 &&
+    yearResult.openingAccumulatedDepreciation === 0 &&
+    yearResult.closingAccumulatedDepreciation === 0
+  );
 }
 
 /** A category with a 0% rate holds assets that are not depreciated, such as trademarks */
@@ -170,6 +188,9 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             disposals.map(toDisposalInput),
             year,
           );
+          if (isClosedBeforeYear(yearResult)) {
+            return;
+          }
           const yearDisposalIds = new Set(yearResult.disposals.map(disposal => disposal.id));
           const yearRefundIds = new Set(yearResult.costRefunds.map(refund => refund.id));
           const fullyDisposed = yearResult.closingCost === 0 && yearResult.disposals.length > 0;

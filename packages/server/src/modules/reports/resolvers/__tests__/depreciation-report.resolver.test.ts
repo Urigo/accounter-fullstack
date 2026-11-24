@@ -219,6 +219,34 @@ describe('depreciationReport with cost refunds', () => {
     expect(report2023.summary.reportYearDelta).toBe(1_554_000);
   });
 
+  it('leaves an asset fully refunded in an earlier year off the later years', async () => {
+    const report2024 = await runReport(2024);
+    expect(recordById(report2024, 'goodwill')).toMatchObject({
+      originalCost: 222_000,
+      reportYearRefundedCost: 222_000,
+      totalDepreciableCosts: 0,
+      reportYearDepreciationCorrection: 8150,
+      totalDepreciation: 0,
+    });
+
+    // the records query still returns it here, as it does for a foreign-currency asset whose
+    // local cost is only known after conversion
+    const report2025 = await runReport(2025);
+    expect(recordById(report2025, 'goodwill')).toBeUndefined();
+    const goodwill2025 = report2025.categories.find(
+      category => category.category.id === 'category-goodwill',
+    );
+    expect(goodwill2025?.records).toEqual([]);
+    expect(goodwill2025?.summary).toMatchObject({ originalCost: 0, totalDepreciableCosts: 0 });
+    // software and customer relationships only, at their 2024 closing figures
+    expect(report2025.summary).toMatchObject({
+      originalCost: 1_198_800,
+      reportYearRefundedCost: 0,
+      pastYearsAccumulatedDepreciation: 354_186,
+      reportYearDepreciationCorrection: 0,
+    });
+  });
+
   it('leaves the year before the refund as filed', async () => {
     const report = await runReport(2023);
 
