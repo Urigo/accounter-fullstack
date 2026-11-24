@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-// PreToolUse hook for Bash calls in Claude Code sessions (.claude/settings.json).
+// PreToolUse hook for every tool that runs a shell command in a Claude Code session
+// (.claude/settings.json): Bash, PowerShell, Monitor and the desktop app's terminal tool. Each
+// one hands over its command line as `tool_input.command`.
 //
 // ALLOW_REMOTE_DB, ALLOW_DEMO_SEED and ALLOW_DEMO_SEED_DATABASE are per-command opt-ins: each
 // one lets a command reach a database that is not local, or reset the database it reaches, and
 // each one means "the person running this command chose to". An agent typing one into a command
-// is not that person. So when a Bash command sets any of them, this hook answers "ask" and the
-// call waits for a person to confirm it, in every permission mode.
+// is not that person. So when a command sets any of them, this hook answers "ask" and the call
+// waits for a person to confirm it. Where nobody can be asked, as in `claude -p` or `dontAsk`
+// mode, Claude Code refuses the call instead.
 //
 // A hook rather than an `ask` permission rule: Bash rules are documented to match past a
 // leading `NAME=value` assignment, and that assignment is the thing to catch here. A hook is

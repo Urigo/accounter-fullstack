@@ -121,7 +121,7 @@ yarn seed:admin-context # Seed admin context for server
   password, and `.env.template` lists every variable.
 - `ALLOW_REMOTE_DB`, `ALLOW_DEMO_SEED` and `ALLOW_DEMO_SEED_DATABASE` are per-command opt-ins that a
   person decides. Never add one to a command on your own initiative, and never put one in a file. A
-  command that sets one asks for confirmation before it runs.
+  command that sets one waits for a person to confirm it, and is refused where nobody can be asked.
 - Do not run `yarn seed:staging-demo` unless the user asked for that command. It truncates the
   domain tables of the database it reaches.
 

@@ -235,9 +235,16 @@ error until the line is removed.
 what points a command at a deployed database:
 
 - `ENFORCE_LOCAL_DB=1` is set in the session's environment.
-- `.env` files cannot be read. The templates can.
+- Env files cannot be read or edited. The templates can. Inside the session's own folder that is
+  every file named `.env*` or `.dev.vars*`, apart from `.env.template`, `.env.example` and
+  `.dev.vars.example`. Outside it, where a session in a git worktree finds the main checkout's
+  files, it is the usual names only: `.env`, `.env.local`, `.env.*.local`, `.env.test`,
+  `.env.development`, `.env.staging`, `.env.production` and `.dev.vars`. The rules stop Claude's
+  file tools and a shell command that names the file, such as `cat` or `grep`. They do not stop a
+  script that opens the file itself.
 - A command that sets `ALLOW_REMOTE_DB`, `ALLOW_DEMO_SEED` or `ALLOW_DEMO_SEED_DATABASE` waits for a
-  person to confirm it, in every permission mode (`.claude/hooks/ask-before-db-opt-in.mjs`).
+  person to confirm it (`.claude/hooks/ask-before-db-opt-in.mjs`). Where nobody can be asked, as in
+  `claude -p` or `dontAsk` mode, it is refused instead.
 
 They load when a session starts, so a session that was already open keeps its earlier settings.
 
