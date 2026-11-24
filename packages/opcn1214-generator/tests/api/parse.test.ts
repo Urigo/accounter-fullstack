@@ -69,7 +69,36 @@ describe('parse1214', () => {
 
   it('reads the layout from the tax year of record 1000', () => {
     const { bytes: bytes2025 } = generate1214(minimalInput({ taxYear: 2025 }), OPTIONS);
-    expect(parse1214(bytes2025).report.taxYear).toBe(2025);
+    const result = parse1214(bytes2025);
+    expect(result.report.taxYear).toBe(2025);
+    // A 2025 file is read with the provisional 2024 layout (SPEC §14).
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        ruleId: 'struct.taxYear.provisionalLayout',
+        severity: 'warning',
+        path: 'taxYear',
+        value: 2025,
+      }),
+    ]);
+  });
+
+  it('returns an empty save date and software name when the file leaves them blank', () => {
+    const result = parse1214(tamper(text, 1, 150, ' '.repeat(25)));
+    expect(result.saveDate).toBe('');
+    expect(result.softwareName).toBe('');
+    expect(result.report).not.toHaveProperty('meta');
+    expect(result.issues.map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['field.required', 'meta.softwareName'],
+      ['field.required', 'meta.saveDate'],
+    ]);
+  });
+
+  it('returns the values of a file not written by generate1214 as read, not canonicalized', () => {
+    // A double space in the registered name: generate1214 would have normalized it (SPEC §4.3).
+    const result = parse1214(tamper(text, 1, 175, 'חברה  בעמ'.padStart(50, ' ')));
+    expect(result.issues).toEqual([]);
+    expect(result.report.company.registeredName).toBe('חברה  בעמ');
+    expect(canonicalize(result.report, OPTIONS)).not.toEqual(result.report);
   });
 
   it('throws CodecDecodeError for undecodable content (structural errors are C7b)', () => {

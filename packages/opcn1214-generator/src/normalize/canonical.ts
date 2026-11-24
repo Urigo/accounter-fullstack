@@ -2,10 +2,11 @@
  * Canonical form (SPEC §8.4): the input as the parser reconstructs it from the generated file, so
  * that parse1214(generate1214(x).bytes).report deep-equals canonicalize(x, options).
  */
+import { scaleBy100Exact } from '../codec/numeric.js';
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import { getLayout } from '../layout/registry.js';
-import type { FieldDef, FieldKind, RecordDef } from '../layout/types.js';
+import type { CodeKind, FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import { MAIN_INPUT_KEYS, setKey, SHAREHOLDER_INPUT_KEYS, type InputTree } from './denormalize.js';
@@ -19,6 +20,27 @@ const DIGIT_STRING_KINDS: ReadonlySet<FieldKind> = new Set(['id9', 'shareholderI
 const PREFIXES: ReadonlySet<string> = new Set(PHONE_PREFIXES);
 const DIGITS = /^\d+$/;
 const ALL_ZEROS = /^0+$/;
+/** Kinds written as round(value × 100) and read back in hundredths (SPEC §4.4, §13.7). */
+const SCALED_KINDS: ReadonlySet<FieldKind | CodeKind> = new Set([
+  'amountX100',
+  'rateX100',
+  'percentX100',
+  'percentLiteral',
+]);
+
+/**
+ * `value` as the parser reads it back: ×100 kinds in hundredths (float residue such as
+ * 1.1 + 2.2 removed; `scaled / 100` is the double the codecs decode), other amounts rounded per
+ * `rounding`.
+ */
+function canonicalNumber(
+  kind: FieldKind | CodeKind,
+  value: number,
+  rounding: GenerateOptions['rounding'],
+): number {
+  const scaled = SCALED_KINDS.has(kind) ? scaleBy100Exact(value) : undefined;
+  return scaled === undefined ? roundAmount(kind, value, rounding) : scaled / 100;
+}
 
 function fieldOf(def: RecordDef, key: string): FieldDef {
   const field = def.fields.find(candidate => candidate.key === key);
@@ -63,7 +85,7 @@ function canonicalString(field: FieldDef, value: string): Primitive {
 
 /**
  * The value of `field` as the parser reads it back: text normalized, digit strings zero-padded to
- * the field width, amounts rounded per `rounding`, and values written as the absent value
+ * the field width, ×100 kinds in hundredths, other amounts rounded per `rounding`, and values written as the absent value
  * (empty strings, `false` flags, optional zeros except amountX) removed.
  */
 function canonicalValue(
@@ -75,7 +97,7 @@ function canonicalValue(
     case 'string':
       return canonicalString(field, value);
     case 'number': {
-      const rounded = roundAmount(field.kind, value, rounding);
+      const rounded = canonicalNumber(field.kind, value, rounding);
       return rounded === 0 && !keepsZero(field) ? undefined : rounded;
     }
     case 'boolean':
@@ -96,7 +118,7 @@ function canonicalAmounts(
     if (derived || value === undefined) {
       continue;
     }
-    const rounded = roundAmount(kind, value, rounding);
+    const rounded = canonicalNumber(kind, value, rounding);
     if (rounded !== 0 || zeroAllowed) {
       output[code] = rounded;
     }
@@ -106,8 +128,8 @@ function canonicalAmounts(
 
 /**
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
- * the values written (software name default, save date from `options.today`), text normalized,
- * digit strings padded to the field width, empty optional values and non-zeroAllowed zero codes
+ * the values written (software name default, also for a blank name; save date from `options.today`), text normalized,
+ * digit strings padded to the field width, ×100 kinds in hundredths, empty optional values and non-zeroAllowed zero codes
  * removed, amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
@@ -122,7 +144,8 @@ export function canonicalize(
   const source: InputTree = {
     ...input,
     meta: {
-      softwareName: input.meta?.softwareName ?? DEFAULT_SOFTWARE_NAME,
+      // As the normalizer: a name that normalizes to '' gets the default (SPEC §7.4).
+      softwareName: normalizeText(input.meta?.softwareName ?? '') || DEFAULT_SOFTWARE_NAME,
       saveDate: input.meta?.saveDate ?? today(),
     },
   };

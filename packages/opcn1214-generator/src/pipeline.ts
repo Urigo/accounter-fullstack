@@ -17,8 +17,11 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-/** The struct.taxYear.provisionalLayout warning of `taxYear`, if its layout is provisional. */
-function provisionalLayoutIssues(taxYear: number): Issue[] {
+/**
+ * The struct.taxYear.provisionalLayout warning of `taxYear`, if its layout is provisional. Also
+ * raised by parse1214 for a file of such a year.
+ */
+export function provisionalLayoutIssues(taxYear: number): Issue[] {
   const baseYear = provisionalBaseYear(taxYear);
   if (baseYear === undefined) {
     return [];

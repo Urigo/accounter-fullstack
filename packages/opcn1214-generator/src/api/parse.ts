@@ -4,14 +4,23 @@ import { splitFile } from '../file/split.js';
 import type { IsoDate, Report1214Input } from '../model/input.js';
 import type { ParseOptions } from '../model/options.js';
 import { denormalize } from '../normalize/denormalize.js';
+import { provisionalLayoutIssues } from '../pipeline.js';
 import { runRules } from '../validate/engine.js';
-import type { Issue } from '../validate/issue.js';
+import { compareIssues, type Issue } from '../validate/issue.js';
 
 /** The outcome of parse1214 (SPEC §6.2). */
 export interface ParseResult {
-  /** Canonical form (SPEC §8.4). */
+  /**
+   * The input reconstructed from the file. For a file written by generate1214 this is the
+   * canonical form (SPEC §8.4); for any other well-formed file the values come back as read (e.g. a
+   * zero amount of a non-zeroAllowed code, or text with double spaces), so canonicalize(report)
+   * may differ from it.
+   */
   report: Report1214Input;
-  /** Validation of the parsed content (errors and warnings), sorted (SPEC §9.1). */
+  /**
+   * Validation of the parsed content (errors and warnings), sorted (SPEC §9.1), including
+   * struct.taxYear.provisionalLayout for a file of a provisional tax year.
+   */
   issues: Issue[];
   /** From 1000@165; '' when the file has none (field.required is then in `issues`). */
   saveDate: IsoDate;
@@ -29,7 +38,9 @@ export function parse1214(content: string | Uint8Array, options?: ParseOptions):
   const report = denormalize(normalized);
   return {
     report,
-    issues: runRules(normalized),
+    issues: [...provisionalLayoutIssues(report.taxYear), ...runRules(normalized)].sort(
+      compareIssues,
+    ),
     saveDate: report.meta?.saveDate ?? '',
     softwareName: report.meta?.softwareName ?? '',
   };

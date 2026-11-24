@@ -25,6 +25,36 @@ describe('canonicalize', () => {
     expect(today).not.toHaveBeenCalled();
   });
 
+  it.each(['', '   ', '\u00A0'])(
+    'writes the default software name for a name that normalizes to %j',
+    softwareName => {
+      expect(canonicalize(minimalInput({ meta: { softwareName } }), OPTIONS).meta).toEqual({
+        softwareName: 'ACCOUNTER',
+        saveDate: TODAY,
+      });
+    },
+  );
+
+  it('keeps ×100 values in hundredths, without float residue', () => {
+    const shareholder = {
+      idNumber: '123456782',
+      fullName: 'ישראל ישראלי',
+      isControllingShareholder: true,
+      dividendRightsPercent: 0.1 + 0.2,
+      votingRightsPercent: 1.1 + 2.2,
+      otherRightsPercent: 100,
+    };
+    const [result] = canonicalize(
+      minimalInput({ shareholders: [shareholder] }),
+      OPTIONS,
+    ).shareholders;
+    expect(result).toMatchObject({
+      dividendRightsPercent: 0.3,
+      votingRightsPercent: 3.3,
+      otherRightsPercent: 100,
+    });
+  });
+
   it('normalizes text and removes empty optional text', () => {
     const { company } = canonicalize(
       minimalInput({
