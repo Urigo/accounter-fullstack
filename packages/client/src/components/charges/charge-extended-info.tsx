@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Image } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -142,11 +134,6 @@ interface Props {
   chargeID: string;
   onChange?: () => void;
   /**
-   * Bumped by the parent when the charge changed outside the expansion (e.g. documents were
-   * uploaded from the charge's row), so an open expansion fed by the batch loader refetches too.
-   */
-  refreshKey?: number;
-  /**
    * Called when a mutation inside the expansion emptied this charge and the server deleted it.
    * Consumers should drop the charge from their list — refetching it would fail, since
    * `Query.charge` throws for a deleted id, leaving a stale "shadow charge" on screen.
@@ -159,7 +146,6 @@ export function ChargeExtendedInfo({
   chargeID,
   onChange = (): void => void 0,
   onChargeDeleted,
-  refreshKey,
   fetching: parentFetching,
 }: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
@@ -200,21 +186,6 @@ export function ChargeExtendedInfo({
     }
     onChange();
   }, [batch, refetchExtensionInfo, onChange]);
-
-  // The parent bumps `refreshKey` when the charge changed from outside the expansion (e.g. documents
-  // were dropped on its row). In per-row mode the `parentFetching` effect below already re-runs
-  // `FetchCharge` when the row refetches, but it deliberately leaves the batch loader alone — so in
-  // batch mode an open expansion would keep the pre-change data. Refetch the batch here instead.
-  const lastRefreshKey = useRef(refreshKey);
-  useEffect(() => {
-    if (refreshKey === lastRefreshKey.current) {
-      return;
-    }
-    lastRefreshKey.current = refreshKey;
-    if (batch.active) {
-      batch.refetch();
-    }
-  }, [refreshKey, batch]);
 
   // The charge itself was deleted (it was emptied by removing its last document): never refetch it
   // — `Query.charge` throws for a deleted id, so the refetch yields no data and the consumer keeps

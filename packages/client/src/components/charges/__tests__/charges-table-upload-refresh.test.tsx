@@ -143,15 +143,33 @@ describe('charges table refresh after a document upload', () => {
     await flush();
   }
 
-  async function expandRow(): Promise<void> {
-    const expand = container.querySelector<HTMLElement>('button.size-7\\.5');
-    if (!expand) {
-      throw new Error('expand button not rendered');
-    }
+  async function click(button: HTMLElement): Promise<void> {
     await act(async () => {
-      expand.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     await flush();
+  }
+
+  /** The button holding the given lucide icon (its `lucide-<name>` class). */
+  function buttonWithIcon(icon: string): HTMLElement {
+    const button = container.querySelector(`.lucide-${icon}`)?.closest<HTMLElement>('button');
+    if (!button) {
+      throw new Error(`button with the ${icon} icon not rendered`);
+    }
+    return button;
+  }
+
+  /** Clicks the row's expand toggle, which shows a different icon while collapsed and while open. */
+  async function toggleRow(): Promise<void> {
+    const toggle = container.querySelector('.lucide-panel-top-open')
+      ? buttonWithIcon('panel-top-open')
+      : buttonWithIcon('panel-top-close');
+    await click(toggle);
+  }
+
+  /** Whether the row's expansion is rendered. */
+  function isExpanded(): boolean {
+    return !!container.querySelector('.lucide-panel-top-close');
   }
 
   const responses = (refetched: string[]) => ({
@@ -163,7 +181,15 @@ describe('charges table refresh after a document upload', () => {
     },
     FetchCharge: () => ({ charge: makeCharge() }),
     ChargesExtendedInfoBatch: () => ({ chargesByIDs: [makeCharge()] }),
+    UpdateCharge: () => ({
+      updateCharge: { __typename: 'UpdateChargeSuccessfulResult', charge: { id: 'charge-1' } },
+    }),
+    // Opened by the description cell after an edit; no matches closes it again.
+    SimilarCharges: () => ({ similarCharges: [] }),
   });
+
+  const batchFetches = (operations: string[]): number =>
+    operations.filter(op => op === 'ChargesExtendedInfoBatch').length;
 
   it('refetches the row once documents dropped on it uploaded', async () => {
     uploadMultipleDocuments.mockResolvedValue([{ id: 'document-1' }]);
@@ -199,7 +225,7 @@ describe('charges table refresh after a document upload', () => {
     const refetched: string[] = [];
     await renderTable(makeClient(operations, responses(refetched)), [makeCharge()]);
 
-    await expandRow();
+    await toggleRow();
     const expansionFetches = (): number => operations.filter(op => op === 'FetchCharge').length;
     const before = expansionFetches();
     expect(before).toBeGreaterThan(0);
@@ -218,16 +244,63 @@ describe('charges table refresh after a document upload', () => {
     await renderTable(makeClient(operations, responses(refetched)), [makeCharge()], true);
     await flush();
 
-    const batchFetches = (): number =>
-      operations.filter(op => op === 'ChargesExtendedInfoBatch').length;
-    expect(batchFetches()).toBe(1);
+    expect(batchFetches(operations)).toBe(1);
     // The batch loader replaces the per-row query.
     expect(operations).not.toContain('FetchCharge');
 
     await dropFile();
 
     expect(refetched).toEqual(['charge-1']);
-    expect(batchFetches()).toBe(2);
+    expect(batchFetches(operations)).toBe(2);
     expect(operations).not.toContain('FetchCharge');
+  });
+
+  it('refetches the batch for a drop on a row collapsed in expand-all mode', async () => {
+    // Re-expanding the row reads the charge from the batch instead of fetching it, so the batch has
+    // to follow the upload while the row is collapsed too.
+    uploadMultipleDocuments.mockResolvedValue([{ id: 'document-1' }]);
+    const operations: string[] = [];
+    const refetched: string[] = [];
+    await renderTable(makeClient(operations, responses(refetched)), [makeCharge()], true);
+    await flush();
+
+    await toggleRow();
+    expect(isExpanded()).toBe(false);
+
+    await dropFile();
+
+    expect(refetched).toEqual(['charge-1']);
+    expect(batchFetches(operations)).toBe(2);
+
+    await toggleRow();
+    expect(isExpanded()).toBe(true);
+    expect(operations).not.toContain('FetchCharge');
+  });
+
+  it('refetches only the row after a description edit in expand-all mode', async () => {
+    const operations: string[] = [];
+    const refetched: string[] = [];
+    const charge = makeCharge({
+      validationData: { missingInfo: ['DESCRIPTION'] },
+      missingInfoSuggestions: { description: 'Office supplies', tags: [] },
+    });
+    await renderTable(makeClient(operations, responses(refetched)), [charge], true);
+    await flush();
+    expect(batchFetches(operations)).toBe(1);
+
+    // Accept the suggested description.
+    const accept = [...container.querySelectorAll('p')]
+      .find(element => element.textContent === 'Office supplies')
+      ?.closest('td')
+      ?.querySelector('.lucide-check')
+      ?.closest<HTMLElement>('button');
+    if (!accept) {
+      throw new Error('suggested description not rendered');
+    }
+    await click(accept);
+
+    expect(operations).toContain('UpdateCharge');
+    expect(refetched).toEqual(['charge-1']);
+    expect(batchFetches(operations)).toBe(1);
   });
 });
