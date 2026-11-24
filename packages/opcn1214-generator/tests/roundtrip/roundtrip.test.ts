@@ -393,7 +393,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
           foreignAsset: false,
           soldToRelatedParty: false,
           boughtFromRelatedParty: false,
-          gainFromInvestmentFund: false,
+          // 3064 allows only yes (cg.investmentFund.value, SPEC §15 A-8).
+          gainFromInvestmentFund: true,
           withholders: [],
           lossesCarriedForward: 0,
           amounts: { '013': 0, '033': 1, '063': 2, '085': 3, '087': 4, '056': 9_999_999_999 },

@@ -399,7 +399,10 @@ export interface SecuritiesAppendix {
   soldToRelatedParty?: boolean;
   /** 30xx@144 "רכישה מצד קשור" (yes/no). */
   boughtFromRelatedParty?: boolean;
-  /** 30xx@145 "רווח מקרן השקעות" (yes/no, SPEC §15 A-8). */
+  /**
+   * 30xx@145 "רווח מקרן השקעות" (yes/no). Only one value is allowed per appendix type (SPEC §15
+   * A-8, cg.investmentFund.value): 3060 `false`, 3064 `true`, or absent.
+   */
   gainFromInvestmentFund?: boolean;
   /** 30xx@146–313: at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
   withholders?: Withholder[];

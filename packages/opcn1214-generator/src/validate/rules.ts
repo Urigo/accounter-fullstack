@@ -523,6 +523,15 @@ export const RULES = deepFreeze([
     specRef: { page: 30 },
   },
   {
+    id: 'cg.investmentFund.value',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description:
+      'A capital-gains appendix whose gain-from-investment-fund mark (30xx@145) is not the one value the PDF lists for its record type: 3060 only no (2), 3064 only yes (1). Absent is allowed (SPEC §15 A-8).',
+    specRef: { page: 43 },
+  },
+  {
     id: 'parse.empty',
     severity: 'error',
     source: 'derived',
