@@ -208,11 +208,12 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       ...minimalInput(),
       capitalGains: [
         { ...securitiesAppendix(), symbol: 64 },
-        { ...reitAppendix(), symbol: 60, amounts: { '013': 1 } },
+        { ...reitAppendix(), symbol: 60, amounts: { '013': 1, '022': 2 } },
       ],
     };
     expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
       ['input.unknownCode', 'capitalGains[0].amounts["012"]'],
+      ['input.unknownCode', 'capitalGains[1].amounts["022"]'],
     ]);
   });
 
