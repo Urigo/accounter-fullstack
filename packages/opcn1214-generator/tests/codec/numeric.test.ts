@@ -187,10 +187,12 @@ describe('numeric codecs', () => {
       expect(() => encode(kind, value, length)).toThrow(Opcn1214InternalError);
     });
 
-    it('rejects values unsafe after scaling', () => {
-      expect(() => encode('amountX100', Number.MAX_SAFE_INTEGER, 12)).toThrow(
-        Opcn1214InternalError,
-      );
+    // Width 20 fits every digit, so only the safe-integer guard can reject these.
+    it.each<[Kind, number]>([
+      ['amount', 2 ** 53],
+      ['amountX100', Number.MAX_SAFE_INTEGER],
+    ])('%s %d is not a safe integer (after scaling) and throws', (kind, value) => {
+      expect(() => encode(kind, value, 20)).toThrow(Opcn1214InternalError);
     });
   });
 
@@ -262,6 +264,11 @@ describe('numeric codecs', () => {
       ['amountX', '      12 34', 'alphanumeric', 8],
       ['amountX', '        12a4', 'alphanumeric', 10],
       ['amountX', '1234        ', 'alphanumeric', 4],
+      // Padding is the space character only: other whitespace is not padding (p.61).
+      ['amountX', '\t\t\t\t\t\t\t\t1234', 'alphanumeric', 0],
+      ['amountX', '\u00a0'.repeat(12), 'alphanumeric', 0],
+      ['amountX', '\t'.repeat(12), 'alphanumeric', 0],
+      ['amountX', '       1234\u000b', 'alphanumeric', 11],
     ])('%s %j (%s) throws CodecDecodeError numeric at offset %i', (kind, raw, type, offset) => {
       const error = decodeError(() => decode(kind, raw, type));
       expect(error).toBeInstanceOf(Error);

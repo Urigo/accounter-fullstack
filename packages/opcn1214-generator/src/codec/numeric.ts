@@ -41,8 +41,8 @@ function encodeInteger(value: number, shape: FieldShape): string {
 
 /**
  * Checks the raw text and returns its digits. Numeric fields must be all digits (all-space text
- * included); alphanumeric fields may carry padding spaces on ALPHANUMERIC_PAD_SIDE and decode to
- * undefined when all spaces.
+ * included); alphanumeric fields may carry padding spaces (U+0020 only, not other whitespace) on
+ * ALPHANUMERIC_PAD_SIDE and decode to undefined when all spaces.
  */
 function readDigits(raw: string, shape: FieldShape): string | undefined {
   if (raw.length !== shape.length) {
@@ -52,17 +52,22 @@ function readDigits(raw: string, shape: FieldShape): string | undefined {
       `Expected ${shape.length} characters for ${shape.kind}, got ${raw.length}`,
     );
   }
-  // Only alphanumeric fields may be blank; spaces in a numeric field are non-numeric.
-  if (shape.type === 'alphanumeric' && raw.trim() === '') {
-    return undefined;
-  }
   let start = 0;
   let end = raw.length;
   if (shape.type === 'alphanumeric') {
+    // Padding is the space character only; trim() would also strip tabs, NBSP and other whitespace.
     if (ALPHANUMERIC_PAD_SIDE === 'left') {
-      start = raw.length - raw.trimStart().length;
+      while (start < end && raw[start] === ' ') {
+        start++;
+      }
     } else {
-      end = raw.trimEnd().length;
+      while (end > start && raw[end - 1] === ' ') {
+        end--;
+      }
+    }
+    // Only alphanumeric fields may be blank; spaces in a numeric field are non-numeric.
+    if (start === end) {
+      return undefined;
     }
   }
   for (let index = start; index < end; index++) {

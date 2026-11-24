@@ -23,9 +23,11 @@ export interface Codec {
    */
   encode(value: Primitive, shape: FieldShape): string;
   /**
-   * Inverse of encode. All-zero numeric text decodes to 0 and all-space text to undefined; the
-   * record codec decides whether 0 means "absent". Throws CodecDecodeError for raw text that
-   * cannot be decoded; the parser converts it into a parse.* issue.
+   * Inverse of encode. All-zero text decodes to 0 (digit-string kinds: to the all-zero string) and
+   * all-space text in an alphanumeric field to undefined; spaces in a numeric field are not
+   * digits (CodecDecodeError 'numeric'). The record codec decides whether 0 means "absent". Throws
+   * CodecDecodeError for raw text that cannot be decoded; the parser converts it into a parse.*
+   * issue.
    */
   decode(raw: string, shape: FieldShape): Primitive;
 }
