@@ -230,8 +230,9 @@ export function headerFromSettings(settings: Shaam6111HeaderSettings): {
       softwareRegistrationNumber:
         settings.softwareRegistrationNumber ?? defaults.softwareRegistrationNumber,
       isPartnership: settings.isPartnership ?? defaults.isPartnership,
-      partnershipCount: settings.partnershipCount,
-      partnershipProfitShare: settings.partnershipProfitShare,
+      // partnership details only describe a partnership
+      partnershipCount: settings.isPartnership ? settings.partnershipCount : undefined,
+      partnershipProfitShare: settings.isPartnership ? settings.partnershipProfitShare : undefined,
       ifrsImplementationYear: settings.ifrsImplementationYear ?? defaults.ifrsImplementationYear,
       ifrsReportingOption: (settings.ifrsReportingOption ??
         defaults.ifrsReportingOption) as SchemaTypes.IfrsReportingOption,

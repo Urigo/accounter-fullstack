@@ -114,6 +114,28 @@ function TextField({
   );
 }
 
+/** The header input for a set of values: blank text is `null`, which unsets a field */
+function toHeaderInput(values: HeaderSettingsValues): Required<Shaam6111HeaderInput> {
+  const text = (value?: string | null) => value?.trim() || null;
+  return {
+    industryCode: text(values.industryCode),
+    businessDescription: text(values.businessDescription),
+    businessType: values.businessType ?? null,
+    reportingMethod: values.reportingMethod ?? null,
+    accountingMethod: values.accountingMethod ?? null,
+    accountingSystem: values.accountingSystem ?? null,
+    softwareRegistrationNumber: text(values.softwareRegistrationNumber),
+    isPartnership: values.isPartnership ?? null,
+    partnershipCount: values.isPartnership ? (values.partnershipCount ?? null) : null,
+    partnershipProfitShare: values.isPartnership ? (values.partnershipProfitShare ?? null) : null,
+    ifrsImplementationYear: text(values.ifrsImplementationYear),
+    ifrsReportingOption: values.ifrsReportingOption ?? null,
+    currencyType: values.currencyType ?? null,
+    amountsInThousands: values.amountsInThousands ?? null,
+    auditOpinionType: values.auditOpinionType ?? null,
+  };
+}
+
 const toNumber = (value: string) => (value.trim() === '' ? null : Number.parseInt(value, 10));
 
 /**
@@ -146,24 +168,19 @@ export function HeaderSettingsDialog({
   };
 
   const onSave = async () => {
-    // only the input's fields: the initial values come from the full report header
-    const header: Shaam6111HeaderInput = {
-      businessType: values.businessType,
-      reportingMethod: values.reportingMethod,
-      accountingMethod: values.accountingMethod,
-      accountingSystem: values.accountingSystem,
-      isPartnership: values.isPartnership,
-      partnershipCount: values.isPartnership ? values.partnershipCount : null,
-      partnershipProfitShare: values.isPartnership ? values.partnershipProfitShare : null,
-      ifrsReportingOption: values.ifrsReportingOption,
-      currencyType: values.currencyType,
-      amountsInThousands: values.amountsInThousands,
-      auditOpinionType: values.auditOpinionType,
-      industryCode: values.industryCode?.trim() || null,
-      businessDescription: values.businessDescription?.trim() || null,
-      softwareRegistrationNumber: values.softwareRegistrationNumber?.trim() || null,
-      ifrsImplementationYear: values.ifrsImplementationYear?.trim() || null,
-    };
+    // only the fields the user changed: the dialog starts from the report's effective header
+    // (inherited values and defaults), and storing those would pin them to this year
+    const initial = toHeaderInput(initialValues);
+    const current = toHeaderInput(values);
+    const header = Object.fromEntries(
+      Object.entries(current).filter(
+        ([key, value]) => value !== initial[key as keyof Shaam6111HeaderInput],
+      ),
+    ) as Shaam6111HeaderInput;
+    if (Object.keys(header).length === 0) {
+      setOpen(false);
+      return;
+    }
     const result = await updateShaam6111({ businessId, year, header });
     if (result) {
       setOpen(false);

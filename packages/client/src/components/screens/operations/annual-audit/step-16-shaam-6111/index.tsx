@@ -31,6 +31,9 @@ export function Step16Shaam6111({ adminBusinessId, year, ...props }: Step16Props
     pause: !adminBusinessId,
   });
   const isValid = !!data?.shaam6111.validation.isValid;
+  // until the check returns, keep the saved status (so the audit progress doesn't dip on every
+  // load), but don't allow marking the step done
+  const isKnown = !!data && !fetching;
 
   let notReadyMessage =
     'The 6111 report has blocking errors; fix them before marking this step done.';
@@ -49,7 +52,8 @@ export function Step16Shaam6111({ adminBusinessId, year, ...props }: Step16Props
       description="Generate the 6111 report; it must pass validation with no blocking errors"
       linkLabel="Open 6111 Report"
       linkHref={href}
-      ready={isValid}
+      ready={!isKnown || isValid}
+      canMarkDone={isKnown && isValid}
       notReadyMessage={notReadyMessage}
     />
   );

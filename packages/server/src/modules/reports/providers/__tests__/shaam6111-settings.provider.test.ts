@@ -35,6 +35,15 @@ describe('effectiveShaam6111Settings', () => {
     expect(effectiveShaam6111Settings(rows, 2024).header.auditOpinionType).toBeUndefined();
   });
 
+  it('lets a later year unset a field with null, which stops inheritance', () => {
+    const withUnset: SettingsRow[] = [
+      ...rows,
+      { year: 2026, header: { businessDescription: null, industryCode: '' }, tax_adjustment_overrides: {} },
+    ];
+    const { header } = effectiveShaam6111Settings(withUnset, 2027);
+    expect(header).toEqual({ businessType: 'INDUSTRIAL' });
+  });
+
   it("uses only the year's own manual amounts", () => {
     expect(effectiveShaam6111Settings(rows, 2025).taxAdjustmentOverrides).toEqual({ '160': 15 });
     expect(effectiveShaam6111Settings(rows, 2024).taxAdjustmentOverrides).toEqual({});

@@ -12,7 +12,7 @@ export default gql`
     updateShaam6111(
       businessId: UUID
       year: Int!
-      " Replaces the year's header settings; unset fields are taken from earlier years (except the audit opinion) "
+      " Header fields to store for the year, merged into what it has. A null unsets a field for the year; fields left out keep the year's value, or come from earlier years (except the audit opinion) "
       header: Shaam6111HeaderInput
       " Replaces the year's manual tax-adjustment amounts "
       taxAdjustmentOverrides: [Shaam6111LineOverrideInput!]

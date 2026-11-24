@@ -70,9 +70,12 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
 
       let headerSettings: Shaam6111HeaderSettings | null = null;
       if (header) {
-        // keep only the fields that are set, so unset ones fall back to earlier years
+        // a field the input names is stored, `null` (or '') unsetting it for this year; fields it
+        // leaves out keep what the year has, or come from earlier years
         headerSettings = Object.fromEntries(
-          Object.entries(header).filter(([, value]) => value != null && value !== ''),
+          Object.entries(header)
+            .filter(([, value]) => value !== undefined)
+            .map(([key, value]) => [key, value === '' ? null : value]),
         ) as Shaam6111HeaderSettings;
       }
 

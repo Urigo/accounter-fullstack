@@ -15,8 +15,10 @@ interface StepWithLinkProps extends BaseStepProps {
    * marked done earlier shows as in progress.
    */
   ready?: boolean;
-  /** Shown while `ready` is false */
+  /** Shown while "Mark as Done" is disabled */
   notReadyMessage?: string;
+  /** Whether "Mark as Done" is enabled; defaults to `ready` (e.g. false while the check loads) */
+  canMarkDone?: boolean;
 }
 
 export function StepWithLink({
@@ -27,6 +29,7 @@ export function StepWithLink({
   linkHref,
   ready = true,
   notReadyMessage,
+  canMarkDone = ready,
   ...props
 }: StepWithLinkProps): ReactElement {
   const {
@@ -64,14 +67,14 @@ export function StepWithLink({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={saving || !ready}
+                disabled={saving || !canMarkDone}
                 onClick={handleMarkDone}
               >
                 Mark as Done
               </Button>
             )}
           </div>
-          {!ready && notReadyMessage && (
+          {!canMarkDone && notReadyMessage && (
             <p className="mt-2 text-sm text-muted-foreground">{notReadyMessage}</p>
           )}
         </div>
