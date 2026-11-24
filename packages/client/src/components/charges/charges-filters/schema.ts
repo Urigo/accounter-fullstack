@@ -7,7 +7,9 @@ import {
   type ChargeFilter,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
+import { isObjectEmpty } from '../../../helpers/form.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { buildEmptyFormValues } from './constants.js';
 
 const timelessDate = z
   .string()
@@ -120,22 +122,30 @@ export const chargeFilterUrlSchema: z.ZodType<ChargeFilter> = z.object({
 /**
  * Seeds the form from an applied filter.
  *
- * Values round-tripped through the URL are parsed with a bare `JSON.parse`, so they
- * can be `null` (which would clobber a default) or structurally invalid (a stale or
- * hand-edited link). Nulls are stripped and the merged result is validated; on failure
- * we fall back to the defaults rather than opening the modal showing an error the user
- * never caused.
+ * The defaults (owner, last-year date range) only seed a fresh filter, meaning none was
+ * applied yet. An applied filter is taken as is, on top of the empty form values: a field
+ * it leaves out was cleared by the user, so a default must not fill it back in. Applying a
+ * filter with no date range and reopening the dialog would otherwise add the default range
+ * back. Every filter the dialog applies carries at least its sort order, so an applied
+ * filter is never empty (see `useChargesFilter`).
+ *
+ * Nulls are stripped before validation, since they would fail the form schema's
+ * `.optional()` fields. An invalid filter (a stale or hand-edited link) falls back to the
+ * defaults rather than opening the dialog showing an error the user never caused.
  */
 export function filterToFormValues(
   filter: ChargeFilter,
   defaults: ChargeFilterFormValues,
 ): ChargeFilterFormValues {
+  if (isObjectEmpty(filter)) {
+    return defaults;
+  }
+
   const provided = Object.fromEntries(
     Object.entries(filter).filter(([, value]) => value != null),
   ) as Partial<ChargeFilterFormValues>;
 
-  const merged = { ...defaults, ...provided };
-  const parsed = chargeFilterFormSchema.safeParse(merged);
+  const parsed = chargeFilterFormSchema.safeParse({ ...buildEmptyFormValues(), ...provided });
   return parsed.success ? parsed.data : defaults;
 }
 
