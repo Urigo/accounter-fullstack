@@ -201,6 +201,27 @@ describe('the boot request', () => {
     expect(operations).toEqual(['UserContext', 'Viewer']);
   });
 
+  it('lets a user in when /welcome finds them active, provisioned since the boot request', async () => {
+    // An admin adds the membership after the guard's read, before /welcome's own.
+    let viewerReads = 0;
+    const router = await openApp(
+      operation => {
+        if (operation === 'UserContext') {
+          return NO_WORKSPACE_BOOT;
+        }
+        viewerReads += 1;
+        return { data: { viewer: viewerReads > 1 ? { ...NEW_VIEWER, status: 'ACTIVE' } : NEW_VIEWER } };
+      },
+      { welcome: <WelcomePage /> },
+    );
+    await settle();
+
+    expect(router.state.location.pathname).toBe(ROUTES.APP_HOME);
+    expect(container.textContent).toContain('Charges Page');
+    // The boot request, the guard's read, /welcome's read, and the guard's read on the way back in.
+    expect(operations).toEqual(['UserContext', 'Viewer', 'Viewer', 'Viewer']);
+  });
+
   it('opens the app when the fresh read fails on the network, rather than trapping the user', async () => {
     const router = await openApp(operation =>
       operation === 'UserContext' ? NO_WORKSPACE_BOOT : 'network-error',
