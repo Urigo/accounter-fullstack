@@ -184,6 +184,7 @@ const config: CodegenConfig = {
             '../modules/foreign-securities/types.js#PaginatedSecurityExecutionsProto',
           SecurityIdentifier: '../modules/foreign-securities/types.js#SecurityIdentifierRow',
           Shaam6111Report: '../modules/reports/types.js#Shaam6111ReportProto',
+          Shareholder: '../modules/report-1214/types.js#ShareholderProto',
           SortCode: '../modules/sort-codes/types.js#IGetSortCodesByIdsResult',
           Tag: '../modules/tags/types.js#IGetAllTagsResult',
           TaxCategory: '../modules/financial-entities/types.js#IGetAllTaxCategoriesResult',
