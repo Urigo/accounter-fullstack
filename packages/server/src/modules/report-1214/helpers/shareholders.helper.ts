@@ -97,8 +97,9 @@ const AMOUNT_FIELDS = [
  *
  * Only storage-level rules are checked here (at most 99 rows, ID format, a name of at most 200
  * characters, percentages within 0-100 with at most 4 decimals, no repeated ID number). Linked
- * business IDs are lowercased, as the UUID scalar keeps the caller's case. The form's own business rules (dividend rights adding up to 100, at most two
- * decimals, ...) are reported by the 1214 generator's validation, not here.
+ * business IDs are lowercased, as the UUID scalar keeps the caller's case. The form's own business
+ * rules (dividend rights adding up to 100, at most two decimals, ...) are reported by the 1214
+ * generator's validation, not here.
  */
 export function normalizeShareholderInputs(
   rows: ReadonlyArray<RawShareholderInput>,
