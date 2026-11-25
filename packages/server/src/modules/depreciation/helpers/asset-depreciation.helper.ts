@@ -45,21 +45,6 @@ export function depreciationEndDate(
 }
 
 /**
- * Whether an asset is still on the depreciation schedule on or after `fromDate`: its end date
- * (`depreciationEndDate`) is on or after `fromDate`, so a period starting on the end date still
- * takes the final year. An asset with no end date (a 0% category) always qualifies, as its cost
- * stays on the books. Selects the records for a period's depreciation charge and report.
- */
-export function depreciatesOnOrAfter(
-  depreciationRate: number,
-  activationDate: TimelessDateString,
-  fromDate: TimelessDateString,
-): boolean {
-  const endDate = depreciationEndDate(depreciationRate, activationDate);
-  return endDate === null || endDate >= fromDate;
-}
-
-/**
  * Calculates depreciation amounts for accounting purposes
  * @param depreciationRate - Annual depreciation rate, in percent (e.g. 7 for 7%). A rate of 0 (a
  *  category that is not depreciated) gives no depreciation at all.
