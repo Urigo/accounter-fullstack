@@ -561,12 +561,13 @@ export interface YearLayout {
 
 ### 5.5 Dependencies
 
-| Package         | Version | Why                                           |
-| --------------- | ------- | --------------------------------------------- |
-| `zod`           | 4.6.7   | strict input shape validation (§9.2)          |
-| `iconv-lite`    | 0.7.3   | windows-1255 encode/decode (same as siblings) |
-| dev: `tsx`      | 4.23.15 | run `scripts/generate-layout.ts`              |
-| dev: `prettier` | 3.10.1  | format the generated layout modules (§5.3)    |
+| Package           | Version | Why                                             |
+| ----------------- | ------- | ----------------------------------------------- |
+| `zod`             | 4.6.7   | strict input shape validation (§9.2)            |
+| `iconv-lite`      | 0.7.3   | windows-1255 encode/decode (same as siblings)   |
+| dev: `tsx`        | 4.23.15 | run `scripts/generate-layout.ts`                |
+| dev: `prettier`   | 3.10.1  | format the generated layout modules (§5.3)      |
+| dev: `typescript` | 6.0.3   | `tsc` for the `typecheck` script (same as root) |
 
 No other runtime dependencies (no `date-fns`: dates are ISO strings, handled with plain arithmetic).
 
