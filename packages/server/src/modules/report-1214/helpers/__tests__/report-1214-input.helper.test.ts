@@ -6,7 +6,9 @@ import {
   validate1214,
   type Report1214Input,
 } from '@accounter/opcn1214-generator';
+import type { AnnualTaxData } from '../../../reports/helpers/annual-tax-data.helper.js';
 import type { Report1214ProfileProto, ShareholderProto } from '../../types.js';
+import { CODE_SOURCES, type Report1214CodeSources } from '../report-1214-amounts.helper.js';
 import {
   assembleReport1214Input,
   composeAddress,
@@ -391,6 +393,63 @@ describe('assembleReport1214Input', () => {
     });
     expect(mappingIssues).toEqual([issue]);
     expect(input!.amounts['165']).toBe(7);
+  });
+
+  it('computes the codes that need the books from the loaded books, under the overrides', () => {
+    const tax = { taxAmounts: { taxableIncomeAmount: 4321.6 } } as unknown as AnnualTaxData;
+    const codeSources: Report1214CodeSources = {
+      ...CODE_SOURCES,
+      '010': {
+        label: 'בדיקה',
+        specRef: 'p.0',
+        requiresTaxData: true,
+        compute: ({ tax }) => tax.taxAmounts.taxableIncomeAmount,
+      },
+      '011': {
+        label: 'לא סופי',
+        specRef: 'p.0',
+        requiresTaxData: true,
+        compute: () => Number.NaN,
+      },
+    };
+    const loadIssue = {
+      ruleId: 'accounter.test.loaded',
+      severity: 'warning' as const,
+      path: 'amounts',
+      message: 'loaded',
+    };
+
+    const computed = assemble({ taxData: { tax, issues: [loadIssue] }, codeSources });
+    expect(computed.input!.amounts['010']).toBe(4322);
+    expect(computed.amounts.find(row => row.code === '010')).toEqual({
+      code: '010',
+      amount: 4322,
+      source: 'COMPUTED',
+      computedAmount: 4322,
+      label: 'בדיקה',
+    });
+    expect(computed.mappingIssues).toEqual([
+      loadIssue,
+      expect.objectContaining({
+        ruleId: REPORT_1214_MAPPING_RULES.computedInvalid,
+        code: '011',
+      }),
+    ]);
+
+    const overridden = assemble({
+      taxData: { tax, issues: [] },
+      codeSources,
+      profile: profile({ amountOverrides: { ...profile().amountOverrides, '010': 5 } }),
+    });
+    expect(overridden.input!.amounts['010']).toBe(5);
+    expect(overridden.amounts.find(row => row.code === '010')).toMatchObject({
+      amount: 5,
+      source: 'OVERRIDE',
+      computedAmount: 4322,
+    });
+
+    // without the books, the code is not computed at all
+    expect(assemble({ codeSources }).input!.amounts).not.toHaveProperty('010');
   });
 
   it('maps shareholders to the generator shape', () => {

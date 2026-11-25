@@ -44,10 +44,11 @@ export default gql`
     code: String!
     " The amount the report uses for the code "
     amount: Float!
+    " Whether the amount is computed by Accounter or set in the profile's overrides (an override always wins) "
     source: Report1214AmountSource!
-    " The amount Accounter computed for the code, also when an override replaces it; null when it computes none "
+    " The amount Accounter computed for the code, also when an override replaces it. Null for override-only codes, and when the computed amount is 0 for a code that does not allow 0 (such a code is left out) "
     computedAmount: Float
-    " The code's Hebrew name, for the codes Accounter computes "
+    " The code's Hebrew name, for the codes Accounter computes; null for override-only codes "
     label: String
   }
 

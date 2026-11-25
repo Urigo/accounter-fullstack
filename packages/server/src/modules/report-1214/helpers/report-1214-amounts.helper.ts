@@ -24,17 +24,36 @@ export interface Report1214AmountsData {
   profile: Pick<Report1214ProfileProto, 'rdInvestments'>;
 }
 
-/** How Accounter computes one record 1000 code. */
-export interface Report1214CodeSource {
+interface Report1214CodeSourceBase {
   /** The code's Hebrew name, as the layout specification (1214-2024.pdf) gives it. */
   label: string;
   /** Page of the layout specification that defines the code. */
   specRef: `p.${number}`;
-  /** Whether `compute` reads `data.tax`; the books are loaded only when some code needs them. */
-  requiresTaxData: boolean;
-  /** The unrounded amount, or `undefined` when Accounter has no value for the code. */
-  compute: (data: Report1214AmountsData) => number | undefined;
 }
+
+/**
+ * How Accounter computes one record 1000 code. `requiresTaxData` says whether `compute` reads the
+ * books: the books are loaded only when some code needs them, and such a code is computed only
+ * when they were loaded, so its `compute` always gets them.
+ */
+export type Report1214CodeSource = Report1214CodeSourceBase &
+  (
+    | {
+        requiresTaxData: false;
+        /** The unrounded amount, or `undefined` when Accounter has no value for the code. */
+        compute: (data: Omit<Report1214AmountsData, 'tax'>) => number | undefined;
+      }
+    | {
+        requiresTaxData: true;
+        /** The unrounded amount, or `undefined` when Accounter has no value for the code. */
+        compute: (data: Report1214AmountsData & { tax: AnnualTaxData }) => number | undefined;
+      }
+  );
+
+/** A table of code sources (`CODE_SOURCES`, or another one in tests). */
+export type Report1214CodeSources = Readonly<
+  Partial<Record<MainFormInputCode, Report1214CodeSource>>
+>;
 
 /**
  * The record 1000 codes Accounter fills in by itself, each with the spec page that names it.
@@ -46,7 +65,7 @@ export interface Report1214CodeSource {
  * 094 and 263, the tax-rate codes 020/030 and the tax-advance and loss carry-forward amounts) are
  * left to the profile's amount overrides until each mapping is confirmed with the accountant.
  */
-export const CODE_SOURCES: Partial<Record<MainFormInputCode, Report1214CodeSource>> = {
+export const CODE_SOURCES: Report1214CodeSources = Object.freeze({
   // verified p.17: "בחלק טז' – סך השקעות בחברות מו"פ" (part 16: total investments in R&D
   // companies; record 1030 lists them). The generator's main.rd.total rule checks this code
   // against the 1030 records, each rounded to whole shekels, so it is summed the same way.
@@ -65,12 +84,15 @@ export const CODE_SOURCES: Partial<Record<MainFormInputCode, Report1214CodeSourc
       );
     },
   },
-};
+} satisfies Report1214CodeSources);
 
 /** Whether any code computed for `year` needs the books (`loadAnnualTaxData`). */
-export function codeSourcesNeedTaxData(year: number): boolean {
+export function codeSourcesNeedTaxData(
+  year: number,
+  sources: Report1214CodeSources = CODE_SOURCES,
+): boolean {
   const inputCodes = layoutInputCodes(year);
-  return Object.entries(CODE_SOURCES).some(
+  return Object.entries(sources).some(
     ([code, source]) => source?.requiresTaxData && inputCodes?.has(code),
   );
 }
@@ -97,7 +119,10 @@ function layoutInputCodes(year: number): Map<string, { zeroAllowed: boolean }> |
  * - A code the year's layout lacks or derives is never computed.
  * - A non-finite result is left out with a `computedInvalid` warning.
  */
-export function computeMainFormAmounts(data: Report1214AmountsData): {
+export function computeMainFormAmounts(
+  data: Report1214AmountsData,
+  sources: Report1214CodeSources = CODE_SOURCES,
+): {
   amounts: Partial<Record<MainFormInputCode, number>>;
   issues: Report1214IssueProto[];
 } {
@@ -107,12 +132,21 @@ export function computeMainFormAmounts(data: Report1214AmountsData): {
   if (!inputCodes) {
     return { amounts, issues };
   }
-  for (const [code, source] of Object.entries(CODE_SOURCES)) {
+  for (const [code, source] of Object.entries(sources)) {
     const layoutCode = inputCodes.get(code);
-    if (!source || !layoutCode || (source.requiresTaxData && !data.tax)) {
+    if (!source || !layoutCode) {
       continue;
     }
-    const value = source.compute(data);
+    let value: number | undefined;
+    if (source.requiresTaxData) {
+      const { tax } = data;
+      if (!tax) {
+        continue;
+      }
+      value = source.compute({ ...data, tax });
+    } else {
+      value = source.compute(data);
+    }
     if (value === undefined) {
       continue;
     }

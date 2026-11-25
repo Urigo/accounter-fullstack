@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import {
   supportedTaxYears,
@@ -34,6 +35,7 @@ import {
   codeSourcesNeedTaxData,
   computeMainFormAmounts,
   REPORT_1214_AMOUNT_RULES,
+  type Report1214CodeSources,
 } from './report-1214-amounts.helper.js';
 import {
   amountOverrideCodes,
@@ -229,6 +231,8 @@ export interface AssembleReport1214InputParams {
    * raised while loading them. Absent: only the amounts that need no books are computed.
    */
   taxData?: Report1214TaxDataResult;
+  /** The code sources of the computed amounts; `CODE_SOURCES` unless a test passes its own. */
+  codeSources?: Report1214CodeSources;
 }
 
 /**
@@ -349,6 +353,7 @@ function assembleAmounts(
   year: number,
   computedAmounts: Readonly<Record<string, number>>,
   storedOverrides: Report1214ProfileProto['amountOverrides'],
+  codeSources: Report1214CodeSources,
   issues: Report1214IssueProto[],
 ): { amounts: Report1214Input['amounts']; rows: Report1214AmountProto[] } {
   const { derivedCodes } = amountOverrideCodes(year);
@@ -380,7 +385,7 @@ function assembleAmounts(
       amount: amounts[code],
       source: Object.hasOwn(overrides, code) ? 'OVERRIDE' : 'COMPUTED',
       computedAmount: Object.hasOwn(computedAmounts, code) ? computedAmounts[code] : null,
-      label: CODE_SOURCES[code as keyof typeof CODE_SOURCES]?.label ?? null,
+      label: codeSources[code as keyof Report1214CodeSources]?.label ?? null,
     }));
   return { amounts: amounts as Report1214Input['amounts'], rows };
 }
@@ -402,6 +407,7 @@ export function assembleReport1214Input({
   profile,
   shareholders,
   taxData,
+  codeSources = CODE_SOURCES,
 }: AssembleReport1214InputParams): Report1214BuildResult {
   if (!supportedTaxYears().includes(year)) {
     return {
@@ -421,12 +427,16 @@ export function assembleReport1214Input({
   const mappingIssues: Report1214IssueProto[] = [...(taxData?.issues ?? [])];
   const company = assembleCompany(business, adminBusiness, profile.company, mappingIssues);
   const declarations = assembleDeclarations(profile.declarations, mappingIssues);
-  const computed = computeMainFormAmounts({ year, tax: taxData?.tax ?? null, profile });
+  const computed = computeMainFormAmounts(
+    { year, tax: taxData?.tax ?? null, profile },
+    codeSources,
+  );
   mappingIssues.push(...computed.issues);
   const { amounts, rows } = assembleAmounts(
     year,
     computed.amounts,
     profile.amountOverrides,
+    codeSources,
     mappingIssues,
   );
 
@@ -462,6 +472,8 @@ export interface ResolveReport1214TaxDataParams {
   isActiveOwner: () => Promise<boolean>;
   /** Loads the books (`loadAnnualTaxData`). */
   load: () => Promise<AnnualTaxData>;
+  /** The code sources of the computed amounts; `CODE_SOURCES` unless a test passes its own. */
+  codeSources?: Report1214CodeSources;
 }
 
 /**
@@ -479,8 +491,10 @@ export async function resolveReport1214TaxData({
   ownerId,
   isActiveOwner,
   load,
+  codeSources = CODE_SOURCES,
 }: ResolveReport1214TaxDataParams): Promise<Report1214TaxDataResult> {
-  if (!supportedTaxYears().includes(year) || !codeSourcesNeedTaxData(year)) {
+  // also false for a year without a layout
+  if (!codeSourcesNeedTaxData(year, codeSources)) {
     return { tax: null, issues: [] };
   }
   if (!(await isActiveOwner())) {
@@ -499,7 +513,12 @@ export async function resolveReport1214TaxData({
   try {
     return { tax: await load(), issues: [] };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
+    console.error('Failed to compute 1214 amounts from the books:', error);
+    // only a GraphQLError (e.g. "No tax rate for year") carries a message meant for users
+    const reason =
+      error instanceof GraphQLError
+        ? error.message
+        : 'The tax computation from the books failed (see server log)';
     return {
       tax: null,
       issues: [
