@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement, type ReactNode } from 'react';
 import {
   Form1214OtherDetailsSectionFragmentDoc,
   type Report1214ProfileInput,
@@ -14,10 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../../ui/select.js';
-import { EditorFooter } from '../editors/editor-footer.js';
+import { describeField, EditorFooter } from '../editors/editor-footer.js';
 import {
   OTHER_DETAILS_BLOCKS,
   otherDetailsBlockToInput,
+  otherDetailsFieldErrors,
   otherDetailsValuesFromBlock,
   type OtherDetailsBlock,
   type OtherDetailsField,
@@ -98,6 +99,8 @@ function OtherDetailsBlockEditor({
   const draft = useBlockDraft(stored, value => otherDetailsValuesFromBlock(block, value));
   const { saving, save } = useSaveProfileBlock();
   const values = draft.value;
+  const errors = useMemo(() => otherDetailsFieldErrors(block, values), [block, values]);
+  const hasErrors = Object.keys(errors).length > 0;
 
   const setValue = (path: string, text: string): void =>
     draft.update(current => ({ ...current, [path]: text }));
@@ -105,7 +108,7 @@ function OtherDetailsBlockEditor({
   const onSave = async (): Promise<void> => {
     const input = otherDetailsBlockToInput(block, values);
     if (!input.ok) {
-      draft.setError(input.error);
+      draft.attemptSave();
       return;
     }
     const blockInput = { [block.key]: input.value } as Report1214ProfileInput;
@@ -126,13 +129,14 @@ function OtherDetailsBlockEditor({
             field={field}
             value={values[field.path] ?? ''}
             onChange={text => setValue(field.path, text)}
+            described={describeField(draft, `${block.key}.${field.path}`, errors[field.path])}
           />
         ))}
       </div>
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        error={draft.error}
+        blocked={draft.saveAttempted && hasErrors}
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       />
@@ -145,11 +149,13 @@ function FieldControl({
   field,
   value,
   onChange,
+  described,
 }: {
   id: string;
   field: OtherDetailsField;
   value: string;
   onChange: (text: string) => void;
+  described: { inputProps: object; errorNode: ReactNode };
 }): ReactElement {
   if (field.kind === 'flag') {
     return (
@@ -192,7 +198,9 @@ function FieldControl({
         maxLength={field.kind === 'digits' ? field.digits?.[1] : undefined}
         value={value}
         onChange={event => onChange(event.target.value)}
+        {...described.inputProps}
       />
+      {described.errorNode}
     </div>
   );
 }

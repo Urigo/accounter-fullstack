@@ -169,20 +169,22 @@ export function otherDetailsValuesFromBlock(
 type FieldParse = { ok: true; value: unknown } | { ok: false; error: string };
 
 function parseField(field: OtherDetailsField, text: string): FieldParse {
-  const invalid = (what: string): FieldParse => ({ ok: false, error: `${field.label}: ${what}` });
+  const invalid = (error: string): FieldParse => ({ ok: false, error });
   switch (field.kind) {
     case 'count': {
       const value = parseOptionalCount(text);
-      return value === undefined ? invalid('enter a whole number') : { ok: true, value };
+      return value === undefined ? invalid('Enter a whole number, 0 or more') : { ok: true, value };
     }
     case 'number': {
       const value = parseOptionalNumber(text);
-      return value === undefined ? invalid('enter a number') : { ok: true, value };
+      return value === undefined ? invalid('Enter a number') : { ok: true, value };
     }
     case 'digits': {
       const [min, max] = field.digits ?? [1, 9];
       const value = parseOptionalDigits(text, min, max);
-      return value === undefined ? invalid(digitsDescription(min, max)) : { ok: true, value };
+      return value === undefined
+        ? invalid(`Enter ${digitsDescription(min, max)}`)
+        : { ok: true, value };
     }
     case 'yesNo':
       return { ok: true, value: text === 'yes' ? true : text === 'no' ? false : null };
@@ -196,6 +198,35 @@ function parseField(field: OtherDetailsField, text: string): FieldParse {
 }
 
 /**
+ * The errors of a block's fields, by path. In an all-or-nothing block (the bank account), the
+ * blank fields are errors once any field is filled in.
+ */
+export function otherDetailsFieldErrors(
+  block: OtherDetailsBlock,
+  values: OtherDetailsValues,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  let setCount = 0;
+  for (const field of block.fields) {
+    const result = parseField(field, values[field.path] ?? '');
+    if (!result.ok) {
+      errors[field.path] = result.error;
+    } else if (result.value != null) {
+      setCount += 1;
+    }
+  }
+  if (block.allOrNothing && setCount > 0) {
+    for (const field of block.fields) {
+      if (!(values[field.path] ?? '').trim() && !errors[field.path]) {
+        errors[field.path] =
+          `Required with the rest of the ${block.title.toLowerCase()}, or clear them all`;
+      }
+    }
+  }
+  return errors;
+}
+
+/**
  * The whole block to save. Unset fields are left out; a block with nothing set is `null`, which
  * clears it.
  */
@@ -203,25 +234,17 @@ export function otherDetailsBlockToInput<K extends OtherDetailsBlockKey>(
   block: OtherDetailsBlock & { key: K },
   values: OtherDetailsValues,
 ): ParseResult<Report1214ProfileInput[K]> {
+  const errors = otherDetailsFieldErrors(block, values);
+  const invalidField = block.fields.find(field => errors[field.path]);
+  if (invalidField) {
+    return parseError(`${block.title}: ${invalidField.label}: ${errors[invalidField.path]}`);
+  }
   const input: Record<string, unknown> = {};
-  let setCount = 0;
   for (const field of block.fields) {
     const result = parseField(field, values[field.path] ?? '');
-    if (!result.ok) {
-      return parseError(`${block.title}: ${result.error}`);
-    }
-    if (result.value != null) {
+    if (result.ok && result.value != null) {
       writePath(input, field.path, result.value);
-      setCount += 1;
     }
   }
-  if (setCount === 0) {
-    return parsed(null);
-  }
-  if (block.allOrNothing && setCount < block.fields.length) {
-    return parseError(
-      `${block.title}: fill in ${block.fields.map(field => field.label.toLowerCase()).join(', ')}, or clear them all`,
-    );
-  }
-  return parsed(input as Report1214ProfileInput[K]);
+  return parsed(Object.keys(input).length === 0 ? null : (input as Report1214ProfileInput[K]));
 }

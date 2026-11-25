@@ -74,6 +74,27 @@ export function relatedCompanyRowsFromProfile(
   }));
 }
 
+export type RelatedCompanyField = Exclude<keyof RelatedCompanyRow, 'rowId'>;
+export type RelatedCompanyRowErrors = Partial<Record<RelatedCompanyField, string>>;
+
+/** The format errors of a row, by field; the server checks the rest. */
+export function validateRelatedCompanyRow(row: RelatedCompanyRow): RelatedCompanyRowErrors {
+  const errors: RelatedCompanyRowErrors = {};
+  if (!row.companyName.trim()) {
+    errors.companyName = 'Enter the company name';
+  }
+  if (!row.relationType) {
+    errors.relationType = 'Choose the relation type';
+  }
+  if (parseOptionalDigits(row.companyFileNumber, 1, 9) === undefined) {
+    errors.companyFileNumber = `The file number is ${digitsDescription(1, 9)}`;
+  }
+  if (parseOptionalCount(row.assessingOfficeCode) === undefined) {
+    errors.assessingOfficeCode = 'The assessing office code is a whole number, 0 or more';
+  }
+  return errors;
+}
+
 /**
  * The whole `relatedCompanies` list to save, in row order. An empty list clears the block. Rows
  * past the form's limit are kept: the report validation reports them.
@@ -83,27 +104,15 @@ export function relatedCompanyRowsToInput(
 ): ParseResult<Report1214RelatedCompanyInput[]> {
   const input: Report1214RelatedCompanyInput[] = [];
   for (const [index, row] of rows.entries()) {
-    const name = `Related company ${index + 1}`;
-    const companyName = row.companyName.trim();
-    if (!companyName) {
-      return parseError(`${name}: enter the company name`);
-    }
-    if (!row.relationType) {
-      return parseError(`${name}: choose the relation type`);
-    }
-    const companyFileNumber = parseOptionalDigits(row.companyFileNumber, 1, 9);
-    if (companyFileNumber === undefined) {
-      return parseError(`${name}: the file number is ${digitsDescription(1, 9)}`);
-    }
-    const assessingOfficeCode = parseOptionalCount(row.assessingOfficeCode);
-    if (assessingOfficeCode === undefined) {
-      return parseError(`${name}: the assessing office code is a whole number`);
+    const firstError = Object.values(validateRelatedCompanyRow(row))[0];
+    if (firstError || !row.relationType) {
+      return parseError(`Related company ${index + 1}: ${firstError}`);
     }
     input.push({
-      companyName,
-      companyFileNumber,
+      companyName: row.companyName.trim(),
+      companyFileNumber: parseOptionalDigits(row.companyFileNumber, 1, 9) ?? null,
       relationType: row.relationType,
-      assessingOfficeCode,
+      assessingOfficeCode: parseOptionalCount(row.assessingOfficeCode) ?? null,
     });
   }
   return parsed(input);

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Form1214RdInvestmentsSectionFragmentDoc } from '../../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../../gql/index.js';
@@ -13,13 +13,15 @@ import {
   TableRow,
 } from '../../../../ui/table.js';
 import { RD_TOTAL_CODE } from '../editors/amount-overrides.js';
-import { EditorFooter } from '../editors/editor-footer.js';
+import { describeField, EditorFooter } from '../editors/editor-footer.js';
 import {
   emptyRdInvestmentRow,
   RD_INVESTMENTS_FORM_LIMIT,
   rdInvestmentRowsFromProfile,
   rdInvestmentRowsToInput,
   rdInvestmentsTotal,
+  validateRdInvestmentRow,
+  type RdInvestmentField,
   type RdInvestmentRow,
 } from '../editors/rd-investments.js';
 import { useBlockDraft } from '../editors/use-block-draft.js';
@@ -53,6 +55,8 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
   const draft = useBlockDraft(profile.rdInvestments, rdInvestmentRowsFromProfile);
   const { saving, save } = useSaveProfileBlock();
   const rows = draft.value;
+  const rowErrors = useMemo(() => rows.map(validateRdInvestmentRow), [rows]);
+  const hasErrors = rowErrors.some(errors => Object.keys(errors).length > 0);
 
   const updateRow = (rowId: string, patch: Partial<RdInvestmentRow>): void =>
     draft.update(current => current.map(row => (row.rowId === rowId ? { ...row, ...patch } : row)));
@@ -60,7 +64,7 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
   const onSave = async (): Promise<void> => {
     const input = rdInvestmentRowsToInput(rows);
     if (!input.ok) {
-      draft.setError(input.error);
+      draft.attemptSave();
       return;
     }
     if (await save({ rdInvestments: input.value }, 'R&D investments')) {
@@ -73,7 +77,7 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
       {rows.length === 0 ? (
         <Empty>
           {draft.dirty
-            ? 'Save to clear the R&D investments of this year.'
+            ? 'Every R&D investment is removed: save to clear the year.'
             : 'No R&D investments are saved for this year.'}
         </Empty>
       ) : (
@@ -87,52 +91,66 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, index) => (
-              <TableRow key={row.rowId}>
-                <TableCell>
-                  <Input
-                    dir="auto"
-                    aria-label={`R&D investment ${index + 1} company name`}
-                    value={row.companyName}
-                    onChange={event => updateRow(row.rowId, { companyName: event.target.value })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    inputMode="numeric"
-                    className="w-32 font-mono"
-                    aria-label={`R&D investment ${index + 1} file number`}
-                    value={row.companyFileNumber}
-                    onChange={event =>
-                      updateRow(row.rowId, { companyFileNumber: event.target.value })
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    inputMode="decimal"
-                    className="ml-auto w-36 text-right"
-                    aria-label={`R&D investment ${index + 1} amount`}
-                    value={row.investmentAmount}
-                    onChange={event =>
-                      updateRow(row.rowId, { investmentAmount: event.target.value })
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Remove R&D investment ${index + 1}`}
-                    onClick={() =>
-                      draft.update(current => current.filter(other => other.rowId !== row.rowId))
-                    }
-                  >
-                    <Trash2 />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {rows.map((row, index) => {
+              const field = (name: RdInvestmentField) =>
+                describeField(draft, `${row.rowId}.${name}`, rowErrors[index]?.[name]);
+              const name = field('companyName');
+              const fileNumber = field('companyFileNumber');
+              const amount = field('investmentAmount');
+              return (
+                <TableRow key={row.rowId} className="align-top">
+                  <TableCell>
+                    <Input
+                      dir="auto"
+                      aria-label={`R&D investment ${index + 1} company name`}
+                      value={row.companyName}
+                      onChange={event => updateRow(row.rowId, { companyName: event.target.value })}
+                      {...name.inputProps}
+                    />
+                    {name.errorNode}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      inputMode="numeric"
+                      className="w-32 font-mono"
+                      aria-label={`R&D investment ${index + 1} file number`}
+                      value={row.companyFileNumber}
+                      onChange={event =>
+                        updateRow(row.rowId, { companyFileNumber: event.target.value })
+                      }
+                      {...fileNumber.inputProps}
+                    />
+                    {fileNumber.errorNode}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      inputMode="decimal"
+                      className="ml-auto w-36 text-right"
+                      aria-label={`R&D investment ${index + 1} amount`}
+                      value={row.investmentAmount}
+                      onChange={event =>
+                        updateRow(row.rowId, { investmentAmount: event.target.value })
+                      }
+                      {...amount.inputProps}
+                    />
+                    {amount.errorNode}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove R&D investment ${index + 1}`}
+                      onClick={() =>
+                        draft.update(current => current.filter(other => other.rowId !== row.rowId))
+                      }
+                    >
+                      <Trash2 />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             <TableRow>
               <TableCell colSpan={2} className="font-semibold">
                 Total (code {RD_TOTAL_CODE})
@@ -158,11 +176,12 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        error={draft.error}
+        blocked={draft.saveAttempted && hasErrors}
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       >
         <Button
+          type="button"
           variant="outline"
           size="sm"
           onClick={() => draft.update(current => [...current, emptyRdInvestmentRow()])}

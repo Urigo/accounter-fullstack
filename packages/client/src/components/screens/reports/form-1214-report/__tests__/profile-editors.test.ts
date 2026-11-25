@@ -6,11 +6,13 @@ import {
   amountOverrideDraftsFromProfile,
   buildAmountOverridesInput,
   newOverrideCodeError,
+  overrideAmountError,
 } from '../editors/amount-overrides.js';
 import { parseOptionalNumber } from '../editors/form-values.js';
 import {
   OTHER_DETAILS_BLOCKS,
   otherDetailsBlockToInput,
+  otherDetailsFieldErrors,
   otherDetailsValuesFromBlock,
   type OtherDetailsBlockKey,
 } from '../editors/other-details.js';
@@ -19,6 +21,7 @@ import {
   rdInvestmentRowsFromProfile,
   rdInvestmentRowsToInput,
   rdInvestmentsTotal,
+  validateRdInvestmentRow,
 } from '../editors/rd-investments.js';
 import {
   emptyRelatedCompanyRow,
@@ -26,6 +29,7 @@ import {
   RELATION_TYPES,
   relatedCompanyRowsFromProfile,
   relatedCompanyRowsToInput,
+  validateRelatedCompanyRow,
 } from '../editors/related-companies.js';
 
 const block = (key: OtherDetailsBlockKey) => OTHER_DETAILS_BLOCKS.find(b => b.key === key)!;
@@ -93,11 +97,11 @@ describe('related companies', () => {
     };
     expect(relatedCompanyRowsToInput([valid, { ...valid, companyName: ' ' }])).toEqual({
       ok: false,
-      error: 'Related company 2: enter the company name',
+      error: 'Related company 2: Enter the company name',
     });
     expect(relatedCompanyRowsToInput([{ ...valid, relationType: '' }])).toEqual({
       ok: false,
-      error: 'Related company 1: choose the relation type',
+      error: 'Related company 1: Choose the relation type',
     });
     expect(relatedCompanyRowsToInput([{ ...valid, companyFileNumber: '12a' }])).toMatchObject({
       ok: false,
@@ -105,6 +109,33 @@ describe('related companies', () => {
     expect(relatedCompanyRowsToInput([{ ...valid, assessingOfficeCode: '1.5' }])).toMatchObject({
       ok: false,
     });
+  });
+});
+
+describe('row validation', () => {
+  it('reports each invalid field of a related company', () => {
+    expect(
+      validateRelatedCompanyRow({
+        ...emptyRelatedCompanyRow(),
+        companyFileNumber: '1234567890',
+        assessingOfficeCode: '-1',
+      }),
+    ).toEqual({
+      companyName: 'Enter the company name',
+      relationType: 'Choose the relation type',
+      companyFileNumber: 'The file number is 1 to 9 digits',
+      assessingOfficeCode: 'The assessing office code is a whole number, 0 or more',
+    });
+  });
+
+  it('accepts a negative R&D amount (the server allows any finite amount)', () => {
+    expect(
+      validateRdInvestmentRow({
+        ...emptyRdInvestmentRow(),
+        companyName: 'A',
+        investmentAmount: '-250',
+      }),
+    ).toEqual({});
   });
 });
 
@@ -132,11 +163,11 @@ describe('R&D investments', () => {
   it('requires a name and an amount', () => {
     expect(rdInvestmentRowsToInput([{ ...emptyRdInvestmentRow(), companyName: 'A' }])).toEqual({
       ok: false,
-      error: 'R&D investment 1: enter the investment amount as a number',
+      error: 'R&D investment 1: Enter the investment amount as a number',
     });
     expect(
       rdInvestmentRowsToInput([{ ...emptyRdInvestmentRow(), investmentAmount: '5' }]),
-    ).toEqual({ ok: false, error: 'R&D investment 1: enter the company name' });
+    ).toEqual({ ok: false, error: 'R&D investment 1: Enter the company name' });
   });
 });
 
@@ -177,7 +208,7 @@ describe('amount overrides', () => {
   it('refuses a blank override amount', () => {
     expect(buildAmountOverridesInput([{ code: '018', amount: ' ' }])).toEqual({
       ok: false,
-      error: 'Code 018: enter the override amount as a number, or remove the override',
+      error: 'Code 018: Enter the amount as a number, or remove the override',
     });
   });
 
@@ -188,6 +219,12 @@ describe('amount overrides', () => {
     expect(newOverrideCodeError('018', drafts)).toBe('Code 018 already has an override');
     // Unknown and derived codes are the server's to refuse
     expect(newOverrideCodeError('999', drafts)).toBeNull();
+  });
+
+  it('accepts negative and zero override amounts', () => {
+    expect(overrideAmountError('-12.5')).toBeNull();
+    expect(overrideAmountError('0')).toBeNull();
+    expect(overrideAmountError('')).toBe('Enter the amount as a number, or remove the override');
   });
 });
 
@@ -235,7 +272,32 @@ describe('other details', () => {
     });
     expect(
       otherDetailsBlockToInput(bank, { bank: '1', branch: '345', account: '678' }),
-    ).toEqual({ ok: false, error: 'Changed bank account: Bank: 2 digits' });
+    ).toEqual({ ok: false, error: 'Changed bank account: Bank: Enter 2 digits' });
+  });
+
+  it('marks the blank bank account fields once one is filled in', () => {
+    expect(
+      otherDetailsFieldErrors(block('bankAccount'), { bank: '12', branch: '', account: 'x' }),
+    ).toEqual({
+      branch: 'Required with the rest of the changed bank account, or clear them all',
+      account: 'Enter 1 to 9 digits',
+    });
+    expect(
+      otherDetailsFieldErrors(block('bankAccount'), { bank: '', branch: '', account: '' }),
+    ).toEqual({});
+  });
+
+  it('accepts negative amounts but not negative counts', () => {
+    expect(
+      otherDetailsFieldErrors(block('otherTaxableIncome'), {
+        source: '',
+        amount: '-100',
+        ratePercent: '',
+      }),
+    ).toEqual({});
+    expect(
+      otherDetailsFieldErrors(block('capitalGainsSummary'), { totalAppendicesCount: '-1' }),
+    ).toEqual({ totalAppendicesCount: 'Enter a whole number, 0 or more' });
   });
 
   it('refuses a count that is not a whole number', () => {
@@ -246,7 +308,7 @@ describe('other details', () => {
       }),
     ).toEqual({
       ok: false,
-      error: 'Attachments: Donation receipts (code 070): enter a whole number',
+      error: 'Attachments: Donation receipts (code 070): Enter a whole number, 0 or more',
     });
   });
 });

@@ -53,6 +53,24 @@ export function rdInvestmentsTotal(rows: ReadonlyArray<RdInvestmentRow>): number
   }, 0);
 }
 
+export type RdInvestmentField = Exclude<keyof RdInvestmentRow, 'rowId'>;
+export type RdInvestmentRowErrors = Partial<Record<RdInvestmentField, string>>;
+
+/** The format errors of a row, by field; the server checks the rest. Amounts may be negative. */
+export function validateRdInvestmentRow(row: RdInvestmentRow): RdInvestmentRowErrors {
+  const errors: RdInvestmentRowErrors = {};
+  if (!row.companyName.trim()) {
+    errors.companyName = 'Enter the company name';
+  }
+  if (parseOptionalDigits(row.companyFileNumber, 1, 9) === undefined) {
+    errors.companyFileNumber = `The file number is ${digitsDescription(1, 9)}`;
+  }
+  if (parseOptionalNumber(row.investmentAmount) == null) {
+    errors.investmentAmount = 'Enter the investment amount as a number';
+  }
+  return errors;
+}
+
 /**
  * The whole `rdInvestments` list to save, in row order. An empty list clears the block. Rows past
  * the form's limit are kept: the report validation reports them.
@@ -62,20 +80,16 @@ export function rdInvestmentRowsToInput(
 ): ParseResult<Report1214RdInvestmentInput[]> {
   const input: Report1214RdInvestmentInput[] = [];
   for (const [index, row] of rows.entries()) {
-    const name = `R&D investment ${index + 1}`;
-    const companyName = row.companyName.trim();
-    if (!companyName) {
-      return parseError(`${name}: enter the company name`);
-    }
-    const companyFileNumber = parseOptionalDigits(row.companyFileNumber, 1, 9);
-    if (companyFileNumber === undefined) {
-      return parseError(`${name}: the file number is ${digitsDescription(1, 9)}`);
-    }
+    const firstError = Object.values(validateRdInvestmentRow(row))[0];
     const investmentAmount = parseOptionalNumber(row.investmentAmount);
-    if (investmentAmount == null) {
-      return parseError(`${name}: enter the investment amount as a number`);
+    if (firstError || investmentAmount == null) {
+      return parseError(`R&D investment ${index + 1}: ${firstError}`);
     }
-    input.push({ companyName, companyFileNumber, investmentAmount });
+    input.push({
+      companyName: row.companyName.trim(),
+      companyFileNumber: parseOptionalDigits(row.companyFileNumber, 1, 9) ?? null,
+      investmentAmount,
+    });
   }
   return parsed(input);
 }

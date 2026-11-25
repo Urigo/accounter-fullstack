@@ -19,11 +19,12 @@ import {
   amountOverrideDraftsFromProfile,
   buildAmountOverridesInput,
   newOverrideCodeError,
+  overrideAmountError,
   RD_TOTAL_CODE,
   type AmountOverrideDraft,
 } from '../editors/amount-overrides.js';
-import { EditorFooter } from '../editors/editor-footer.js';
-import { numberToText, parseOptionalNumber } from '../editors/form-values.js';
+import { describeField, EditorFooter, FieldError } from '../editors/editor-footer.js';
+import { numberToText } from '../editors/form-values.js';
 import { useBlockDraft } from '../editors/use-block-draft.js';
 import { useSaveProfileBlock } from '../editors/use-save-profile-block.js';
 import { Empty, formatNumber, Section } from './section-layout.js';
@@ -63,8 +64,10 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
   const { saving, save } = useSaveProfileBlock();
   const [newCode, setNewCode] = useState('');
   const [newAmount, setNewAmount] = useState('');
+  const [addErrors, setAddErrors] = useState<{ code?: string; amount?: string }>({});
   const drafts = draft.value;
   const rows = amountEditorRows(amounts, drafts);
+  const hasErrors = drafts.some(override => overrideAmountError(override.amount) !== null);
 
   const setOverride = (code: string, amount: string): void =>
     draft.update(current =>
@@ -72,31 +75,28 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
     );
   const removeOverride = (code: string): void =>
     draft.update(current => current.filter(override => override.code !== code));
-  const addOverride = (code: string, amount: string, current: AmountOverrideDraft[]): boolean => {
-    const codeError = newOverrideCodeError(code, current);
-    if (codeError) {
-      draft.setError(codeError);
-      return false;
-    }
+  const addOverride = (code: string, amount: string, current: AmountOverrideDraft[]): void =>
     draft.update(() => addAmountOverrideDraft(current, code, amount));
-    return true;
-  };
 
+  // The new-override inputs are checked when "Add" is pressed, not while typing
   const onAdd = (): void => {
-    if (parseOptionalNumber(newAmount) == null) {
-      draft.setError(`Enter the amount of code ${newCode.trim() || '…'} as a number`);
+    const errors = {
+      code: newOverrideCodeError(newCode, drafts) ?? undefined,
+      amount: overrideAmountError(newAmount) ?? undefined,
+    };
+    setAddErrors(errors);
+    if (errors.code || errors.amount) {
       return;
     }
-    if (addOverride(newCode, newAmount, drafts)) {
-      setNewCode('');
-      setNewAmount('');
-    }
+    addOverride(newCode, newAmount, drafts);
+    setNewCode('');
+    setNewAmount('');
   };
 
   const onSave = async (): Promise<void> => {
     const input = buildAmountOverridesInput(drafts);
     if (!input.ok) {
-      draft.setError(input.error);
+      draft.attemptSave();
       return;
     }
     if (await save({ amountOverrides: input.value }, 'amount overrides')) {
@@ -128,7 +128,7 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
           </TableHeader>
           <TableBody>
             {rows.map(row => (
-              <TableRow key={row.code}>
+              <TableRow key={row.code} className="align-top">
                 <TableCell className="font-mono">{row.code}</TableCell>
                 <TableCell dir="auto">{row.label ?? ''}</TableCell>
                 <TableCell className="text-right">{formatNumber(row.computedAmount)}</TableCell>
@@ -138,11 +138,13 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
                       <span className="text-sm text-muted-foreground">From R&D investments</span>
                     ) : (
                       <Button
+                        type="button"
                         variant="link"
                         size="sm"
                         onClick={() =>
                           addOverride(row.code, numberToText(row.computedAmount), drafts)
                         }
+                        aria-label={`Override code ${row.code}`}
                       >
                         Override
                       </Button>
@@ -155,12 +157,15 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
                       {row.override}
                     </span>
                   ) : (
-                    <Input
-                      inputMode="decimal"
-                      className="ml-auto w-36 text-right"
-                      aria-label={`Override of code ${row.code}`}
+                    <OverrideInput
+                      code={row.code}
                       value={row.override}
-                      onChange={event => setOverride(row.code, event.target.value)}
+                      onChange={amount => setOverride(row.code, amount)}
+                      field={describeField(
+                        draft,
+                        `override.${row.code}`,
+                        overrideAmountError(row.override) ?? undefined,
+                      )}
                     />
                   )}
                 </TableCell>
@@ -174,6 +179,7 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
                 <TableCell>
                   {row.override !== undefined && (
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       aria-label={`Remove the override of code ${row.code}`}
@@ -191,31 +197,81 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        error={draft.error}
+        blocked={draft.saveAttempted && hasErrors}
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       >
-        <Input
-          inputMode="numeric"
-          maxLength={3}
-          className="w-24 font-mono"
-          placeholder="Code"
-          aria-label="Code of the new override"
-          value={newCode}
-          onChange={event => setNewCode(event.target.value)}
-        />
-        <Input
-          inputMode="decimal"
-          className="w-36 text-right"
-          placeholder="Amount"
-          aria-label="Amount of the new override"
-          value={newAmount}
-          onChange={event => setNewAmount(event.target.value)}
-        />
-        <Button variant="outline" size="sm" onClick={onAdd}>
-          <Plus /> Add override
-        </Button>
+        <div className="flex flex-wrap items-start gap-2">
+          <div>
+            <Input
+              inputMode="numeric"
+              maxLength={3}
+              className="w-24 font-mono"
+              placeholder="Code"
+              aria-label="Code of the new override"
+              aria-invalid={addErrors.code ? true : undefined}
+              aria-describedby={addErrors.code ? 'form-1214-new-override-code-error' : undefined}
+              value={newCode}
+              onChange={event => {
+                setNewCode(event.target.value);
+                setAddErrors(errors => ({ ...errors, code: undefined }));
+              }}
+            />
+            {addErrors.code && (
+              <FieldError id="form-1214-new-override-code-error" message={addErrors.code} />
+            )}
+          </div>
+          <div>
+            <Input
+              inputMode="decimal"
+              className="w-36 text-right"
+              placeholder="Amount"
+              aria-label="Amount of the new override"
+              aria-invalid={addErrors.amount ? true : undefined}
+              aria-describedby={
+                addErrors.amount ? 'form-1214-new-override-amount-error' : undefined
+              }
+              value={newAmount}
+              onChange={event => {
+                setNewAmount(event.target.value);
+                setAddErrors(errors => ({ ...errors, amount: undefined }));
+              }}
+            />
+            {addErrors.amount && (
+              <FieldError id="form-1214-new-override-amount-error" message={addErrors.amount} />
+            )}
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onAdd}>
+            <Plus /> Add override
+          </Button>
+        </div>
       </EditorFooter>
     </Section>
+  );
+}
+
+function OverrideInput({
+  code,
+  value,
+  onChange,
+  field,
+}: {
+  code: string;
+  value: string;
+  onChange: (amount: string) => void;
+  field: ReturnType<typeof describeField>;
+}): ReactElement {
+  return (
+    <div className="ml-auto w-36">
+      <Input
+        inputMode="decimal"
+        className="text-right"
+        aria-label={`Override of code ${code}`}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        {...field.inputProps}
+      />
+      {field.errorNode}
+    </div>
   );
 }

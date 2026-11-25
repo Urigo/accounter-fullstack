@@ -104,6 +104,13 @@ export function addAmountOverrideDraft(
   return [...drafts, { code: code.trim(), amount }].sort((a, b) => a.code.localeCompare(b.code));
 }
 
+/** Why an override amount cannot be saved, or `null`. Amounts may be negative; 0 is kept. */
+export function overrideAmountError(amount: string): string | null {
+  return parseOptionalNumber(amount) == null
+    ? 'Enter the amount as a number, or remove the override'
+    : null;
+}
+
 /**
  * The whole `amountOverrides` list to save, from the overrides only (never the computed values).
  * An amount of 0 is kept: it suppresses a code the report would otherwise fill in. An empty list
@@ -116,9 +123,7 @@ export function buildAmountOverridesInput(
   for (const draft of drafts) {
     const amount = parseOptionalNumber(draft.amount);
     if (amount == null) {
-      return parseError(
-        `Code ${draft.code}: enter the override amount as a number, or remove the override`,
-      );
+      return parseError(`Code ${draft.code}: ${overrideAmountError(draft.amount)}`);
     }
     input.push({ code: draft.code, amount });
   }
