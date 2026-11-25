@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { Report1214ProfileInput } from '../../../../../gql/graphql.js';
-import { useUpdateReport1214ProfileBlocks } from '../../../../../hooks/use-update-report-1214-profile-blocks.js';
+import { useUpdateReport1214Profile } from '../../../../../hooks/use-update-report-1214-profile.js';
 import { useForm1214Report } from '../report-context.js';
 
 /**
@@ -9,19 +9,19 @@ import { useForm1214Report } from '../report-context.js';
  */
 export function useSaveProfileBlock(): {
   saving: boolean;
-  save: (input: Report1214ProfileInput, blockLabel: string) => Promise<boolean>;
+  save: (input: Report1214ProfileInput, blockName: string) => Promise<boolean>;
 } {
   const { year, refresh } = useForm1214Report();
-  const { fetching, updateProfileBlocks } = useUpdateReport1214ProfileBlocks();
+  const { fetching, updateReport1214Profile } = useUpdateReport1214Profile();
   const save = useCallback(
-    async (input: Report1214ProfileInput, blockLabel: string) => {
-      const saved = await updateProfileBlocks({ year, input, blockLabel });
+    async (input: Report1214ProfileInput, blockName: string) => {
+      const saved = await updateReport1214Profile({ year, input, blockName });
       if (saved) {
         refresh();
       }
       return saved;
     },
-    [year, refresh, updateProfileBlocks],
+    [year, refresh, updateReport1214Profile],
   );
   return { saving: fetching, save };
 }
