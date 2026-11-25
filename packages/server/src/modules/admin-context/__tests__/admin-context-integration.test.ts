@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { LedgerRecordsLockProvider } from '../../ledger/providers/ledger-records-lock.provider.js';
+import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import { GraphQLError } from 'graphql';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import type { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
@@ -52,7 +54,7 @@ function createProvider(options: {
   } as unknown as AuthContextProvider;
 
   return {
-    provider: new AdminContextProvider(auth, db),
+    provider: new AdminContextProvider(auth, db, new AuditLogsProvider(db), new LedgerRecordsLockProvider(db)),
     query,
     auth,
   };

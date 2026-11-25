@@ -9,6 +9,7 @@ import { BusinessTripsProvider } from '../modules/business-trips/providers/busin
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesAuthorizationProvider } from '../modules/charges/providers/charges-authorization.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
+import { AuditLogsProvider } from '../modules/common/providers/audit-logs.provider.js';
 import { DocumentsProvider } from '../modules/documents/providers/documents.provider.js';
 import { CryptoExchangeProvider } from '../modules/exchange-rates/providers/crypto-exchange.provider.js';
 import { ExchangeProvider } from '../modules/exchange-rates/providers/exchange.provider.js';
@@ -20,6 +21,7 @@ import { FinancialEntitiesProvider } from '../modules/financial-entities/provide
 import { TaxCategoriesProvider } from '../modules/financial-entities/providers/tax-categories.provider.js';
 import { SecurityBusinessesProvider } from '../modules/foreign-securities/providers/security-businesses.provider.js';
 import { BalanceCancellationProvider } from '../modules/ledger/providers/balance-cancellation.provider.js';
+import { LedgerRecordsLockProvider } from '../modules/ledger/providers/ledger-records-lock.provider.js';
 import { LedgerProvider } from '../modules/ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
@@ -90,7 +92,12 @@ export function createLedgerTestContext(options: {
   const tenantAwareDB = new TenantAwareDBClient(dbProvider, authContextProvider);
 
   // Create AdminContextProvider for providers that need it
-  const adminContextProvider = new AdminContextProvider(authContextProvider, tenantAwareDB);
+  const adminContextProvider = new AdminContextProvider(
+    authContextProvider,
+    tenantAwareDB,
+    new AuditLogsProvider(tenantAwareDB),
+    new LedgerRecordsLockProvider(tenantAwareDB),
+  );
 
   const injector = new SimpleInjector(token => {
     switch (token) {

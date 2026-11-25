@@ -298,7 +298,7 @@ export const AnnualAuditFlow = (): ReactNode => {
             <Step08LedgerLock
               id="8"
               title="Lock Ledger"
-              description="Lock ledger by records and by date"
+              description="Lock the ledger up to year-end. To post audit adjustments later, reopen it with a reason (logged)."
               year={year}
               icon={<Lock className="h-4 w-4" />}
               onStatusChange={handleStatusChange}

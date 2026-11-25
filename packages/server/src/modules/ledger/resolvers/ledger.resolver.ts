@@ -11,6 +11,7 @@ import type { Currency } from '../../../shared/enums.js';
 import { compareTimelessDates, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import {
   getChargeDocumentsMeta,
@@ -453,33 +454,21 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       return results;
     },
     lockLedgerRecords: async (_, { date }, { injector }) => {
-      try {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-        const lockByRecords = injector
-          .get(LedgerProvider)
-          .lockLedgerRecords(date)
-          .catch(e => {
-            console.error(`Error locking ledger records for ${date}: ${e}`);
-            throw new Error(`Error locking ledger records for ${date}`);
-          });
-        const lockByDate = injector
-          .get(AdminContextProvider)
-          .updateAdminContext({
-            ownerId,
-            ledgerLock: date,
-          })
-          .catch(e => {
-            console.error(`Error locking ledger by date ${date}: ${e}`);
-            throw new Error(`Error locking ledger by date ${date}`);
-          });
-        await Promise.all([lockByRecords, lockByDate]);
-
-        return true;
-      } catch (error) {
-        console.error(`Error locking ledger for ${date}: ${error}`);
-        return false;
-      }
+      await injector.get(AdminContextProvider).moveLedgerLock({
+        action: 'LOCK',
+        date,
+        userId: await getActingUserId(injector),
+      });
+      return true;
+    },
+    unlockLedger: async (_, { date, reason }, { injector }) => {
+      await injector.get(AdminContextProvider).moveLedgerLock({
+        action: 'UNLOCK',
+        date,
+        reason,
+        userId: await getActingUserId(injector),
+      });
+      return true;
     },
   },
   LedgerRecord: {

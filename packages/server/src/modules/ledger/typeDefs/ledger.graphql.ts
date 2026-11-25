@@ -16,7 +16,12 @@ export default gql`
     regenerateLedgerRecords(chargeIds: [UUID!]!): [GeneratedLedgerRecords!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " close the ledger up to and including the date, and flag the records dated up to it as locked; the lock date can only move forward "
     lockLedgerRecords(date: TimelessDate!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " reopen the ledger: move the lock date back, with a logged reason. Allows new entries in the reopened period; records already locked stay locked "
+    unlockLedger(date: TimelessDate!, reason: String!): Boolean!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
   }

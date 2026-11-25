@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
+import { LedgerRecordsLockProvider } from '../../ledger/providers/ledger-records-lock.provider.js';
+import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import { QueryResult, QueryResultRow } from 'pg';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
@@ -36,7 +38,11 @@ describe('AdminContextProvider', () => {
     } as unknown as Mocked<AuthContextProvider>;
 
     // Inject mocks: authContextProvider (for auth context) and dbProvider
-    provider = new AdminContextProvider(authContextProvider, dbProvider);
+    provider = new AdminContextProvider(
+      authContextProvider,
+      dbProvider,
+      new AuditLogsProvider(dbProvider), new LedgerRecordsLockProvider(dbProvider),
+    );
   });
 
   it('should fetch admin context for the current user', async () => {

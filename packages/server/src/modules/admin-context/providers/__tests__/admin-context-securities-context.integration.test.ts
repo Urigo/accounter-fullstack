@@ -1,4 +1,6 @@
 import { Pool } from 'pg';
+import { LedgerRecordsLockProvider } from '../../../ledger/providers/ledger-records-lock.provider.js';
+import { AuditLogsProvider } from '../../../common/providers/audit-logs.provider.js';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { connectTestDb } from '../../../../__tests__/helpers/db-connection.js';
 import { seedAdminOnce } from '../../../../__tests__/helpers/db-fixtures.js';
@@ -48,7 +50,7 @@ function createMockAuthContextProvider(businessId: string): AuthContextProvider 
 function createProvider() {
   const authContextProvider = createMockAuthContextProvider(ownerId);
   const dbClient = new TenantAwareDBClient(new DBProvider(pool), authContextProvider);
-  return new AdminContextProvider(authContextProvider, dbClient);
+  return new AdminContextProvider(authContextProvider, dbClient, new AuditLogsProvider(dbClient), new LedgerRecordsLockProvider(dbClient));
 }
 
 async function storedSecuritiesContext() {
