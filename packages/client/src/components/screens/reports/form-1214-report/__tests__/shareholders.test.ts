@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dividendRightsTotal,
   emptyShareholderRow,
+  findDuplicateIdNumbers,
   hasShareholderRowErrors,
   isDividendTotalComplete,
   moveShareholderRow,
@@ -10,6 +11,7 @@ import {
   sameShareholderRows,
   shareholderToRow,
   validateShareholderRow,
+  validateShareholderRows,
   type ShareholderData,
   type ShareholderRow,
 } from '../shareholders.js';
@@ -107,7 +109,7 @@ describe('validateShareholderRow', () => {
 
   it('checks percents: non-negative, at most 100, at most 4 decimals', () => {
     expect(validateShareholderRow(row({ dividendRightsPercent: '-1' })).dividendRightsPercent).toBe(
-      'Must be a non-negative number',
+      'Use digits and a dot, e.g. 12.5',
     );
     expect(validateShareholderRow(row({ votingRightsPercent: '100.01' })).votingRightsPercent).toBe(
       'Must be at most 100',
@@ -119,10 +121,36 @@ describe('validateShareholderRow', () => {
     expect(validateShareholderRow(row({ dividendRightsPercent: '100' }))).toEqual({});
   });
 
-  it('checks amounts are non-negative numbers', () => {
-    expect(validateShareholderRow(row({ salaryMonths1To9: '-5' })).salaryMonths1To9).toBeDefined();
-    expect(validateShareholderRow(row({ otherPayments: '1,000' })).otherPayments).toBeDefined();
-    expect(validateShareholderRow(row({ salaryMonths10To12: '1000.75' }))).toEqual({});
+  it('accepts a leading or trailing dot and trailing zeros beyond 4 decimals', () => {
+    expect(
+      validateShareholderRow(
+        row({ dividendRightsPercent: '.5', votingRightsPercent: '5.', otherRightsPercent: '12.50000' }),
+      ),
+    ).toEqual({});
+    expect(rowToShareholderInput(row({ dividendRightsPercent: '.5' })).dividendRightsPercent).toBe(
+      0.5,
+    );
+  });
+
+  it('rejects text that is not a plain finite number', () => {
+    for (const text of ['1e3', '1,000', '.', '1.2.3', 'Infinity']) {
+      expect(validateShareholderRow(row({ dividendRightsPercent: text })).dividendRightsPercent).toBe(
+        'Use digits and a dot, e.g. 12.5',
+      );
+    }
+    expect(validateShareholderRow(row({ otherPayments: '9'.repeat(400) })).otherPayments).toBeDefined();
+  });
+
+  it('accepts signed amounts', () => {
+    expect(
+      validateShareholderRow(
+        row({ salaryMonths1To9: '-5', salaryMonths10To12: '1000.75', otherPayments: '-.5' }),
+      ),
+    ).toEqual({});
+    expect(validateShareholderRow(row({ otherPayments: '1,000' })).otherPayments).toMatch(
+      /^Must be a number/,
+    );
+    expect(validateShareholderRow(row({ salaryMonths1To9: '--5' })).salaryMonths1To9).toBeDefined();
   });
 
   it('reports whether any row has errors', () => {
@@ -153,5 +181,43 @@ describe('sameShareholderRows', () => {
     expect(sameShareholderRows(a, [...b].reverse())).toBe(false);
     expect(sameShareholderRows(a, [b[0]])).toBe(false);
     expect(sameShareholderRows(a, [b[0], { ...b[1], isMaterialShareholder: false }])).toBe(false);
+  });
+});
+
+describe('findDuplicateIdNumbers / validateShareholderRows', () => {
+  it('finds IDs that repeat once zero-padded, pointing at the first row', () => {
+    const rows = [
+      row({ idNumber: '12345' }),
+      row({ idNumber: '777' }),
+      row({ idNumber: '000012345' }),
+      row({ idNumber: ' 12345 ' }),
+    ];
+    expect(findDuplicateIdNumbers(rows)).toEqual(
+      new Map([
+        [2, 0],
+        [3, 0],
+      ]),
+    );
+    const errors = validateShareholderRows(rows);
+    expect(errors[0]).toEqual({});
+    expect(errors[2].idNumber).toBe('Same ID as row 1');
+    expect(errors[3].idNumber).toBe('Same ID as row 1');
+  });
+
+  it('lets the placeholder IDs repeat, padded or not', () => {
+    const rows = [
+      row({ idNumber: '999999964' }),
+      row({ idNumber: '999999964' }),
+      row({ idNumber: '999999998' }),
+      row({ idNumber: '999999998' }),
+    ];
+    expect(findDuplicateIdNumbers(rows).size).toBe(0);
+    expect(hasShareholderRowErrors(validateShareholderRows(rows))).toBe(false);
+  });
+
+  it('leaves malformed IDs to the format check', () => {
+    const rows = [row({ idNumber: 'abc' }), row({ idNumber: 'abc' })];
+    expect(findDuplicateIdNumbers(rows).size).toBe(0);
+    expect(validateShareholderRows(rows)[1].idNumber).toBe('ID number must be 1-9 digits');
   });
 });
