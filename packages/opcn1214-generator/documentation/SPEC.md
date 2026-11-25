@@ -1,7 +1,8 @@
 # `@accounter/opcn1214-generator` — Developer Specification
 
-Status: **ready for implementation** (greenfield). Normative source: SHAAM, _"מבנה קובץ מייצגים
-(OPCN ואינטרנט מייצג) לטעינת דוחות 1214 מקוון 2024"_, dated 20/01/2025 —
+Status: **implemented** (golden-file verification on shopcn:
+[`VERIFICATION.md`](../tests/fixtures/golden/VERIFICATION.md)). Normative source: SHAAM, _"מבנה קובץ
+מייצגים (OPCN ואינטרנט מייצג) לטעינת דוחות 1214 מקוון 2024"_, dated 20/01/2025 —
 [`specifications/1214-2024.pdf`](specifications/1214-2024.pdf) (71 pages). Machine-readable
 extraction of every record layout: [`layout/2024/`](layout/2024/) (see
 [`layout/README.md`](layout/README.md)).
@@ -685,8 +686,8 @@ export interface ResponseRecord {
 ### 6.4 Exports
 
 `index.ts` exports exactly: the functions and `RULES` above; types `Report1214Input` and all its
-sub-types (§7), the code unions (§5.3), `Issue`, `RuleMeta`, `Severity`, option/result types,
-`YearLayout` and the layout types; the error classes. Nothing else is public.
+sub-types (§7), the code unions (§5.3), `Issue`, `RuleId`, `RuleMeta`, `Severity`, option/result
+types, `YearLayout` and the layout types; the error classes. Nothing else is public.
 
 ### 6.5 Stability contract (semver)
 
