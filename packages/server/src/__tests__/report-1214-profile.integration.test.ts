@@ -50,6 +50,8 @@ const OTHER_USER_ID = makeUUID('user', 'report-1214-profile-other-user');
 
 /** A year without a generator layout: amount codes are checked against the latest supported one */
 const YEAR = 2094;
+/** A second, untouched year of the suite, for the empty-input insert */
+const EMPTY_INPUT_YEAR = 2095;
 
 const PROFILE_FIELDS = /* GraphQL */ `
   id
@@ -274,6 +276,23 @@ async function removeProfiles() {
       [[ADMIN_ID, OTHER_OWNER_ID]],
     ),
   );
+}
+
+/** The raw JSONB blocks of the admin's profile row of `year` */
+async function rawRow(year: number) {
+  const rows = await withSuperuserClient(client =>
+    client
+      .query(
+        `SELECT company, declarations, preparer, attachments, bank_account, other_taxable_income,
+                capital_gains_summary, qualifying_company, related_companies, rd_investments,
+                amount_overrides
+         FROM ${qualifyTable('report_1214_profiles')} WHERE owner_id = $1 AND year = $2`,
+        [ADMIN_ID, year],
+      )
+      .then(result => result.rows),
+  );
+  expect(rows).toHaveLength(1);
+  return rows[0];
 }
 
 const fullDeclarations = {
@@ -605,21 +624,12 @@ describe('report 1214 profile', () => {
       ],
       [
         {
-          relatedCompanies: Array.from({ length: 4 }, () => ({
-            companyName: 'X',
-            relationType: 'OTHER',
-          })),
-        },
-        /At most 3 related companies/,
-      ],
-      [
-        {
-          rdInvestments: Array.from({ length: 6 }, () => ({
+          rdInvestments: Array.from({ length: 51 }, () => ({
             companyName: 'X',
             investmentAmount: 1,
           })),
         },
-        /At most 5 R&D investments/,
+        /^rdInvestments exceeds the size limit of 50 items/,
       ],
     ];
     for (const [input, message] of cases) {
@@ -632,6 +642,80 @@ describe('report 1214 profile', () => {
       expect(error.message).toMatch(message);
     }
     expect((await getProfile()).company.email).toBe('office@example.com');
+  });
+
+  it('stores a list over the form limit as is, for the report validation to flag', async () => {
+    const saved = await updateProfile({
+      relatedCompanies: Array.from({ length: 4 }, (_, i) => ({
+        companyName: `Related ${i}`,
+        relationType: 'OTHER',
+      })),
+      rdInvestments: Array.from({ length: 6 }, (_, i) => ({
+        companyName: `Lab ${i}`,
+        investmentAmount: 1000,
+      })),
+      declarations: { reportablePositions: [1, 2, 3, 4, 5, 6] },
+    });
+    expect(saved.relatedCompanies).toHaveLength(4);
+    expect(saved.rdInvestments).toHaveLength(6);
+    expect(saved.declarations.reportablePositions).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(await getProfile()).toEqual(saved);
+  });
+
+  it('checks amount codes against the layout of a supported year (2025)', async () => {
+    // Rejections only: nothing is written, so the suite never touches a real tax year's row
+    const unknown = await expectError(UPDATE_PROFILE_MUTATION, {
+      ownerId: ADMIN_ID,
+      year: 2025,
+      input: { amountOverrides: [{ code: '999', amount: 1 }] },
+    });
+    expect(unknown.code).toBe('BAD_USER_INPUT');
+    expect(unknown.message).toMatch(/is not a record 1000 input code of the 2025 layout/);
+
+    const derived = await expectError(UPDATE_PROFILE_MUTATION, {
+      ownerId: ADMIN_ID,
+      year: 2025,
+      input: { amountOverrides: [{ code: '297', amount: 8 }] },
+    });
+    expect(derived.code).toBe('BAD_USER_INPUT');
+    expect(derived.message).toMatch(/code 297 is derived/);
+  });
+
+  it('fills the omitted blocks of a fresh partial insert with the column defaults', async () => {
+    await updateProfile({ company: { email: 'office@example.com' } });
+    expect(await rawRow(YEAR)).toEqual({
+      company: { email: 'office@example.com' },
+      declarations: {},
+      preparer: {},
+      attachments: {},
+      bank_account: {},
+      other_taxable_income: {},
+      capital_gains_summary: {},
+      qualifying_company: {},
+      related_companies: [],
+      rd_investments: [],
+      amount_overrides: {},
+    });
+  });
+
+  it('creates an empty row for an empty input on a fresh owner and year', async () => {
+    // Intended: saving an empty input still records that the profile was saved (updatedAt)
+    const saved = await updateProfile({}, EMPTY_INPUT_YEAR);
+    expect(saved.updatedAt).not.toBeNull();
+    expect(saved).toMatchObject({ preparer: null, relatedCompanies: [], amountOverrides: [] });
+    expect(await rawRow(EMPTY_INPUT_YEAR)).toEqual({
+      company: {},
+      declarations: {},
+      preparer: {},
+      attachments: {},
+      bank_account: {},
+      other_taxable_income: {},
+      capital_gains_summary: {},
+      qualifying_company: {},
+      related_companies: [],
+      rd_investments: [],
+      amount_overrides: {},
+    });
   });
 
   it('rejects a year outside 2000-2100', async () => {
@@ -660,6 +744,14 @@ describe('report 1214 profile', () => {
         otherYoga,
       );
       expect(write.code).toBe('FORBIDDEN');
+
+      // access is checked before the input, so invalid input is FORBIDDEN as well
+      const invalidWrite = await expectError(
+        UPDATE_PROFILE_MUTATION,
+        { ownerId: ADMIN_ID, year: YEAR, input: { amountOverrides: [{ code: '008', amount: 1 }] } },
+        otherYoga,
+      );
+      expect(invalidWrite.code).toBe('FORBIDDEN');
 
       expect((await getProfile()).company.email).toBe('office@example.com');
     });
