@@ -262,6 +262,7 @@ export const AnnualAuditFlow = (): ReactNode => {
                 {
                   label: 'Manage Shareholders',
                   href: `${ROUTES.REPORTS.FORM_1214(year)}#shareholders`,
+                  openInNewTab: true,
                 },
               ]}
             />
