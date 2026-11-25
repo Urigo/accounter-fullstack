@@ -6,10 +6,16 @@ import type {
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
-import { currentTenantYear, endOfTimelessYear } from '../../../../../shared/helpers/index.js';
+import {
+  currentTenantYear,
+  endOfTimelessYear,
+  startOfTimelessYear,
+} from '../../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
+import { DepreciationDisposalsProvider } from '../../../../depreciation/providers/depreciation-disposals.provider.js';
 import { calculateDepreciationAmount } from '../../../../reports/helpers/depreciation-report.helper.js';
+import { generateDepreciationDisposalsLedger } from '../../../helpers/depreciation-disposal-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -61,7 +67,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       gnmDepreciationYearlyAmount,
       marketingDepreciationYearlyAmount,
       totalDepreciationYearlyAmount,
-    } = await calculateDepreciationAmount(injector, year);
+    } = await calculateDepreciationAmount(injector, year, charge.owner_id);
     const ledgerEntries: LedgerProto[] = [];
 
     function addLedgerEntry(
@@ -130,6 +136,20 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       accumulatedDepreciationTaxCategoryId,
     );
 
+    // write-offs (and other disposals) with no charge of their own are booked here
+    const yearDisposals = await injector.get(DepreciationDisposalsProvider).getDisposalsByDates({
+      fromDate: startOfTimelessYear(year),
+      toDate: endOfTimelessYear(year),
+    });
+    const disposalsLedger = await generateDepreciationDisposalsLedger(
+      yearDisposals.filter(
+        disposal => !disposal.charge_id && disposal.owner_id === charge.owner_id,
+      ),
+      charge,
+      injector,
+    );
+    ledgerEntries.push(...disposalsLedger.entries);
+
     // generate ledger from misc expenses
     await generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
@@ -151,7 +171,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
         balanceSum: 0,
         financialEntities: [],
       },
-      errors: [],
+      errors: disposalsLedger.errors,
     };
   } catch (e) {
     return {
