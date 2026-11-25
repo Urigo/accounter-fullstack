@@ -54,8 +54,14 @@ export type AnnualTaxData = {
  *
  * Only the ledger query is scoped to `ownerId`. Financial entities and sort codes are read
  * unfiltered, and `calculateTaxAmounts` reads the session's admin context (tax categories) and the
- * year's business trips without an owner filter. Callers must therefore pass the session's active
- * owner; any other `ownerId` would mix its ledger with the session owner's tax settings.
+ * year's business trips without an owner filter. The result is therefore only consistent for the
+ * session's active owner: for any other `ownerId`, its ledger is combined with the active owner's
+ * tax settings and the trips of every business in the session's scope.
+ *
+ * The 1214 report only calls this for the active owner. The 6111 report does not yet guard against
+ * it: it accepts any business in the read scope, as it did before this function was extracted.
+ * Making the result correct for any owner means passing `ownerId` on to `calculateTaxAmounts`
+ * (`AdminContextProvider.adminContextByOwnerIdLoader`, business trips filtered by owner).
  *
  * The year is not validated here: callers must check it (e.g. 2000–2100) before calling.
  */
@@ -95,8 +101,16 @@ export async function loadAnnualTaxData(
     );
   }
   const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
+  // Fill all three years here, rather than relying on `calculateCumulativeRnDExpenses` caching the
+  // years it computes into the map it is given.
   const profitLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
-  const profitLossByYear = new Map([[year, profitLoss]]);
+  const profitLossByYear = new Map<number, ProfitLossReportAmounts>();
+  for (const [ledgerYear, decoratedRecords] of decoratedLedgerByYear) {
+    profitLossByYear.set(
+      ledgerYear,
+      ledgerYear === year ? profitLoss : getProfitLossReportAmounts(decoratedRecords),
+    );
+  }
   const { profitBeforeTax, researchAndDevelopmentExpenses } = profitLoss;
   const researchAndDevelopmentAddBack = researchAndDevelopmentExpenses.amount * -1;
   const taxableCumulativeResearchAndDevelopment =

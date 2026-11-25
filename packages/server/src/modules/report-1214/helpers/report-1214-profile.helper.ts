@@ -599,9 +599,9 @@ function block<In, Out>(value: Maybe<In>, empty: Out, normalize: (value: In) => 
  * database. Errors are `BAD_USER_INPUT` naming the offending path.
  *
  * Only shape and format are checked (phone prefixes and digits, digit-only file numbers, a size
- * limit of 50 items per list, known non-derived amount codes, text up to 200 characters). Strings are trimmed and
- * empty ones dropped; unset members are left out of the stored JSON. The form's business rules are
- * reported by the 1214 generator's validation.
+ * limit of 50 items per list, known non-derived amount codes, text up to 200 characters). Strings
+ * are trimmed and empty ones dropped; unset members are left out of the stored JSON. The form's
+ * business rules are reported by the 1214 generator's validation.
  */
 export function normalizeReport1214ProfileInput(
   input: Report1214ProfileInput,
