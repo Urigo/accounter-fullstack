@@ -286,11 +286,14 @@ describe('Acquisition cost refund, end to end (spec §3-§6)', () => {
         expect(preview?.exchangeRate).toBeCloseTo(3.7, 10);
         expect(preview?.result?.costReduction).toBe(costReduction);
         expect(preview?.remainingCost).toBe(remainingCost);
-        // stored as entered: in USD, with no local cost (converted when read)
+        // stored as costRefundsFixture inserts it: in USD, with no local cost (converted when read)
+        const inserted = costRefundsFixture.depreciationDisposals!.disposals.find(
+          disposal => disposal.id === refundId,
+        );
         expect(preview?.stored).toEqual({
           disposedCost: null,
-          originalAmount: expect.any(Number),
-          originalCurrency: 'USD',
+          originalAmount: Number(inserted?.originalAmount),
+          originalCurrency: inserted?.originalCurrency,
         });
       }
       const total = Object.values(expected).reduce(

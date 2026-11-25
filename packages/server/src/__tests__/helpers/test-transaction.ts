@@ -52,7 +52,9 @@ export async function withTestTransaction<T>(
  * - `connect()` hands out the same client, whose `release()` does nothing. On it, `BEGIN`,
  *   `COMMIT` and `ROLLBACK` become a savepoint, its release and a rollback to it, so a provider's
  *   "transaction" is nested in the test's. Savepoints a provider opens itself pass through.
- * - `query()` runs on the client directly (system-level reads, such as exchange rates).
+ * - `query()` runs on the client directly (system-level reads, such as exchange rates), with no
+ *   savepoint: a statement that fails there aborts the whole test transaction, and every later
+ *   statement fails with 25P02 (`current transaction is aborted`).
  *
  * The connections it hands out are meant to be used one after another, as a single
  * `TenantAwareDBClient` does: two "transactions" open at once on the one client would interleave.
