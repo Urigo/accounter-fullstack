@@ -1049,7 +1049,7 @@ already explain it (no `untransmittedCount > 0`, no capital-gains appendix in th
 | 1000@832 has foreign appendix                                   | `foreignAppendix ? yes : no`                                                                                             | consistency with 2000 record               |
 | 1000@833 has capital-gains appendix                             | yes if `capitalGains.length > 0` or `untransmittedCount > 0` or `declarations.hasCapitalGainsAppendix === true`, else no | consistency with 30xx records              |
 | code 008                                                        | `1` if `appliesAccountingStandards`, else omitted                                                                        | p.9 (882 → "fill 008 with 1")              |
-| code 028                                                        | `capitalGains.length + (untransmittedCount ?? 0)`, omitted if 0                                                          | p.14 "forms attached, transmitted and not" |
+| code 028                                                        | `capitalGains.length + (untransmittedCount ?? 0)`, omitted if 0; a count not an integer 0–99 adds 0 (962 reports it)     | p.14 "forms attached, transmitted and not" |
 | code 273                                                        | 1029/1030: yes/no → 1, no/yes → 2, yes/yes → 3, no/no → 9                                                                | p.19 mapping                               |
 | codes 277 / 278 / 280                                           | from `bankAccount`: 277 = account; 278 = bank(2) + branch(3); 280 = 1                                                    | p.19–20                                    |
 | code 297                                                        | `form6111Obligation`: obliged → 8, notObliged → 9, otherwise omitted                                                     | p.7 (834 → "fill 297 with 8/9")            |
@@ -1065,6 +1065,14 @@ already explain it (no `untransmittedCount > 0`, no capital-gains appendix in th
 
 Passing a derived code in an `amounts` map is an error (`input.derivedCode`) whose message names the
 input property that controls it.
+
+Codes 277/278/280 are written only for a well-formed `bankAccount`; a malformed member has no field
+of its own, so the normalizer reports it as a `main.bankAccount.format` notice at
+`bankAccount.<member>` and writes no bank code. When parsing, `bankAccount` exists when any of
+277/278/280 is present (278 split into bank and branch after padding to 5 digits; an absent 277 or
+278 reads as zeros), and 297 is read back as `form6111Obligation` (8 → `obliged`, 9 → `notObliged`)
+only when 834 is absent: 834 is the source of truth, and a disagreeing 297 is
+`parse.derivedMismatch`.
 
 ---
 
@@ -1152,7 +1160,8 @@ included, is `parse.order`, and the 9999 counts are compared with the records be
 - `meta.saveDate` and `meta.softwareName` set to the values actually written
   (`canonicalize(input, options)` takes the same options as generation, for `today`);
 - digit-string inputs of numeric fields (`id9`, `shareholderId`, `digits`) zero-padded to the field
-  width (`'12'` → `'012'` for a 3-digit branch);
+  width (`'12'` → `'012'` for a 3-digit branch); `bankAccount.account` zero-padded to 9 digits, as
+  code 277 holds it (`'678'` → `'000000678'`);
 - optional numeric header values equal to `0` removed (exception: `amountX` 1000@1091, where 0 is
   meaningful).
 
@@ -1320,7 +1329,7 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                       | p.10–11  |
 | `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount` | p.10     |
 | `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                  | p.12, 19 |
-| `main.bankAccount.format`                   | E   | spec    | bank not 2 digits, branch not 3 digits, or account longer than 9 digits                              | p.19     |
+| `main.bankAccount.format`                   | E   | spec    | bank not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits                    | p.19     |
 | `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                        | p.12     |
 | `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                     | p.12     |
 | `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                      | p.10     |

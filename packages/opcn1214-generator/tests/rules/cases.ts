@@ -3,6 +3,7 @@
  * error. Input fail cases are minimalInput() with one deliberate defect; file fail cases are the
  * `minimal` golden file with one deliberate defect.
  */
+import { getLayout } from '../../src/layout/registry.js';
 import type { PhonePrefix, Shareholder } from '../../src/model/input.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
@@ -23,6 +24,33 @@ function withShareholder(overrides: Partial<Shareholder>) {
     ...overrides,
   }));
   return minimalInput({ shareholders });
+}
+
+/** Input codes whose presence calls for other data in later rules (D4/D5); kept out of padding. */
+const CONDITIONAL_CODES: ReadonlySet<string> = new Set(['010', '070', '080', '084', '165']);
+
+/**
+ * minimalInput() with plain amount codes (value 1) added until record 1000 holds `pairs`
+ * code-amount pairs, the derived code 273 included.
+ */
+function withMainCodePairs(pairs: number) {
+  const base = minimalInput();
+  const present = Object.keys(base.amounts).length + 1; // + derived 273
+  const extra = getLayout(2024)
+    .records['1000'].codes.filter(
+      def =>
+        !def.derived &&
+        def.kind === 'amount' &&
+        def.required === 'no' &&
+        !CONDITIONAL_CODES.has(def.code) &&
+        !Object.hasOwn(base.amounts, def.code),
+    )
+    .slice(0, pairs - present)
+    .map(def => [def.code, 1]);
+  if (extra.length !== pairs - present) {
+    throw new Error(`not enough plain codes for ${pairs} pairs`);
+  }
+  return minimalInput({ amounts: Object.fromEntries(extra) });
 }
 
 /** The `minimal` golden file text with one edit. */
@@ -83,6 +111,24 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => ({ ...minimalInput(), company: { ...minimalInput().company, faxx: '1234567' } }),
     pass: () => minimalInput({ company: { email: undefined } }),
     path: 'company.faxx',
+  },
+  'input.unknownCode': {
+    kind: 'input',
+    fail: () => ({ ...minimalInput(), amounts: { ...minimalInput().amounts, '999': 5 } }),
+    pass: () => minimalInput({ amounts: { '299': 5 } }),
+    path: 'amounts["999"]',
+  },
+  'input.derivedCode': {
+    kind: 'input',
+    fail: () => ({ ...minimalInput(), amounts: { ...minimalInput().amounts, '273': 1 } }),
+    pass: () => minimalInput({ declarations: { directorsReceivedOpinion: true } }),
+    path: 'amounts["273"]',
+  },
+  'struct.mainCodePairs.max': {
+    kind: 'input',
+    fail: () => withMainCodePairs(62),
+    pass: () => withMainCodePairs(61),
+    path: 'amounts',
   },
   'field.required': {
     kind: 'input',
@@ -163,6 +209,12 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalInput({ company: { phone: { number: '123' } } }),
     pass: () => minimalInput({ company: { phone: { number: '1234567' } } }),
     path: 'company.phone.number',
+  },
+  'main.bankAccount.format': {
+    kind: 'input',
+    fail: () => minimalInput({ bankAccount: { bank: '1', branch: '345', account: '678' } }),
+    pass: () => minimalInput({ bankAccount: { bank: '12', branch: '345', account: '678' } }),
+    path: 'bankAccount.bank',
   },
   'parse.empty': {
     kind: 'file',

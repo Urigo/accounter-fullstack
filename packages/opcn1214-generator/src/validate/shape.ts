@@ -1,5 +1,14 @@
-/** Stage 2 of SPEC §9.2: zod shape issues as input.shape issues. */
+/**
+ * Stage 2 of SPEC §9.2: code-map keys that are unknown or derived (input.unknownCode,
+ * input.derivedCode), then the strict zod schema, whose issues become input.shape issues.
+ */
 import type { z } from 'zod';
+import { Opcn1214InternalError } from '../errors.js';
+import { getLayout } from '../layout/registry.js';
+import type { RecordDef, YearLayout } from '../layout/types.js';
+import type { SupportedTaxYear } from '../model/input.js';
+import { schemaFor } from '../model/schema.js';
+import { DERIVED_MAIN_CODE_SOURCES } from '../normalize/derive.js';
 import { makeIssue, type Issue } from './issue.js';
 
 type ZodIssue = z.ZodError['issues'][number];
@@ -63,4 +72,110 @@ function convert(issue: ZodIssue): Issue[] {
  */
 export function zodIssuesToIssues(error: z.ZodError): Issue[] {
   return error.issues.flatMap(convert);
+}
+
+/** A code map of the input (`amounts`, …) and the record whose codes it holds. */
+interface CodeMap {
+  /** Input path of the map, e.g. `amounts`. */
+  path: string;
+  taxYear: number;
+  record: RecordDef;
+  /** 0-based index of the record among records of its type. */
+  recordIndex: number;
+  /** The input properties each derived code of the record comes from (SPEC §7.4). */
+  derivedSources: Readonly<Partial<Record<string, readonly string[]>>>;
+}
+
+/** `{}` or `Object.create(null)`: what zod accepts as a record (not a Map, Date or class). */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+/**
+ * Checks the keys of the code map `value` against the codes of `map.record` (SPEC §9.2): a key that
+ * is not a code of the record is input.unknownCode, a derived code is input.derivedCode naming the
+ * input property that controls it. Returns those issues and the map without the reported keys, so
+ * zod does not report them again; a value that is not a plain object (an array, a Map, a Date, a
+ * class instance) is returned unchanged for zod, which reports it as input.shape.
+ */
+function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: unknown } {
+  if (!isPlainObject(value)) {
+    return { issues: [], value };
+  }
+  const codes = new Map(map.record.codes.map(def => [def.code, def]));
+  const issues: Issue[] = [];
+  const kept: Record<string, unknown> = {};
+  for (const [key, amount] of Object.entries(value)) {
+    const def = codes.get(key);
+    if (def && !def.derived) {
+      kept[key] = amount;
+      continue;
+    }
+    const details = {
+      path: `${map.path}[${JSON.stringify(key)}]`,
+      recordType: map.record.type,
+      recordIndex: map.recordIndex,
+      code: key,
+      ...primitive(amount),
+    };
+    if (def) {
+      const sources = map.derivedSources[key];
+      if (!sources) {
+        throw new Opcn1214InternalError(`Derived code ${key} has no input source`);
+      }
+      issues.push(
+        makeIssue('input.derivedCode', {
+          ...details,
+          message: `Code ${key} is derived from ${sources.join(' and ')} (SPEC §7.4); remove it from ${map.path}.`,
+        }),
+      );
+    } else {
+      // A number key ({ 18: … }) arrives as "18"; codes are 3-digit strings (SPEC §3.5).
+      const padded = key.padStart(3, '0');
+      const hint =
+        padded !== key && codes.has(padded) ? ` Did you mean ${JSON.stringify(padded)}?` : '';
+      issues.push(
+        makeIssue('input.unknownCode', {
+          ...details,
+          message: `${JSON.stringify(key)} is not a code of record ${map.record.type} for tax year ${map.taxYear}.${hint}`,
+        }),
+      );
+    }
+  }
+  return { issues, value: kept };
+}
+
+/**
+ * The code maps of `input` scanned (scanCodeMap): their issues, and a shallow copy of `input` with
+ * the reported keys removed. Record 1000 `amounts` today; the foreign appendix (F1) and the
+ * capital-gains appendices (G1) add theirs.
+ */
+function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; input: unknown } {
+  if (!isPlainObject(input)) {
+    return { issues: [], input };
+  }
+  const amounts = scanCodeMap(input.amounts, {
+    path: 'amounts',
+    taxYear: layout.taxYear,
+    record: layout.records['1000'],
+    recordIndex: 0,
+    derivedSources: DERIVED_MAIN_CODE_SOURCES,
+  });
+  return { issues: amounts.issues, input: { ...input, amounts: amounts.value } };
+}
+
+/**
+ * The shape stage (SPEC §9.2 stage 2) of `input` of a supported `taxYear`: the
+ * input.unknownCode / input.derivedCode issues of its code maps, then the input.shape issues of the
+ * year's strict schema run on the input without the reported code keys. Offending values are
+ * carried. `input` is not changed.
+ */
+export function checkShape(input: unknown, taxYear: SupportedTaxYear): Issue[] {
+  const scanned = scanCodeMaps(input, getLayout(taxYear));
+  const shape = schemaFor(taxYear).safeParse(scanned.input, { reportInput: true });
+  return shape.success ? scanned.issues : [...scanned.issues, ...zodIssuesToIssues(shape.error)];
 }

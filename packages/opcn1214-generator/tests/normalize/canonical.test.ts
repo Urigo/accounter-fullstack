@@ -228,6 +228,31 @@ describe('canonicalize', () => {
     expect(result.capitalGainsSummary).toEqual(input.capitalGainsSummary);
     expect(result.qualifyingCompany).toEqual(input.qualifyingCompany);
     expect(result.declarations).toEqual(input.declarations);
+    expect(result.bankAccount).toEqual(input.bankAccount);
+  });
+
+  describe('bank account (codes 277/278/280)', () => {
+    it('pads the account to 9 digits, as 277 is read back', () => {
+      const result = canonicalize(
+        minimalInput({ bankAccount: { bank: '12', branch: '345', account: '678' } }),
+        OPTIONS,
+      );
+      expect(result.bankAccount).toEqual({ bank: '12', branch: '345', account: '000000678' });
+    });
+
+    it('leaves no bankAccount without one', () => {
+      expect(canonicalize(minimalInput(), OPTIONS)).not.toHaveProperty('bankAccount');
+    });
+  });
+
+  it('never carries derived codes into amounts', () => {
+    const input = minimalInput({
+      declarations: { form6111Obligation: 'obliged', appliesAccountingStandards: true },
+      capitalGainsSummary: { untransmittedCount: 2 },
+      bankAccount: { bank: '12', branch: '345', account: '678' },
+    });
+    expect(canonicalize(input, OPTIONS).amounts).toEqual(minimalInput().amounts);
+    expect(canonicalize(input, OPTIONS).declarations.form6111Obligation).toBe('obliged');
   });
 
   it('removes optional zero header numbers except the amountX 1091, and empty groups', () => {

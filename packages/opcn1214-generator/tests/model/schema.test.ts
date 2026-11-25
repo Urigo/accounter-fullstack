@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
-import { zodIssuesToIssues } from '../../src/validate/shape.js';
+import { checkShape, zodIssuesToIssues } from '../../src/validate/shape.js';
 import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
 
 /** The input.shape issues of `input` against the schema of its year (2024 by default). */
@@ -73,10 +73,10 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       ]);
     });
 
-    it('reports an unknown amounts key as input.shape at amounts["999"]', () => {
+    it('reports an unknown amounts key as input.unknownCode, not input.shape (SPEC §9.2)', () => {
       const input = { ...minimalInput(), amounts: { ...minimalInput().amounts, '999': 5 } };
-      expect(shapeIssues(input)).toEqual([
-        expect.objectContaining({ ruleId: 'input.shape', path: 'amounts["999"]', value: 5 }),
+      expect(checkShape(input, 2024)).toEqual([
+        expect.objectContaining({ ruleId: 'input.unknownCode', path: 'amounts["999"]', value: 5 }),
       ]);
     });
 
@@ -322,6 +322,159 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     it('rejects null groups', () => {
       const input = { ...minimalInput(), attachments: null };
       expect(shapePaths(input)).toEqual(['attachments']);
+    });
+  });
+
+  describe('bankAccount', () => {
+    it('accepts a bank account of digit strings, and any string (main.bankAccount.format checks it)', () => {
+      expect(
+        shapeIssues(minimalInput({ bankAccount: { bank: '12', branch: '345', account: '678' } })),
+      ).toEqual([]);
+      expect(
+        shapeIssues(minimalInput({ bankAccount: { bank: '1', branch: 'x', account: '' } })),
+      ).toEqual([]);
+    });
+
+    it('requires every member as a string and rejects unknown members', () => {
+      const input = {
+        ...minimalInput(),
+        bankAccount: { bank: 12, branch: '345', iban: 'IL' },
+      };
+      expect(shapePaths(input).sort()).toEqual([
+        'bankAccount.account',
+        'bankAccount.bank',
+        'bankAccount.iban',
+      ]);
+    });
+  });
+
+  describe('code maps (SPEC §9.2: scanned before zod)', () => {
+    it('reports a derived amounts key as input.derivedCode naming the controlling property', () => {
+      const input = { ...minimalInput(), amounts: { ...minimalInput().amounts, '297': 8 } };
+      expect(checkShape(input, 2024)).toEqual([
+        {
+          ruleId: 'input.derivedCode',
+          severity: 'error',
+          message:
+            'Code 297 is derived from declarations.form6111Obligation (SPEC §7.4); remove it from amounts.',
+          path: 'amounts["297"]',
+          recordType: '1000',
+          recordIndex: 0,
+          code: '297',
+          value: 8,
+        },
+      ]);
+    });
+
+    it.each([
+      ['008', 'declarations.appliesAccountingStandards'],
+      ['028', 'capitalGainsSummary.untransmittedCount'],
+      ['273', 'declarations.directorsReceivedOpinion and declarations.tookReportablePosition'],
+      ['277', 'bankAccount'],
+      ['278', 'bankAccount'],
+      ['280', 'bankAccount'],
+      ['297', 'declarations.form6111Obligation'],
+    ])('names the input of derived code %s: %s', (code, source) => {
+      const input = { ...minimalInput(), amounts: { [code]: 1 } };
+      const [issue, ...rest] = checkShape(input, 2024);
+      expect(rest).toEqual([]);
+      expect(issue?.ruleId).toBe('input.derivedCode');
+      expect(issue?.message).toContain(`derived from ${source} `);
+    });
+
+    it('reports unknown and derived keys together with the zod issues, each once', () => {
+      const input = {
+        ...minimalInput(),
+        company: { ...minimalInput().company, faxx: 1 },
+        amounts: { '010': 'x', '999': 5, abc: undefined, '273': 1 },
+      };
+      expect(
+        checkShape(input, 2024)
+          .map(issue => [issue.ruleId, issue.path])
+          .sort(),
+      ).toEqual([
+        ['input.derivedCode', 'amounts["273"]'],
+        ['input.shape', 'amounts["010"]'],
+        ['input.shape', 'company.faxx'],
+        ['input.unknownCode', 'amounts["999"]'],
+        ['input.unknownCode', 'amounts["abc"]'],
+      ]);
+    });
+
+    it('leaves a code map that is not an object to zod', () => {
+      expect(checkShape({ ...minimalInput(), amounts: [] }, 2024)).toEqual([
+        expect.objectContaining({ ruleId: 'input.shape', path: 'amounts' }),
+      ]);
+      expect(checkShape({ ...minimalInput(), amounts: null }, 2024)).toEqual([
+        expect.objectContaining({ ruleId: 'input.shape', path: 'amounts' }),
+      ]);
+    });
+
+    class AmountsClass {
+      '018' = 4;
+    }
+
+    it.each([
+      ['a Map', () => new Map([['018', 4]])],
+      ['a Date', () => new Date()],
+      ['a class instance', () => new AmountsClass()],
+    ])('leaves %s to zod, which reports input.shape', (_name, amounts) => {
+      expect(checkShape({ ...minimalInput(), amounts: amounts() }, 2024)).toEqual([
+        expect.objectContaining({ ruleId: 'input.shape', path: 'amounts' }),
+      ]);
+    });
+
+    it('scans a code map without a prototype (Object.create(null))', () => {
+      const amounts = Object.assign(Object.create(null) as Record<string, number>, {
+        ...minimalInput().amounts,
+        '999': 5,
+      });
+      expect(
+        checkShape({ ...minimalInput(), amounts }, 2024).map(issue => [issue.ruleId, issue.path]),
+      ).toEqual([['input.unknownCode', 'amounts["999"]']]);
+    });
+
+    it('reports an own "__proto__" key (as JSON.parse makes it) as input.unknownCode', () => {
+      const amounts: unknown = JSON.parse(
+        JSON.stringify(minimalInput().amounts).replace('{', '{"__proto__":5,'),
+      );
+      expect(Object.keys(amounts as object)).toContain('__proto__');
+      expect(
+        checkShape({ ...minimalInput(), amounts }, 2024).map(issue => [issue.ruleId, issue.path]),
+      ).toEqual([['input.unknownCode', 'amounts["__proto__"]']]);
+    });
+
+    it('suggests the 3-digit code for a number key ({ 18: … })', () => {
+      const [issue, ...rest] = checkShape(
+        { ...minimalInput(), amounts: { ...minimalInput().amounts, 18: 4 } },
+        2024,
+      );
+      expect(rest).toEqual([]);
+      expect(issue).toMatchObject({ ruleId: 'input.unknownCode', path: 'amounts["18"]' });
+      expect(issue?.message).toBe(
+        '"18" is not a code of record 1000 for tax year 2024. Did you mean "018"?',
+      );
+    });
+
+    it('gives no hint when the padded key is not a code either', () => {
+      const [issue] = checkShape({ ...minimalInput(), amounts: { 7: 1 } }, 2024);
+      expect(issue?.message).toBe('"7" is not a code of record 1000 for tax year 2024.');
+    });
+
+    it('leaves an input that is not an object to zod', () => {
+      expect(checkShape(null, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+        ['input.shape', ''],
+      ]);
+    });
+
+    it('does not change its input', () => {
+      const input = { ...minimalInput(), amounts: { '999': 5 } };
+      checkShape(input, 2024);
+      expect(input.amounts).toEqual({ '999': 5 });
+    });
+
+    it('accepts the minimal input', () => {
+      expect(checkShape(minimalInput(), 2024)).toEqual([]);
     });
   });
 

@@ -7,11 +7,10 @@ import { getLayout, provisionalBaseYear, supportedTaxYears } from './layout/regi
 import type { Report1214Input, SupportedTaxYear } from './model/input.js';
 import type { NormalizedReport } from './model/normalized.js';
 import type { ValidateOptions } from './model/options.js';
-import { schemaFor } from './model/schema.js';
 import { normalizeReport } from './normalize/report.js';
 import { runRules } from './validate/engine.js';
 import { compareIssues, makeIssue, type Issue } from './validate/issue.js';
-import { zodIssuesToIssues } from './validate/shape.js';
+import { checkShape } from './validate/shape.js';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -39,9 +38,10 @@ export function provisionalLayoutIssues(taxYear: number): Issue[] {
 /**
  * Validates `input`: stage 1 checks the tax year, stops on struct.taxYear.unsupported and warns
  * with struct.taxYear.provisionalLayout (without stopping; the warning is about the year, so it is
- * reported even when a later stage stops); stage 2 checks the shape with the year's strict schema
- * and stops on input.shape; then the input is normalized and every rule runs. `report` is set
- * unless a stopping stage failed. Never throws for bad input; issues are sorted (SPEC §9.1).
+ * reported even when a later stage stops); stage 2 checks the code maps and the shape with the
+ * year's strict schema and stops on input.unknownCode, input.derivedCode or input.shape; then the
+ * input is normalized and every rule runs. `report` is set unless a stopping stage failed. Never
+ * throws for bad input; issues are sorted (SPEC §9.1).
  */
 export function runPipeline(
   input: unknown,
@@ -53,9 +53,9 @@ export function runPipeline(
     return { issues: [unsupportedTaxYearIssue(taxYear, supported)] };
   }
   const yearIssues = provisionalLayoutIssues(taxYear);
-  const shape = schemaFor(taxYear as SupportedTaxYear).safeParse(input, { reportInput: true });
-  if (!shape.success) {
-    return { issues: [...yearIssues, ...zodIssuesToIssues(shape.error)].sort(compareIssues) };
+  const shapeIssues = checkShape(input, taxYear as SupportedTaxYear);
+  if (shapeIssues.length > 0) {
+    return { issues: [...yearIssues, ...shapeIssues].sort(compareIssues) };
   }
   // The schema is Report1214Input with plain strings where the types have literal unions (phone
   // prefixes); the field rules check those values.
