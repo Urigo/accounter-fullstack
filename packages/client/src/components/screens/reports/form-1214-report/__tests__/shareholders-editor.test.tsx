@@ -194,10 +194,9 @@ describe('ShareholdersEditor', () => {
     expect(hasText('Unsaved changes')).toBe(false);
   });
 
-  it('disables Save while a row is invalid, without flagging a fresh blank row', () => {
+  it('shows errors only once a cell is left, without flagging a fresh blank row', () => {
     render(SAVED);
     click(button('Add shareholder'));
-    expect(button('Save').disabled).toBe(true);
     expect(hasText('Fix the highlighted fields')).toBe(false);
 
     const [, , idNumber] = inputs('ID number');
@@ -212,6 +211,19 @@ describe('ShareholdersEditor', () => {
     expect(hasText('Fix the highlighted fields')).toBe(true);
   });
 
+  it('on Save with errors, shows them all and focuses the first instead of saving', async () => {
+    render(SAVED);
+    click(button('Add shareholder'));
+    expect(button('Save').disabled).toBe(false);
+
+    await act(async () => button('Save').click());
+    expect(setShareholdersMock).not.toHaveBeenCalled();
+    expect(hasText('ID number must be 1-9 digits')).toBe(true);
+    expect(hasText('Full name is required')).toBe(true);
+    const [, , idNumber] = inputs('ID number');
+    expect(document.activeElement).toBe(idNumber);
+  });
+
   it('disables Save while saving', () => {
     hookState.saving = true;
     render(SAVED);
@@ -219,24 +231,32 @@ describe('ShareholdersEditor', () => {
     expect(button('Saving...').disabled).toBe(true);
   });
 
-  it('blocks more than 99 rows', () => {
+  it('blocks more than 99 rows on Save', async () => {
     const many = Array.from({ length: 100 }, (_, index) =>
       shareholder(`s${index}`, String(index + 1), `Shareholder ${index + 1}`),
     );
     render(many);
     type(inputs('Full name')[0], 'Edited');
-    expect(button('Save').disabled).toBe(true);
     expect(button('Add shareholder').disabled).toBe(true);
     expect(hasText('At most 99 shareholders; remove 1.')).toBe(true);
+
+    await act(async () => button('Save').click());
+    expect(setShareholdersMock).not.toHaveBeenCalled();
+    expect((document.activeElement as HTMLElement | null)?.textContent).toBe(
+      'At most 99 shareholders; remove 1.',
+    );
   });
 
-  it('blocks a repeated ID', () => {
+  it('blocks a repeated ID on Save, focusing it', async () => {
     render(SAVED);
     const [, second] = inputs('ID number');
     type(second, '1');
-    expect(button('Save').disabled).toBe(true);
-    blur(second);
+    expect(hasText('Same ID as row 1')).toBe(false);
+
+    await act(async () => button('Save').click());
+    expect(setShareholdersMock).not.toHaveBeenCalled();
     expect(hasText('Same ID as row 1')).toBe(true);
+    expect(document.activeElement).toBe(second);
   });
 
   it('offers to copy last year only while the year is empty and clean', async () => {

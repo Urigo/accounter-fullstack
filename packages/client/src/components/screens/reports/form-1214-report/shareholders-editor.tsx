@@ -55,7 +55,7 @@ const NUMERIC_COLUMNS: Array<{ field: NumericField; label: string; widthClass: s
 /**
  * The shareholders of the year (form 1214 records 1020), edited locally and saved as a whole list:
  * the list order is the report order. Format typos, repeated IDs and more than 99 rows are caught
- * here, before the round trip; the generator reports the rest (the 100% dividend total among them)
+ * here, before the round trip: Save then shows every error and focuses the first instead of sending; the generator reports the rest (the 100% dividend total among them)
  * in the validation panel.
  */
 export function ShareholdersEditor({ shareholders }: Props): ReactElement {
@@ -101,6 +101,20 @@ export function ShareholdersEditor({ shareholders }: Props): ReactElement {
   const dividendTotal = dividendRightsTotal(rows);
 
   const nextKey = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Set by a Save that found errors: once they render, focus the first one. The counter makes a
+  // repeated failed Save focus again even when nothing else changed
+  const focusFirstError = useRef(false);
+  const [focusRequest, setFocusRequest] = useState(0);
+  useEffect(() => {
+    if (!focusFirstError.current) {
+      return;
+    }
+    focusFirstError.current = false;
+    containerRef.current
+      ?.querySelector<HTMLElement>('[aria-invalid="true"], [data-row-limit-error]')
+      ?.focus();
+  }, [focusRequest]);
   const busy = saving || copying;
 
   function edit(update: (current: ShareholderRow[]) => ShareholderRow[]): void {
@@ -131,7 +145,14 @@ export function ShareholdersEditor({ shareholders }: Props): ReactElement {
   }
 
   async function save(): Promise<void> {
-    if (!draft || hasErrors || tooManyRows) {
+    if (!draft) {
+      return;
+    }
+    if (hasErrors || tooManyRows) {
+      // Reveal every error and take the user to the first one; nothing is sent
+      setTouched(new Set(rows.flatMap(row => ROW_FIELDS.map(field => `${row.key}:${field}`))));
+      focusFirstError.current = true;
+      setFocusRequest(request => request + 1);
       return;
     }
     const result = await setShareholders({ year, shareholders: draft.map(rowToShareholderInput) });
@@ -160,7 +181,7 @@ export function ShareholdersEditor({ shareholders }: Props): ReactElement {
   const canCopy = savedRows.length === 0 && !dirty;
 
   return (
-    <div className="space-y-3">
+    <div ref={containerRef} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
@@ -195,12 +216,7 @@ export function ShareholdersEditor({ shareholders }: Props): ReactElement {
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => void save()}
-            disabled={!dirty || hasErrors || tooManyRows || busy}
-          >
+          <Button type="button" size="sm" onClick={() => void save()} disabled={!dirty || busy}>
             {saving ? 'Saving...' : 'Save'}
           </Button>
         </div>
@@ -281,25 +297,27 @@ export function ShareholdersEditor({ shareholders }: Props): ReactElement {
         </p>
       )}
       {tooManyRows && (
-        <p className="text-sm text-red-600">
+        <p data-row-limit-error tabIndex={-1} className="text-sm text-red-600">
           At most {MAX_SHAREHOLDERS} shareholders; remove {rows.length - MAX_SHAREHOLDERS}.
         </p>
       )}
-      {hasVisibleErrors ? (
+      {hasVisibleErrors && (
         <p className="text-sm text-red-600">Fix the highlighted fields before saving.</p>
-      ) : (
-        hasErrors &&
-        dirty && (
-          <p className="text-sm text-muted-foreground">
-            Fill in an ID number and a full name for every row to save.
-          </p>
-        )
       )}
     </div>
   );
 }
 
 const SECTION = 'shareholders';
+
+const ROW_FIELDS: ShareholderRowField[] = [
+  'idNumber',
+  'fullName',
+  'isControllingShareholder',
+  'isMaterialShareholder',
+  'businessId',
+  ...NUMERIC_COLUMNS.map(column => column.field),
+];
 
 /** A row's errors, limited to the cells the user already left. */
 function visibleRowErrors(
