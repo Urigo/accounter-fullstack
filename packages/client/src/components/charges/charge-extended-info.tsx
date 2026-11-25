@@ -19,6 +19,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
+import { ChargeDepreciationDisposals } from '../common/depreciation/charge-depreciation-disposals.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {
   BusinessTripSummarizedReport,
@@ -68,6 +69,7 @@ import { SalariesTable } from './extended-info/salaries-info.js';
       ledgerCount
       miscExpensesCount
       depreciationRecordsCount
+      depreciationDisposalsCount
       isLedgerLocked
       openDocuments
     }
@@ -263,6 +265,7 @@ export function ChargeExtendedInfo({
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.metadata?.miscExpensesCount;
   const hasDepreciation = !!charge?.metadata?.depreciationRecordsCount;
+  const hasDepreciationDisposals = !!charge?.metadata?.depreciationDisposalsCount;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
   const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasReceipts;
   const hasAccountingDocs = hasInvoices || hasReceipts;
@@ -309,6 +312,14 @@ export function ChargeExtendedInfo({
       );
     }
   }, [hasDepreciation]);
+
+  useEffect(() => {
+    if (hasDepreciationDisposals) {
+      setAccordionItems(items =>
+        items.includes('depreciationDisposals') ? items : [...items, 'depreciationDisposals'],
+      );
+    }
+  }, [hasDepreciationDisposals]);
 
   const galleryIsReady = isFragmentReady(
     ChargeExpansionFieldsFragmentDoc,
@@ -460,6 +471,14 @@ export function ChargeExtendedInfo({
                 <AccordionTrigger disabled={!hasDepreciation}>Depreciation</AccordionTrigger>
                 <AccordionContent>
                   <Depreciation chargeId={charge.id} onChange={onExtendedChange} />
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            {hasDepreciationDisposals && (
+              <AccordionItem value="depreciationDisposals">
+                <AccordionTrigger>Asset Disposals & Cost Refunds</AccordionTrigger>
+                <AccordionContent>
+                  <ChargeDepreciationDisposals chargeId={charge.id} onChange={onExtendedChange} />
                 </AccordionContent>
               </AccordionItem>
             )}

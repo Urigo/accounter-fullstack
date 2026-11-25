@@ -177,6 +177,7 @@ export default [
               'CreditcardDebitDateFilled',
               'DateRange',
               'DeelChargeSynced',
+              'DepreciationDisposalComputation',
               'DocumentDiscount',
               'DocumentDraft',
               'DocumentIncomeRecord',

@@ -9,6 +9,9 @@ import { BusinessTripsProvider } from '../modules/business-trips/providers/busin
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesAuthorizationProvider } from '../modules/charges/providers/charges-authorization.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
+import { DepreciationCategoriesProvider } from '../modules/depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationDisposalsProvider } from '../modules/depreciation/providers/depreciation-disposals.provider.js';
+import { DepreciationProvider } from '../modules/depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../modules/documents/providers/documents.provider.js';
 import { CryptoExchangeProvider } from '../modules/exchange-rates/providers/crypto-exchange.provider.js';
 import { ExchangeProvider } from '../modules/exchange-rates/providers/exchange.provider.js';
@@ -130,6 +133,12 @@ export function createLedgerTestContext(options: {
         return new BalanceCancellationProvider(tenantAwareDB);
       case MiscExpensesProvider:
         return new MiscExpensesProvider(tenantAwareDB, adminContextProvider);
+      case DepreciationDisposalsProvider:
+        return new DepreciationDisposalsProvider(tenantAwareDB, adminContextProvider);
+      case DepreciationProvider:
+        return new DepreciationProvider(tenantAwareDB, adminContextProvider);
+      case DepreciationCategoriesProvider:
+        return new DepreciationCategoriesProvider(dbProvider);
       case DocumentsProvider:
         return new DocumentsProvider(tenantAwareDB, adminContextProvider);
       case TransactionsProvider:
