@@ -77,6 +77,39 @@ const declarations = z.strictObject({
   hasCapitalGainsAppendix: z.boolean().optional(),
 });
 
+const otherTaxableIncome = z.strictObject({
+  source: z.string().optional(),
+  amount: z.number().optional(),
+  ratePercent: z.number().optional(),
+});
+
+const attachments = z.strictObject({
+  donationReceiptsCount: z.number().optional(),
+  withholdingCertificatesCount: z.number().optional(),
+});
+
+const capitalGainsSummary = z.strictObject({
+  totalAppendicesCount: z.number().optional(),
+  untransmittedCount: z.number().optional(),
+  reasons: z
+    .strictObject({
+      lossOrNoGain: z.boolean().optional(),
+      overFiveImprovementBalances: z.boolean().optional(),
+      over14Appendices: z.boolean().optional(),
+      other: z.boolean().optional(),
+      otherText: z.string().optional(),
+    })
+    .optional(),
+});
+
+const qualifyingCompany = z.strictObject({
+  purchased: z.boolean().optional(),
+  israeliPurchaseAmount: z.number().optional(),
+  foreignPurchaseAmount: z.number().optional(),
+  amortizationClaimed: z.boolean().optional(),
+  amortizationAmount: z.number().optional(),
+});
+
 const shareholder = z.strictObject({
   idNumber: z.string(),
   fullName: z.string(),
@@ -102,6 +135,10 @@ export const report1214InputSchema = z.strictObject({
   company,
   preparer: preparer.optional(),
   declarations,
+  otherTaxableIncome: otherTaxableIncome.optional(),
+  attachments: attachments.optional(),
+  capitalGainsSummary: capitalGainsSummary.optional(),
+  qualifyingCompany: qualifyingCompany.optional(),
   amounts: z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), z.number().optional()),
   shareholders: z.array(shareholder),
 });
