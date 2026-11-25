@@ -28,6 +28,18 @@ async function getActiveWriteTarget(injector: Injector): Promise<string> {
 }
 
 /**
+ * Whether `ownerId` is the request's active business (the session's write target). Reads that
+ * depend on session-wide settings (e.g. the tax computation, which reads the session's admin
+ * context) are only consistent for that owner.
+ */
+export async function isActiveReport1214Owner(
+  injector: Injector,
+  ownerId: string,
+): Promise<boolean> {
+  return (await getActiveWriteTarget(injector)).toLowerCase() === ownerId.toLowerCase();
+}
+
+/**
  * Resolves the owner (company) a form 1214 read or write applies to. The result is lowercased:
  * the UUID scalar keeps the caller's case, while Postgres returns UUIDs in lowercase.
  *

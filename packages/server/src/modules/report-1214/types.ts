@@ -108,11 +108,25 @@ export interface Report1214IssueProto {
   specRef?: { page: number; note?: string };
 }
 
+/** GraphQL `Report1214Amount` parent: one record 1000 amount of the built input. */
+export interface Report1214AmountProto {
+  code: string;
+  /** The amount in the input: the override when there is one, the computed amount otherwise. */
+  amount: number;
+  source: 'COMPUTED' | 'OVERRIDE';
+  /** The amount Accounter computed for the code, also when an override replaces it. */
+  computedAmount: number | null;
+  /** The code's Hebrew name, for the codes Accounter computes. */
+  label: string | null;
+}
+
 /** The generator input built for an owner and year, with the issues found while building it. */
 export interface Report1214BuildResult {
   /** `null` when no input can be built at all (a tax year the generator has no layout for). */
   input: Report1214Input | null;
   mappingIssues: Report1214IssueProto[];
+  /** The record 1000 amounts of `input`, sorted by code (empty when there is no input). */
+  amounts: Report1214AmountProto[];
 }
 
 /**

@@ -15,14 +15,26 @@ import type {
   IGetAdminBusinessesByIdsResult,
   IGetBusinessesByIdsResult,
 } from '../../financial-entities/types.js';
+import {
+  loadAnnualTaxData,
+  type AnnualTaxData,
+} from '../../reports/helpers/annual-tax-data.helper.js';
 import { Report1214ProfileProvider } from '../providers/report-1214-profile.provider.js';
 import { ShareholdersProvider } from '../providers/shareholders.provider.js';
 import type {
+  Report1214AmountProto,
   Report1214BuildResult,
   Report1214IssueProto,
   Report1214ProfileProto,
   ShareholderProto,
 } from '../types.js';
+import { isActiveReport1214Owner } from './owner.helper.js';
+import {
+  CODE_SOURCES,
+  codeSourcesNeedTaxData,
+  computeMainFormAmounts,
+  REPORT_1214_AMOUNT_RULES,
+} from './report-1214-amounts.helper.js';
 import {
   amountOverrideCodes,
   bankAccountToGql,
@@ -53,6 +65,7 @@ export const REPORT_1214_MAPPING_RULES = {
   declarationMissing: 'accounter.declarations.missing',
   /** warning: a stored amount override of a code the report derives was left out. */
   derivedOverrideDropped: 'accounter.amounts.derivedOverrideDropped',
+  ...REPORT_1214_AMOUNT_RULES,
 } as const;
 
 /**
@@ -211,6 +224,11 @@ export interface AssembleReport1214InputParams {
   adminBusiness: Report1214AdminBusinessIdentity | null;
   profile: Report1214ProfileProto;
   shareholders: ReadonlyArray<ShareholderProto>;
+  /**
+   * The books of the year for the computed amounts (`resolveReport1214TaxData`), with the issues
+   * raised while loading them. Absent: only the amounts that need no books are computed.
+   */
+  taxData?: Report1214TaxDataResult;
 }
 
 /**
@@ -321,15 +339,21 @@ function assembleDeclarations(
   return filled as Declarations;
 }
 
-/** The amount overrides, without the codes the year's layout derives (each one a warning). */
+/**
+ * The record 1000 amounts: the computed ones (`computeMainFormAmounts`) under the profile's
+ * overrides. An override wins by its presence, so an override of 0 replaces (or, for a code that
+ * does not allow 0, suppresses) the computed amount. Overrides of codes the year's layout derives
+ * are left out, each with a warning.
+ */
 function assembleAmounts(
   year: number,
-  overrides: Report1214ProfileProto['amountOverrides'],
+  computedAmounts: Readonly<Record<string, number>>,
+  storedOverrides: Report1214ProfileProto['amountOverrides'],
   issues: Report1214IssueProto[],
-): Report1214Input['amounts'] {
+): { amounts: Report1214Input['amounts']; rows: Report1214AmountProto[] } {
   const { derivedCodes } = amountOverrideCodes(year);
-  const amounts: Record<string, number> = {};
-  for (const [code, amount] of Object.entries(overrides)) {
+  const overrides: Record<string, number> = {};
+  for (const [code, amount] of Object.entries(storedOverrides)) {
     if (typeof amount !== 'number') {
       continue;
     }
@@ -345,14 +369,26 @@ function assembleAmounts(
       );
       continue;
     }
-    amounts[code] = amount;
+    overrides[code] = amount;
   }
-  return amounts as Report1214Input['amounts'];
+
+  const amounts: Record<string, number> = { ...computedAmounts, ...overrides };
+  const rows = Object.keys(amounts)
+    .sort()
+    .map((code): Report1214AmountProto => ({
+      code,
+      amount: amounts[code],
+      source: Object.hasOwn(overrides, code) ? 'OVERRIDE' : 'COMPUTED',
+      computedAmount: Object.hasOwn(computedAmounts, code) ? computedAmounts[code] : null,
+      label: CODE_SOURCES[code as keyof typeof CODE_SOURCES]?.label ?? null,
+    }));
+  return { amounts: amounts as Report1214Input['amounts'], rows };
 }
 
 /**
  * Pure part of `buildReport1214Input`: the generator input for a tax year, from the business
- * identity, the 1214 profile and the shareholders. Amounts come only from the profile overrides.
+ * identity, the 1214 profile, the shareholders and the books. Amounts are the computed ones
+ * (`computeMainFormAmounts`) under the profile's overrides (`assembleAmounts`).
  *
  * Never invents data: what is missing is reported as a mapping issue (rule IDs in
  * `REPORT_1214_MAPPING_RULES`) and left out, so `validate1214` reports the rest. The only filler
@@ -365,6 +401,7 @@ export function assembleReport1214Input({
   adminBusiness,
   profile,
   shareholders,
+  taxData,
 }: AssembleReport1214InputParams): Report1214BuildResult {
   if (!supportedTaxYears().includes(year)) {
     return {
@@ -377,13 +414,21 @@ export function assembleReport1214Input({
           `Form 1214 cannot be generated for ${year}: supported tax years are ${supportedTaxYears().join(', ')}`,
         ),
       ],
+      amounts: [],
     };
   }
 
-  const mappingIssues: Report1214IssueProto[] = [];
+  const mappingIssues: Report1214IssueProto[] = [...(taxData?.issues ?? [])];
   const company = assembleCompany(business, adminBusiness, profile.company, mappingIssues);
   const declarations = assembleDeclarations(profile.declarations, mappingIssues);
-  const amounts = assembleAmounts(year, profile.amountOverrides, mappingIssues);
+  const computed = computeMainFormAmounts({ year, tax: taxData?.tax ?? null, profile });
+  mappingIssues.push(...computed.issues);
+  const { amounts, rows } = assembleAmounts(
+    year,
+    computed.amounts,
+    profile.amountOverrides,
+    mappingIssues,
+  );
 
   const bankAccount = bankAccountToGql(profile.bankAccount) ?? undefined;
   const input: Report1214Input = compact({
@@ -401,7 +446,72 @@ export function assembleReport1214Input({
     shareholders: shareholders.map(shareholderToInput),
     rdInvestments: nonEmptyList(profile.rdInvestments),
   });
-  return { input, mappingIssues };
+  return { input, mappingIssues, amounts: rows };
+}
+
+/** The books of a tax year for the computed amounts, or `null` with the reason as an issue. */
+export interface Report1214TaxDataResult {
+  tax: AnnualTaxData | null;
+  issues: Report1214IssueProto[];
+}
+
+export interface ResolveReport1214TaxDataParams {
+  year: number;
+  ownerId: string;
+  /** Whether `ownerId` is the session's active business (see `isActiveReport1214Owner`). */
+  isActiveOwner: () => Promise<boolean>;
+  /** Loads the books (`loadAnnualTaxData`). */
+  load: () => Promise<AnnualTaxData>;
+}
+
+/**
+ * Loads the books of a tax year for the computed amounts, when it is safe and useful:
+ *
+ * - Nothing is loaded (and nothing reported) when no code of the year needs the books.
+ * - The year must have a generator layout, and the owner must be the session's active business:
+ *   the tax computation reads the session's settings, so another owner's books would be mixed
+ *   with them. Otherwise a `computationSkipped` warning says why.
+ * - A failing load or tax computation (e.g. no corporate tax rate for the year) is a
+ *   `computationFailed` warning; the report goes on with the overrides only.
+ */
+export async function resolveReport1214TaxData({
+  year,
+  ownerId,
+  isActiveOwner,
+  load,
+}: ResolveReport1214TaxDataParams): Promise<Report1214TaxDataResult> {
+  if (!supportedTaxYears().includes(year) || !codeSourcesNeedTaxData(year)) {
+    return { tax: null, issues: [] };
+  }
+  if (!(await isActiveOwner())) {
+    return {
+      tax: null,
+      issues: [
+        mappingIssue(
+          REPORT_1214_MAPPING_RULES.computationSkipped,
+          'warning',
+          'amounts',
+          `Amounts were not computed from the books: business ${ownerId} is not the active business. Switch to it to compute them, or set them in the 1214 profile`,
+        ),
+      ],
+    };
+  }
+  try {
+    return { tax: await load(), issues: [] };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      tax: null,
+      issues: [
+        mappingIssue(
+          REPORT_1214_MAPPING_RULES.computationFailed,
+          'warning',
+          'amounts',
+          `Amounts could not be computed from the books of ${year} (${reason}): set them in the 1214 profile`,
+        ),
+      ],
+    };
+  }
 }
 
 /**
@@ -414,11 +524,17 @@ export async function buildReport1214Input(
   ownerId: string,
   year: number,
 ): Promise<Report1214BuildResult> {
-  const [business, adminBusiness, profileRow, shareholderRows] = await Promise.all([
+  const [business, adminBusiness, profileRow, shareholderRows, taxData] = await Promise.all([
     injector.get(BusinessesProvider).getBusinessByIdLoader.load(ownerId),
     injector.get(AdminBusinessesProvider).getAdminBusinessByIdLoader.load(ownerId),
     injector.get(Report1214ProfileProvider).getProfileByOwnerAndYearLoader.load({ ownerId, year }),
     injector.get(ShareholdersProvider).getShareholdersByOwnerAndYearLoader.load({ ownerId, year }),
+    resolveReport1214TaxData({
+      year,
+      ownerId,
+      isActiveOwner: () => isActiveReport1214Owner(injector, ownerId),
+      load: () => loadAnnualTaxData(injector, ownerId, year),
+    }),
   ]);
   return assembleReport1214Input({
     year,
@@ -426,5 +542,6 @@ export async function buildReport1214Input(
     adminBusiness: adminBusiness ?? null,
     profile: mapReport1214ProfileRow(profileRow, ownerId, year),
     shareholders: shareholderRows.map(mapShareholderRow),
+    taxData,
   });
 }

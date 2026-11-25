@@ -103,6 +103,34 @@ const VALIDATION_QUERY = /* GraphQL */ `
   }
 `;
 
+const AMOUNTS_QUERY = /* GraphQL */ `
+  query Report1214AmountsTest($ownerId: UUID, $year: Int!) {
+    report1214(ownerId: $ownerId, year: $year) {
+      amounts {
+        code
+        amount
+        source
+        computedAmount
+        label
+      }
+      validation {
+        isValid
+        errors {
+          ruleId
+          path
+          severity
+        }
+        warnings {
+          ruleId
+        }
+      }
+      file {
+        encodedContent
+      }
+    }
+  }
+`;
+
 const UPDATE_PROFILE_MUTATION = /* GraphQL */ `
   mutation Report1214ReportUpdateProfile(
     $ownerId: UUID
@@ -136,6 +164,18 @@ type Report = {
   shareholders: Array<{ idNumber: string }>;
   validation: { isValid: boolean; errors: Issue[]; warnings: Array<{ ruleId: string }> };
   file: { fileName: string; encodedContent: string; omittedZeroCodes: string[] } | null;
+};
+
+type AmountRow = {
+  code: string;
+  amount: number;
+  source: 'COMPUTED' | 'OVERRIDE';
+  computedAmount: number | null;
+  label: string | null;
+};
+type AmountsReport = Pick<Report, 'validation'> & {
+  amounts: AmountRow[];
+  file: { encodedContent: string } | null;
 };
 
 type GraphQLResponse<T> = {
@@ -395,6 +435,77 @@ describe('report1214', () => {
         votingRightsPercent: 40,
       },
     ]);
+  });
+
+  it('lists the amounts: overrides, and code 165 computed from the R&D investments', async () => {
+    await updateProfile({
+      ...completeProfile,
+      rdInvestments: [
+        { companyName: 'מחקר בע"מ', investmentAmount: 1000 },
+        { companyName: 'פיתוח בע"מ', investmentAmount: 2500 },
+      ],
+    });
+    await setShareholders(shareholdersInput);
+
+    const { report1214: report } = await execute<{ report1214: AmountsReport }>(AMOUNTS_QUERY, {
+      ownerId: OWNER_ID,
+      year: YEAR,
+    });
+    const override = (code: string, amount: number): AmountRow => ({
+      code,
+      amount,
+      source: 'OVERRIDE',
+      computedAmount: null,
+      label: null,
+    });
+    expect(report.amounts).toEqual([
+      override('018', 4),
+      override('072', 0),
+      override('081', 1000),
+      override('094', 0),
+      {
+        code: '165',
+        amount: 3500,
+        source: 'COMPUTED',
+        computedAmount: 3500,
+        label: 'סך השקעות בחברות מו"פ',
+      },
+      override('263', 1),
+    ]);
+    expect(report.validation.errors).toEqual([]);
+    // no code needs the books yet, so nothing is loaded or skipped
+    expect(
+      report.validation.warnings.filter(
+        ({ ruleId }) => ruleId.startsWith('accounter.amounts.') || ruleId.startsWith('main.rd.'),
+      ),
+    ).toEqual([]);
+
+    const parsed = parse1214(new Uint8Array(Buffer.from(report.file!.encodedContent, 'base64')));
+    expect(parsed.report.amounts).toMatchObject({ '165': 3500 });
+    expect(parsed.report.rdInvestments).toHaveLength(2);
+  });
+
+  it('lets an override replace the computed amount, and still shows the computed one', async () => {
+    await updateProfile({
+      ...completeProfile,
+      rdInvestments: [{ companyName: 'מחקר בע"מ', investmentAmount: 1000 }],
+      amountOverrides: [...completeProfile.amountOverrides, { code: '165', amount: 1200 }],
+    });
+    await setShareholders(shareholdersInput);
+
+    const { report1214: report } = await execute<{ report1214: AmountsReport }>(AMOUNTS_QUERY, {
+      ownerId: OWNER_ID,
+      year: YEAR,
+    });
+    expect(report.amounts.find(row => row.code === '165')).toEqual({
+      code: '165',
+      amount: 1200,
+      source: 'OVERRIDE',
+      computedAmount: 1000,
+      label: 'סך השקעות בחברות מו"פ',
+    });
+    // the generator flags the override that disagrees with the investments
+    expect(report.validation.warnings.map(issue => issue.ruleId)).toContain('main.rd.total');
   });
 
   it('withholds the file while validation has errors', async () => {
