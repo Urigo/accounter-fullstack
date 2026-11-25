@@ -22,6 +22,7 @@ COPY packages/kraken-scraper/package.json ./packages/kraken-scraper/
 COPY packages/migrations/package.json ./packages/migrations/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY packages/modern-poalim-scraper/package.json ./packages/modern-poalim-scraper/
+COPY packages/opcn1214-generator/package.json ./packages/opcn1214-generator/
 COPY packages/payper-mesh/package.json ./packages/payper-mesh/
 COPY packages/pcn874-generator/package.json ./packages/pcn874-generator/
 COPY packages/scraper-app/package.json ./packages/scraper-app/
