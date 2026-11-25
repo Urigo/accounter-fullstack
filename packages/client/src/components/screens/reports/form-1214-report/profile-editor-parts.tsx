@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '../../../ui/select.js';
 import { FORM_1214_PHONE_PREFIXES, type TriState } from './profile-forms.js';
+import { useForm1214Report } from './report-context.js';
 
 /** `Select` cannot hold an empty value: this stands for "not set". */
 export const UNSET_OPTION = '__unset__';
@@ -51,6 +52,18 @@ export function useResetAfterSave<T extends FieldValues>(
   );
   const cancel = useCallback(() => form.reset(defaults), [defaults, form]);
   return { markSaved, cancel };
+}
+
+/**
+ * Tells the page whether this editor holds unsaved edits (so a year change asks first), and that
+ * it no longer does once it unmounts.
+ */
+export function useReportDirtyState(section: string, dirty: boolean): void {
+  const { setDirty } = useForm1214Report();
+  useEffect(() => {
+    setDirty(section, dirty);
+  }, [section, dirty, setDirty]);
+  useEffect(() => () => setDirty(section, false), [section, setDirty]);
 }
 
 /** A text field that may be left empty. */
@@ -222,8 +235,12 @@ export function EditorActions({
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
-      <div className="flex items-center justify-end gap-2">
-        {isDirty && <Badge variant="outline">Unsaved changes</Badge>}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {isDirty ? (
+          <Badge variant="outline">Unsaved changes</Badge>
+        ) : (
+          <span className="text-sm text-muted-foreground">No changes to save</span>
+        )}
         <Button type="button" variant="outline" disabled={!isDirty || saving} onClick={onCancel}>
           Cancel
         </Button>
