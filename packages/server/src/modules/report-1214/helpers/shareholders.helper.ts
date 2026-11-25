@@ -93,7 +93,8 @@ const AMOUNT_FIELDS = [
 
 /**
  * Validates and normalizes the shareholder rows of a `setShareholders` call, before anything
- * reaches the database. Errors are `BAD_USER_INPUT` and name the row by its index in the list.
+ * reaches the database. Errors are `BAD_USER_INPUT` and name the row by its 1-based position, as
+ * the UI numbers rows.
  *
  * Only storage-level rules are checked here (at most 99 rows, ID format, a name of at most 200
  * characters, percentages within 0-100 with at most 4 decimals, no repeated ID number). Linked
@@ -112,7 +113,7 @@ export function normalizeShareholderInputs(
   const firstRowByIdNumber = new Map<string, number>();
 
   return rows.map((row, index) => {
-    const label = `Shareholder row ${index}`;
+    const label = `Shareholder row ${index + 1}`;
 
     const idNumber = normalizeIdNumber(row.idNumber);
     if (!idNumber) {
@@ -122,7 +123,7 @@ export function normalizeShareholderInputs(
       const firstIndex = firstRowByIdNumber.get(idNumber);
       if (firstIndex !== undefined) {
         throw badUserInput(
-          `${label}: ID number ${idNumber} is already used by shareholder row ${firstIndex}`,
+          `${label}: ID number ${idNumber} is already used by shareholder row ${firstIndex + 1}`,
         );
       }
       firstRowByIdNumber.set(idNumber, index);
