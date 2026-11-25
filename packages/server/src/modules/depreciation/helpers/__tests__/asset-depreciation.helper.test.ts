@@ -97,6 +97,19 @@ describe('calculateAssetYear without disposals', () => {
     });
   });
 
+  it('shows a fully depreciated asset at its full cost, with no residual value', () => {
+    const asset: AssetDepreciationInput = {
+      cost: 10_000,
+      depreciationRate: 25,
+      // the engine ends it on 2022-12-31: activation + 4 years − 1 day
+      activationDate: d('2019-01-01'),
+    };
+    const result = calculateAssetYear(asset, [], 2025);
+    expect(result.openingAccumulatedDepreciation).toBe(10_000);
+    expect(result.yearDepreciation).toBe(0);
+    expect(result.netBookValue).toBe(0);
+  });
+
   it('ignores disposals dated after the requested year', () => {
     const asset: AssetDepreciationInput = {
       cost: 100_000,
@@ -246,6 +259,31 @@ describe('calculateAssetYear with sales and write-offs', () => {
       gainLoss: 0,
     });
     expect(result.closingCost).toBe(0);
+  });
+
+  it('sells a fully depreciated asset after its end year at a gain equal to the proceeds', () => {
+    const oldAsset: AssetDepreciationInput = {
+      cost: 10_000,
+      depreciationRate: 25,
+      // the engine ends it on 2022-12-31: activation + 4 years − 1 day
+      activationDate: d('2019-01-01'),
+    };
+    const sale: AssetDisposalInput = {
+      id: 'sale',
+      disposalDate: d('2025-06-30'),
+      disposedCost: 10_000,
+      proceeds: 1500,
+    };
+    const result = calculateAssetYear(oldAsset, [sale], 2025);
+    expect(result.openingAccumulatedDepreciation).toBe(10_000);
+    expect(result.yearDepreciation).toBe(0);
+    expect(result.disposals[0]).toMatchObject({
+      accumulatedDepreciation: 10_000,
+      netBookValue: 0,
+      gainLoss: 1500,
+    });
+    expect(result.closingCost).toBe(0);
+    expect(result.netBookValue).toBe(0);
   });
 
   it('handles a disposal in the activation year', () => {

@@ -31,7 +31,6 @@ function record(
 ): IGetDepreciationRecordsByDatesResult {
   // asserted: the row type follows the table's columns (`d.*`), which differ between stacked PRs
   return {
-    category_percentage: PERCENTAGES[overrides.category],
     charge_id: `charge-${overrides.id}`,
     currency: null,
     owner_id: OWNER_ID,
