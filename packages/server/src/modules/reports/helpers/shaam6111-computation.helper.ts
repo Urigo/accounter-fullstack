@@ -564,8 +564,8 @@ export function isCorporateRegistrationNumber(registrationNumber?: string | null
 /**
  * The business's withholding tax (ניכויים) file number, as the 6111 and 1214 reports read it from
  * the admin business: the first of `company_tax_id` and `tax_nikuim_pinkas_number` that is set
- * (trimmed), is a valid Israeli ID and is not the company's own number (`vatNumber`), since the
- * withholding file is a separate 9-digit file. `undefined` when none qualifies.
+ * (trimmed), is a valid Israeli ID and is not the company's own number (`vatNumber`, also
+ * trimmed), since the withholding file is a separate 9-digit file. `undefined` when none qualifies.
  */
 export function selectWithholdingTaxFileNumber(
   adminBusiness:
@@ -577,7 +577,8 @@ export function selectWithholdingTaxFileNumber(
     | undefined,
   vatNumber: string | null | undefined,
 ): string | undefined {
+  const ownNumber = vatNumber?.trim();
   return [adminBusiness?.company_tax_id, adminBusiness?.tax_nikuim_pinkas_number]
     .map(id => id?.trim())
-    .find(id => !!id && id !== vatNumber && isValidIsraeliID(id));
+    .find(id => !!id && id !== ownNumber && isValidIsraeliID(id));
 }
