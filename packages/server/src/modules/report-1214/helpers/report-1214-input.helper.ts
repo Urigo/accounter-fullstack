@@ -15,6 +15,7 @@ import type {
   IGetAdminBusinessesByIdsResult,
   IGetBusinessesByIdsResult,
 } from '../../financial-entities/types.js';
+import { selectWithholdingTaxFileNumber } from '../../reports/helpers/shaam6111-computation.helper.js';
 import { Report1214ProfileProvider } from '../providers/report-1214-profile.provider.js';
 import { ShareholdersProvider } from '../providers/shareholders.provider.js';
 import type {
@@ -26,13 +27,13 @@ import type {
 import {
   amountOverrideCodes,
   bankAccountToGql,
+  compact,
+  emptyToNull,
   mapReport1214ProfileRow,
-  REPORT_1214_PHONE_PREFIXES,
+  PHONE_PREFIX_SET,
+  type AssertNever,
 } from './report-1214-profile.helper.js';
 import { mapShareholderRow } from './shareholders.helper.js';
-
-/** `true` when type `T` is `never`; used for compile-time drift checks against the generator. */
-type AssertNever<T extends never> = T;
 
 /**
  * Rule IDs of the issues raised while building the generator input (before `validate1214` runs).
@@ -53,6 +54,8 @@ export const REPORT_1214_MAPPING_RULES = {
   declarationMissing: 'accounter.declarations.missing',
   /** warning: a stored amount override of a code the report derives was left out. */
   derivedOverrideDropped: 'accounter.amounts.derivedOverrideDropped',
+  /** warning: the stored bank account lacks a member, so no bank account is reported. */
+  bankAccountIncomplete: 'accounter.bankAccount.incomplete',
 } as const;
 
 /**
@@ -86,17 +89,16 @@ const REQUIRED_DECLARATION_LABELS: Record<(typeof REQUIRED_DECLARATION_KEYS)[num
   tookReportablePosition: 'whether the company took a reportable position (1030)',
 };
 
-const PHONE_PREFIX_SET: ReadonlySet<string> = new Set(REPORT_1214_PHONE_PREFIXES);
-
 /**
  * Parses an Israeli phone number as people type it into the `{ prefix, number }` form 1214 wants.
  * Accepts `+972` / `972` / `00972` country codes (with or without the trunk 0 after them), spaces,
- * dashes, dots and parentheses. The prefix must be one form 1214 allows (2 digits for landlines,
+ * dashes, dots, parentheses and invisible format characters (bidi marks pasted with Hebrew text).
+ * The prefix must be one form 1214 allows (2 digits for landlines,
  * 3 for mobile and 07x numbers), followed by exactly 7 digits. Anything else (extensions, foreign
  * numbers, other prefixes) is `null`.
  */
 export function parseIsraeliPhone(raw: string | null | undefined): Phone | null {
-  const trimmed = raw?.trim();
+  const trimmed = raw?.replace(/\p{Cf}/gu, '').trim();
   if (!trimmed || !/^\+?[\d\s\-.()]+$/.test(trimmed)) {
     return null;
   }
@@ -142,21 +144,14 @@ function text(value: string | null | undefined): string | undefined {
   return value?.trim() || undefined;
 }
 
-/** `undefined` for an empty object, the object otherwise. */
+/** `undefined` for an empty (unset) block, the block otherwise. */
 function nonEmpty<T extends object>(value: T): T | undefined {
-  return Object.keys(value).length === 0 ? undefined : value;
+  return emptyToNull(value) ?? undefined;
 }
 
 /** `undefined` for an empty list, the list otherwise. */
 function nonEmptyList<T>(value: T[]): T[] | undefined {
   return value.length === 0 ? undefined : value;
-}
-
-/** Drops the `undefined` members, so the input carries only what is set. */
-function compact<T extends object>(value: T): T {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, member]) => member !== undefined),
-  ) as T;
 }
 
 function mappingIssue(
@@ -200,9 +195,8 @@ export type Report1214BusinessIdentity = Pick<
 >;
 
 /** The admin-business columns the report takes the withholding file from. */
-export type Report1214AdminBusinessIdentity = Pick<
-  IGetAdminBusinessesByIdsResult,
-  'company_tax_id'
+export type Report1214AdminBusinessIdentity = Partial<
+  Pick<IGetAdminBusinessesByIdsResult, 'company_tax_id' | 'tax_nikuim_pinkas_number'>
 >;
 
 export interface AssembleReport1214InputParams {
@@ -236,7 +230,11 @@ function assembleCompany(
   }
 
   const booksAddress = business
-    ? composeAddress(business.address_hebrew || business.address, business.city, business.zip_code)
+    ? composeAddress(
+        text(business.address_hebrew) ?? text(business.address),
+        business.city,
+        business.zip_code,
+      )
     : undefined;
   const mailingAddress = overrides.mailingAddress ?? booksAddress;
   const businessAddress = overrides.businessAddress ?? booksAddress;
@@ -283,7 +281,9 @@ function assembleCompany(
     fileNumber: fileNumber!,
     registeredName:
       overrides.registeredName ?? text(business?.hebrew_name) ?? text(business?.name) ?? '',
-    withholdingFileNumber: overrides.withholdingFileNumber ?? text(adminBusiness?.company_tax_id),
+    withholdingFileNumber:
+      overrides.withholdingFileNumber ??
+      selectWithholdingTaxFileNumber(adminBusiness, business?.vat_number),
     vatFileNumber: text(business?.vat_number),
     occupationDescription: overrides.occupationDescription,
     mailingAddress: mailingAddress!,
@@ -355,7 +355,11 @@ function assembleAmounts(
  * identity, the 1214 profile and the shareholders. Amounts come only from the profile overrides.
  *
  * Never invents data: what is missing is reported as a mapping issue (rule IDs in
- * `REPORT_1214_MAPPING_RULES`) and left out, so `validate1214` reports the rest. The only filler
+ * `REPORT_1214_MAPPING_RULES`) and left out, so `validate1214` reports the rest. A missing required
+ * identity member (file number, address, phone) leaves the input short of the generator's shape:
+ * `validate1214` then stops at its `input.shape` stage, so the form's other rules only run in full
+ * once the identity is complete (the resolver drops the `input.shape` issues that repeat a mapping
+ * error). The only filler
  * is `false` for unanswered required declarations, each already an error that blocks the file.
  * A tax year without a generator layout yields `input: null`.
  */
@@ -386,6 +390,16 @@ export function assembleReport1214Input({
   const amounts = assembleAmounts(year, profile.amountOverrides, mappingIssues);
 
   const bankAccount = bankAccountToGql(profile.bankAccount) ?? undefined;
+  if (!bankAccount && Object.keys(profile.bankAccount).length > 0) {
+    mappingIssues.push(
+      mappingIssue(
+        REPORT_1214_MAPPING_RULES.bankAccountIncomplete,
+        'warning',
+        'bankAccount',
+        'The stored bank account lacks its bank, branch or account number, so no changed bank account is reported: complete it or clear it in the 1214 profile',
+      ),
+    );
+  }
   const input: Report1214Input = compact({
     taxYear: year as SupportedTaxYear,
     company,

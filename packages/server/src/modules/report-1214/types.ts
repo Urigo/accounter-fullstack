@@ -105,6 +105,7 @@ export interface Report1214IssueProto {
   path: string;
   code?: string;
   recordType?: string;
+  recordIndex?: number;
   specRef?: { page: number; note?: string };
 }
 
