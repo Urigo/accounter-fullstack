@@ -221,6 +221,13 @@ import migration_2026_10_25T12_00_00_provider_credentials_business_id from './ac
 import migration_2026_11_18T12_00_00_poalim_swift_document_type_code from './actions/2026-11-18T12-00-00.poalim-swift-document-type-code.js';
 import migration_2026_11_22T12_00_00_add_poalim_deposit_tax_events_table from './actions/2026-11-22T12-00-00.add-poalim-deposit-tax-events-table.js';
 import migration_2026_11_22T13_00_00_bank_deposit_withholding_tax_category from './actions/2026-11-22T13-00-00.bank-deposit-withholding-tax-category.js';
+import migration_2026_11_22T14_00_00_depreciation_disposals from './actions/2026-11-22T14-00-00.depreciation-disposals.js';
+import migration_2026_11_22T14_30_00_rls_depreciation_disposals from './actions/2026-11-22T14-30-00.rls-depreciation-disposals.js';
+import migration_2026_11_24T10_00_00_depreciation_refund_mode_and_correction_category from './actions/2026-11-24T10-00-00.depreciation-refund-mode-and-correction-category.js';
+import migration_2026_11_24T10_30_00_depreciation_category_percentage_100 from './actions/2026-11-24T10-30-00.depreciation-category-percentage-100.js';
+import migration_2026_11_24T11_00_00_depreciation_local_amount from './actions/2026-11-24T11-00-00.depreciation-local-amount.js';
+import migration_2026_11_24T11_30_00_depreciation_disposal_original_amount from './actions/2026-11-24T11-30-00.depreciation-disposal-original-amount.js';
+import migration_2026_11_24T12_00_00_depreciation_asset_tax_category from './actions/2026-11-24T12-00-00.depreciation-asset-tax-category.js';
 import migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders from './actions/2026-11-25T12-00-00.report-1214-profile-and-shareholders.js';
 import { runMigrations } from './pg-migrator.js';
 
@@ -447,6 +454,13 @@ export const MIGRATIONS = [
   migration_2026_11_18T12_00_00_poalim_swift_document_type_code,
   migration_2026_11_22T12_00_00_add_poalim_deposit_tax_events_table,
   migration_2026_11_22T13_00_00_bank_deposit_withholding_tax_category,
+  migration_2026_11_22T14_00_00_depreciation_disposals,
+  migration_2026_11_22T14_30_00_rls_depreciation_disposals,
+  migration_2026_11_24T10_00_00_depreciation_refund_mode_and_correction_category,
+  migration_2026_11_24T10_30_00_depreciation_category_percentage_100,
+  migration_2026_11_24T11_00_00_depreciation_local_amount,
+  migration_2026_11_24T11_30_00_depreciation_disposal_original_amount,
+  migration_2026_11_24T12_00_00_depreciation_asset_tax_category,
   migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders,
 ] as const;
 

@@ -20,7 +20,18 @@ export default gql`
     id: UUID!
     chargeId: UUID!
     charge: Charge!
+    " the asset's cost, in the currency it was paid in "
     amount: FinancialAmount!
+    " the asset's cost basis in the local currency: the override when set, else the amount converted at the activation date's rate. Null when the record has no amount "
+    localAmount: FinancialAmount
+    " the local cost basis override, if set "
+    localAmountOverride: Float
+    " the asset's own cost account, if set; otherwise the asset account is the tax category of the charge that bought it "
+    assetTaxCategory: TaxCategory
+    " the rate the amount was converted at; null for local-currency records and overrides "
+    exchangeRate: Float
+    " the date of the rate the amount was converted at; null for local-currency records and overrides "
+    exchangeRateDate: TimelessDate
     activationDate: TimelessDate!
     category: DepreciationCategory!
     type: DepreciationType
@@ -30,6 +41,7 @@ export default gql`
   type DepreciationCategory {
     id: UUID!
     name: String!
+    " annual rate in percent; 0 for a category that is not depreciated "
     percentage: Float!
   }
 
@@ -74,6 +86,10 @@ export default gql`
     chargeId: UUID!
     amount: Float
     currency: Currency
+    " cost basis override in the local currency, for an asset paid for in a foreign currency "
+    localAmount: Float
+    " the asset's cost account; defaults to the tax category of the charge that bought it. Set it when one charge buys several assets "
+    assetTaxCategoryId: UUID
     activationDate: TimelessDate!
     type: DepreciationType
     categoryId: UUID!
@@ -88,6 +104,10 @@ export default gql`
     chargeId: UUID
     amount: Float
     currency: Currency
+    " cost basis override in the local currency; null clears it, leaving it out keeps it "
+    localAmount: Float
+    " the asset's cost account; null clears it (back to the charge's tax category), leaving it out keeps it "
+    assetTaxCategoryId: UUID
     activationDate: TimelessDate
     type: DepreciationType
     categoryId: UUID
@@ -99,6 +119,7 @@ export default gql`
   " input variables for insertDepreciationCategory "
   input InsertDepreciationCategoryInput {
     name: String!
+    " annual rate in percent, 0 to 100; 0 for a category that is not depreciated "
     percentage: Float!
   }
 
@@ -109,6 +130,7 @@ export default gql`
   input UpdateDepreciationCategoryInput {
     id: UUID!
     name: String
+    " annual rate in percent, 0 to 100; 0 for a category that is not depreciated "
     percentage: Float
   }
 
