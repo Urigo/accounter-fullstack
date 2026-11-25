@@ -52,8 +52,17 @@ const USER_ID = makeUUID('user', 'report-1214-shareholders-user');
 /** A second tenant, with its own user, that must not see the admin's shareholders */
 const OTHER_OWNER_ID = makeUUID('business', 'report-1214-shareholders-other-owner');
 const OTHER_USER_ID = makeUUID('user', 'report-1214-shareholders-other-user');
+/** Owner of the suite's owner, but only an `employee` of the other owner */
+const WEAK_MEMBER_USER_ID = makeUUID('user', 'report-1214-shareholders-weak-member');
 /** A business in the admin's books, linkable as a shareholder's financial entity */
 const LINKED_BUSINESS_ID = makeUUID('business', 'report-1214-shareholders-linked');
+/** Businesses in the owner's books that the merge and delete tests consume */
+const MERGE_SOURCE_ID = makeUUID('business', 'report-1214-shareholders-merge-source');
+const MERGE_TARGET_ID = makeUUID('business', 'report-1214-shareholders-merge-target');
+const DELETED_BUSINESS_ID = makeUUID('business', 'report-1214-shareholders-deleted');
+const DISPOSABLE_BUSINESS_IDS = [MERGE_SOURCE_ID, MERGE_TARGET_ID, DELETED_BUSINESS_ID];
+/** Only read, to copy its admin context settings: never written or linked to */
+const SEEDED_ADMIN_ID = makeUUID('business', 'Admin Business');
 
 const YEAR = 2091;
 const OTHER_YEAR = 2092;
@@ -146,6 +155,7 @@ type GraphQLResponse<T> = {
 let db: TestDatabase;
 let yoga: { fetch: (url: string, init: RequestInit) => Response | Promise<Response> };
 let otherYoga: typeof yoga;
+let weakMemberYoga: typeof yoga;
 
 async function executeRaw<T>(
   query: string,
@@ -206,6 +216,21 @@ async function withSuperuserClient<T>(fn: (client: PoolClient) => Promise<T>): P
   }
 }
 
+async function removeDisposableBusinesses() {
+  await withSuperuserClient(async client => {
+    await client.query(
+      `UPDATE ${qualifyTable('financial_entities')} SET owner_id = NULL WHERE id = ANY($1)`,
+      [DISPOSABLE_BUSINESS_IDS],
+    );
+    await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = ANY($1)`, [
+      DISPOSABLE_BUSINESS_IDS,
+    ]);
+    await client.query(`DELETE FROM ${qualifyTable('financial_entities')} WHERE id = ANY($1)`, [
+      DISPOSABLE_BUSINESS_IDS,
+    ]);
+  });
+}
+
 async function ensureBusiness(client: PoolClient, id: string, ownerId: string, name: string) {
   await client.query(
     `INSERT INTO ${qualifyTable('financial_entities')} (id, name, type, owner_id)
@@ -257,6 +282,8 @@ beforeAll(async () => {
   db = new TestDatabase();
   await db.connect();
   await db.ensureLatestSchema();
+  // the seeded admin context is only read below, as a template for the owner's own
+  await db.seedAdmin();
   await ensureRlsRole(db.getPool(), {
     // the role is per worker and dropped with its grants in afterAll (dropRlsRole)
     grants: [{ table: 'shareholders', privileges: 'SELECT, INSERT, DELETE' }],
@@ -289,6 +316,20 @@ beforeAll(async () => {
     );
 
     await ensureBusiness(client, LINKED_BUSINESS_ID, OWNER_ID, 'Shareholders linked holdco');
+
+    // mergeBusinesses / deleteBusiness read the active business's admin context: give the owner
+    // its own user_context row, a copy of the seeded admin's settings under the owner's id
+    await client.query(
+      `INSERT INTO ${qualifyTable('user_context')}
+       SELECT (jsonb_populate_record(
+         NULL::${qualifyTable('user_context')},
+         to_jsonb(uc) || jsonb_build_object('owner_id', $1::uuid)
+       )).*
+       FROM ${qualifyTable('user_context')} uc
+       WHERE uc.owner_id = $2
+       ON CONFLICT (owner_id) DO NOTHING`,
+      [OWNER_ID, SEEDED_ADMIN_ID],
+    );
   });
 
   const pool = db.getPool();
@@ -302,6 +343,7 @@ beforeAll(async () => {
     });
   yoga = yogaFor(USER_ID);
   otherYoga = yogaFor(OTHER_USER_ID);
+  weakMemberYoga = yogaFor(WEAK_MEMBER_USER_ID);
 });
 
 beforeEach(removeShareholders);
@@ -311,9 +353,13 @@ afterAll(async () => {
     return;
   }
   await removeShareholders();
+  await removeDisposableBusinesses();
   await withSuperuserClient(async client => {
+    await client.query(`DELETE FROM ${qualifyTable('user_context')} WHERE owner_id = $1`, [
+      OWNER_ID,
+    ]);
     await client.query(`DELETE FROM ${qualifyTable('business_users')} WHERE user_id = ANY($1)`, [
-      [USER_ID, OTHER_USER_ID],
+      [USER_ID, OTHER_USER_ID, WEAK_MEMBER_USER_ID],
     ]);
     await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = ANY($1)`, [
       [OWNER_ID, OTHER_OWNER_ID],
@@ -583,6 +629,50 @@ describe('report 1214 shareholders', () => {
       expect((await getShareholders(YEAR)).map(s => s.fullName)).toEqual(['Dana Cohen']);
     });
 
+    it("refuses another business's 1214 data to a member whose role there is too weak", async () => {
+      // business_owner of the suite's owner (the active business, most recent) and only an
+      // employee of the other owner: the directive passes on the active business's role
+      await withSuperuserClient(async client => {
+        await client.query(
+          `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id, updated_at)
+           VALUES ($1, $2, 'employee', now() - interval '1 day'),
+                  ($1, $3, 'business_owner', now())
+           ON CONFLICT DO NOTHING`,
+          [WEAK_MEMBER_USER_ID, OTHER_OWNER_ID, OWNER_ID],
+        );
+      });
+      await setShareholders(YEAR, [dana]);
+
+      const read = await expectError(
+        SHAREHOLDERS_QUERY,
+        { ownerId: OTHER_OWNER_ID, year: YEAR },
+        weakMemberYoga,
+      );
+      expect(read.code).toBe('FORBIDDEN');
+      expect(read.message).toBe(
+        `Your role in business ${OTHER_OWNER_ID} does not allow access to its 1214 data`,
+      );
+
+      const write = await expectError(
+        SET_SHAREHOLDERS_MUTATION,
+        { ownerId: OTHER_OWNER_ID.toUpperCase(), year: YEAR, shareholders: [] },
+        weakMemberYoga,
+      );
+      expect(write.code).toBe('FORBIDDEN');
+      expect(write.message).toMatch(/^Your role in business /);
+
+      // their own business, explicitly or by default, still works
+      for (const ownerId of [OWNER_ID, null]) {
+        const own = await executeRaw<{ shareholders: Shareholder[] }>(
+          SHAREHOLDERS_QUERY,
+          { ownerId, year: YEAR },
+          weakMemberYoga,
+        );
+        expect(own.errors).toBeUndefined();
+        expect(own.data?.shareholders.map(s => s.fullName)).toEqual(['Dana Cohen']);
+      }
+    });
+
     it('refuses a write to a business of the user other than the active one', async () => {
       // A second, older membership: the admin business stays the active (most recent) one
       await withSuperuserClient(client =>
@@ -699,6 +789,61 @@ describe('report 1214 shareholders', () => {
       }
 
       expect((await getShareholders(YEAR)).map(s => s.fullName)).toEqual(['Dana Cohen']);
+    });
+  });
+  describe('linked business lifecycle', () => {
+    beforeEach(async () => {
+      await removeDisposableBusinesses();
+      await withSuperuserClient(async client => {
+        for (const [id, name] of [
+          [MERGE_SOURCE_ID, 'Shareholders merge source'],
+          [MERGE_TARGET_ID, 'Shareholders merge target'],
+          [DELETED_BUSINESS_ID, 'Shareholders deleted holdco'],
+        ]) {
+          await ensureBusiness(client, id, OWNER_ID, name);
+        }
+        // mergeBusinesses parses the target's suggestion data
+        await client.query(
+          `UPDATE ${qualifyTable('businesses')} SET suggestion_data = '{}'::jsonb WHERE id = ANY($1)`,
+          [DISPOSABLE_BUSINESS_IDS],
+        );
+      });
+    });
+
+    it('moves the link to the target when the linked business is merged away', async () => {
+      await setShareholders(YEAR, [{ ...holdco, businessId: MERGE_SOURCE_ID }]);
+
+      await execute(
+        /* GraphQL */ `
+          mutation Report1214MergeLinkedBusiness($target: UUID!, $sources: [UUID!]!) {
+            mergeBusinesses(targetBusinessId: $target, businessIdsToMerge: $sources) {
+              id
+            }
+          }
+        `,
+        { target: MERGE_TARGET_ID, sources: [MERGE_SOURCE_ID] },
+      );
+
+      const [shareholder] = await getShareholders(YEAR);
+      expect(shareholder.businessId).toBe(MERGE_TARGET_ID);
+      expect(shareholder.business?.id).toBe(MERGE_TARGET_ID);
+    });
+
+    it('unlinks the shareholder when the linked business is deleted', async () => {
+      await setShareholders(YEAR, [{ ...holdco, businessId: DELETED_BUSINESS_ID }]);
+
+      const { deleteBusiness } = await execute<{ deleteBusiness: boolean }>(
+        /* GraphQL */ `
+          mutation Report1214DeleteLinkedBusiness($businessId: UUID!) {
+            deleteBusiness(businessId: $businessId)
+          }
+        `,
+        { businessId: DELETED_BUSINESS_ID },
+      );
+      expect(deleteBusiness).toBe(true);
+
+      const [shareholder] = await getShareholders(YEAR);
+      expect(shareholder).toMatchObject({ fullName: 'Holdco Ltd', businessId: null, business: null });
     });
   });
 });

@@ -96,6 +96,7 @@ describe('loadAnnualTaxData', () => {
     expect(data.profitLoss.revenue.amount).toBe(5000);
     expect(data.profitLoss.profitBeforeTax.amount).toBe(4100);
     expect(data.profitLossByYear.get(2025)).toBe(data.profitLoss);
+    expect([...data.profitLossByYear.keys()]).toEqual([2023, 2024, 2025]);
     expect(data.researchAndDevelopmentAddBack).toBe(900);
     expect(data.taxableCumulativeResearchAndDevelopment).toBe(-600);
   });
