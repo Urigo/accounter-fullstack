@@ -575,6 +575,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
       EXPENSES_TAX_CATEGORY_ID,
       expect.arrayContaining([expect.objectContaining({ id: 'invoice' })]),
       SUPPLIER_ID,
+      [expect.objectContaining({ id: 'invoice' })],
     );
     const [, , , , chargeEntries] = vi.mocked(generateDepreciationDisposalsLedger).mock.calls[0];
     expect(chargeEntries?.some(entry => entry.description?.startsWith('Asset disposal'))).toBe(
@@ -647,7 +648,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
       const { errors } = await generate(refundInjector());
 
       expect(errors).toEqual([
-        `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category "${EXPENSES_TAX_CATEGORY_ID}" (-5,000.00 diff): book the refund with a credit note to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty`,
+        `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category "${EXPENSES_TAX_CATEGORY_ID}" (-5,000.00 diff): book the refund with a credit-note document to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty (misc expenses don't stand in for a credit note)`,
       ]);
     });
   });

@@ -334,6 +334,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         proceedsAccountId,
         chargeEntries,
         mainBusinessId,
+        accountingLedgerEntries,
       );
       foreignCounterpartyRefunds = hasForeignCurrencyRefunds(counterpartyRefunds);
       for (const error of disposalErrors) {

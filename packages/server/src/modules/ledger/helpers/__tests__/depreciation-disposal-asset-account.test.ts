@@ -437,6 +437,52 @@ describe('a cost refund booked by its record', () => {
     expect(seller.foreign.get(Currency.Usd)).toBeCloseTo(0, 6);
   });
 
+  it('books it by the record when the tax category is the asset account a misc expense credits', async () => {
+    // the charge's tax category is A itself, which the unrelated misc expense credits in USD: not a
+    // credit note, so the refunds are still booked against the seller
+    const ledger = await generateDepreciationDisposalsLedger(
+      refunds,
+      charge,
+      makeInjector(assets, refunds),
+      ACQUISITION,
+      chargeEntries,
+      SELLER,
+      [],
+    );
+
+    expect(ledger.errors).toEqual([]);
+    expect(costReductions(ledger.entries)).toEqual([
+      [SELLER, ACQUISITION, 59_200],
+      [SELLER, ACQUISITION, 74_000],
+    ]);
+    expect(ledger.expectedProceeds).toBeNull();
+    expect(ledger.counterpartyRefunds).toEqual(refunds);
+  });
+
+  it('books it by the record when only a misc expense credits the clearing account', async () => {
+    // a USD misc expense crediting the clearing account is not a credit note either: only a
+    // document (a credit invoice) to the tax category takes the refund from there
+    const miscToClearing = [usdEntry(SELLER, CLEARING, 36_000), usdEntry(BANK, SELLER, 36_000)];
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      refunds,
+      charge,
+      makeInjector(assets, refunds),
+      CLEARING,
+      miscToClearing,
+      SELLER,
+      [],
+    );
+
+    expect(ledger.errors).toEqual([]);
+    expect(costReductions(ledger.entries)).toEqual([
+      [SELLER, ACQUISITION, 59_200],
+      [SELLER, ACQUISITION, 74_000],
+    ]);
+    expect(ledger.proceedsDisposals).toEqual([]);
+    expect(ledger.counterpartyRefunds).toEqual(refunds);
+  });
+
   it('reports a refund with neither a counterparty nor a credit note', async () => {
     const ledger = await generateDepreciationDisposalsLedger(
       refunds,
@@ -455,9 +501,9 @@ describe('a cost refund booked by its record', () => {
     expect(ledger.expectedProceeds).toBeNull();
   });
 
-  it('keeps the credit note path when the charge credits its tax category in the refund currency', async () => {
-    // a USD credit note to the clearing account: as without the charge's entries, the counterparty
-    // notwithstanding
+  it('keeps the credit note path when a document credits the tax category in the refund currency', async () => {
+    // a USD credit-note document to the clearing account: as without the charge's entries, the
+    // counterparty notwithstanding
     vi.mocked(getChargeTaxCategoryId).mockResolvedValue(null);
     const creditNote = [usdEntry(SELLER, CLEARING, 36_000), usdEntry(BANK, SELLER, 36_000)];
 
@@ -474,6 +520,8 @@ describe('a cost refund booked by its record', () => {
       CLEARING,
       creditNote,
       SELLER,
+      // the credit note is a document (a credit invoice)
+      creditNote.slice(0, 1),
     );
 
     expect(withEntries).toEqual({ ...without, counterpartyRefunds: [] });
@@ -517,6 +565,7 @@ describe('a cost refund booked by its record', () => {
       CLEARING,
       [ilsCreditNote, usdEntry(BANK, SELLER, 16_000)],
       SELLER,
+      [ilsCreditNote],
     );
 
     expect(ledger.errors).toEqual([]);

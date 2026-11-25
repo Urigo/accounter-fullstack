@@ -18,7 +18,7 @@ import { FinancialEntitiesProvider } from '../../financial-entities/providers/fi
 
 /** What a ledger error about a refund booked to the wrong account suggests */
 export const REFUND_ACCOUNT_HINT =
-  "book the refund with a credit note to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty";
+  "book the refund with a credit-note document to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty (misc expenses don't stand in for a credit note)";
 
 /** An account's name for a ledger error: its financial entity's name, else its id */
 export async function getLedgerAccountName(injector: Injector, accountId: string): Promise<string> {

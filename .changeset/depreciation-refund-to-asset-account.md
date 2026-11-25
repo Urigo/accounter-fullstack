@@ -4,11 +4,11 @@
 
 - **Two ways to book a cost refund.** A charge's disposal rows are now generated after its own
   entries, which tell, per refund currency, how the refund was booked:
-  - **by a credit note** to the charge's tax category (its entries credit the tax category in the
-    refund's currency, local for a local refund): as before, the cost reduction is moved from the
+  - **by a credit-note document** to the charge's tax category (a credit invoice crediting the tax
+    category in the refund's currency, local for a local refund): as before, the cost reduction is moved from the
     tax category to the asset account, and checked by the proceeds check, or for a foreign-currency
     refund by the in-currency check and its exchange entry;
-  - **by the refund record itself**, without such a credit note: the cost reduction is booked
+  - **by the refund record itself**, without such a document: the cost reduction is booked
     against the charge's counterparty (its main business), Dr counterparty / Cr asset account, in
     the refund's currency (the refunded amount itself for a foreign-currency refund), next to the
     depreciation correction. It settles against the money the charge receives from the
@@ -16,8 +16,11 @@
     exchange-rate difference (the refund converts at the asset's cost-basis rate) to the
     exchange-rates account. A refund with neither a credit note nor a counterparty is a ledger
     error.
+- Only documents count as a credit note: misc expenses, transactions and fees crediting the tax
+  category don't stand in for one, whatever the tax category is (the asset account included, which
+  carries the charge's other movements).
 - Booking both (a credit note crediting the asset account, and the refund record) counts the refund
   twice; the counterparty is left unbalanced, which the business balance reports.
 - Sales always take the charge's tax category; the yearly depreciation charge is unchanged.
 - The proceeds and in-currency checks name the account, and suggest booking the refund with a
-  credit note to the charge's tax category, or leaving it to the refund record.
+  credit-note document to the charge's tax category, or leaving it to the refund record.

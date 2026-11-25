@@ -266,18 +266,22 @@ export type DisposalsLedger = {
  * for events without money booked by the charge.
  *
  * `chargeEntries` are the charge's own document, transaction, fee and misc-expense entries, without
- * the disposal rows. With them, a cost refund is booked one of two ways:
- * - by a credit note: the entries net-credit the charge's tax category in the refund's currency (its
- *   foreign currency when entered in one, else the local currency). The cost reduction is moved
- *   from there (Dr tax category / Cr asset), and the refund is checked with the sales in
- *   `expectedProceeds` (`checkDisposalProceeds`, or the in-currency check and exchange entry of
- *   `generateCostRefundExchangeLedger`);
- * - by the refund record itself, without such a credit note: the cost reduction is booked against
+ * the disposal rows, and `documentEntries` the document entries among them. With them, a cost
+ * refund is booked one of two ways:
+ * - by a credit note: a document (a credit invoice) net-credits the charge's tax category in the
+ *   refund's currency (its foreign currency when entered in one, else the local currency). The cost
+ *   reduction is moved from there (Dr tax category / Cr asset), and the refund is checked with the
+ *   sales in `expectedProceeds` (`checkDisposalProceeds`, or the in-currency check and exchange
+ *   entry of `generateCostRefundExchangeLedger`, both against `chargeEntries`);
+ * - by the refund record itself, without such a document: the cost reduction is booked against
  *   `counterpartyAccountId`, the charge's main business (Dr counterparty / Cr asset, in the refund's
  *   currency), and settles against the money the charge receives from it. The refund is left out of
  *   `expectedProceeds`; the charge's business balance checks it, and books the exchange-rate
  *   difference to the payment's rate. A refund with neither a credit note nor a counterparty is an
  *   error.
+ * Only documents count as a credit note: misc expenses, transactions and fees crediting the tax
+ * category don't stand in for one, whatever the tax category is (the asset account included, which
+ * carries the charge's other movements, such as the refund of an asset that is not depreciated).
  * Booking both (a credit note crediting the asset account, and the record) counts the refund twice;
  * the counterparty is then left unbalanced, which the charge's business balance reports.
  *
@@ -291,6 +295,7 @@ export async function generateDepreciationDisposalsLedger(
   chargeProceedsAccountId?: string | null,
   chargeEntries?: readonly LedgerProto[],
   counterpartyAccountId?: string | null,
+  documentEntries?: readonly LedgerProto[],
 ): Promise<DisposalsLedger> {
   if (disposals.length === 0) {
     return {
@@ -328,13 +333,13 @@ export async function generateDepreciationDisposalsLedger(
   let rowsMissing = false;
   const proceedsDisposals: IGetDepreciationDisposalsByIdsResult[] = [];
   const counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[] = [];
-  const creditsToAccounts = new Map<string, ReturnType<typeof netCreditToAccount>>();
-  /** What the charge's own entries net-credit to an account: in `currency`, else locally */
-  const creditedTo = (accountId: string, currency: Currency | null): number => {
-    let credit = creditsToAccounts.get(accountId);
+  const documentCredits = new Map<string, ReturnType<typeof netCreditToAccount>>();
+  /** What the charge's documents net-credit to an account: in `currency`, else locally */
+  const documentCreditTo = (accountId: string, currency: Currency | null): number => {
+    let credit = documentCredits.get(accountId);
     if (!credit) {
-      credit = netCreditToAccount(chargeEntries ?? [], accountId);
-      creditsToAccounts.set(accountId, credit);
+      credit = netCreditToAccount(documentEntries ?? [], accountId);
+      documentCredits.set(accountId, credit);
     }
     return currency ? (credit.foreign.get(currency) ?? 0) : credit.local;
   };
@@ -374,14 +379,14 @@ export async function generateDepreciationDisposalsLedger(
         continue;
       }
 
-      // a cost refund without a credit note to the charge's tax category, in its currency, is
-      // booked by its record, against the charge's counterparty
+      // a cost refund without a credit-note document to the charge's tax category, in its
+      // currency, is booked by its record, against the charge's counterparty
       const byRecord =
         !!chargeEntries &&
         disposal.type === 'COST_REFUND' &&
         !(
           chargeProceedsAccountId &&
-          creditedTo(chargeProceedsAccountId, foreign?.currency ?? null) >= 0.005
+          documentCreditTo(chargeProceedsAccountId, foreign?.currency ?? null) >= 0.005
         );
       if (byRecord && !counterpartyAccountId) {
         rowsMissing = true;
