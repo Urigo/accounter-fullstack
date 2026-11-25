@@ -335,7 +335,7 @@ export function normalizeDeclarations(
     for (const [index, position] of input.reportablePositions.entries()) {
       if (!Number.isInteger(position) || position < 1 || position > 999) {
         throw badUserInput(
-          `declarations.reportablePositions[${index}] must be an integer between 1 and 999 (got ${position})`,
+          `Reportable position ${index + 1} must be an integer between 1 and 999 (got ${position})`,
         );
       }
     }
@@ -477,12 +477,21 @@ function normalizeRelatedCompanies(
 ): Report1214RelatedCompanyData[] {
   assertListSize(rows.length, 'relatedCompanies');
   return rows.map((row, index) => {
-    const path = `relatedCompanies[${index}]`;
+    // human-readable, 1-based label: the client shows these messages as they are
+    const label = `Related company ${index + 1}:`;
     return compact({
-      companyName: requireText(row.companyName, `${path}.companyName`),
-      companyFileNumber: normalizeDigits(row.companyFileNumber, `${path}.companyFileNumber`, 1, 9),
+      companyName: requireText(row.companyName, `${label} company name`),
+      companyFileNumber: normalizeDigits(
+        row.companyFileNumber,
+        `${label} company file number`,
+        1,
+        9,
+      ),
       relationType: relatedCompanyRelationType.toStored(row.relationType),
-      assessingOfficeCode: normalizeCount(row.assessingOfficeCode, `${path}.assessingOfficeCode`),
+      assessingOfficeCode: normalizeCount(
+        row.assessingOfficeCode,
+        `${label} assessing office code`,
+      ),
     });
   });
 }
@@ -492,11 +501,17 @@ function normalizeRdInvestments(
 ): Report1214RdInvestmentData[] {
   assertListSize(rows.length, 'rdInvestments');
   return rows.map((row, index) => {
-    const path = `rdInvestments[${index}]`;
-    const investmentAmount = normalizeFinite(row.investmentAmount, `${path}.investmentAmount`);
+    // human-readable, 1-based label: the client shows these messages as they are
+    const label = `R&D investment ${index + 1}:`;
+    const investmentAmount = normalizeFinite(row.investmentAmount, `${label} investment amount`);
     return compact({
-      companyName: requireText(row.companyName, `${path}.companyName`),
-      companyFileNumber: normalizeDigits(row.companyFileNumber, `${path}.companyFileNumber`, 1, 9),
+      companyName: requireText(row.companyName, `${label} company name`),
+      companyFileNumber: normalizeDigits(
+        row.companyFileNumber,
+        `${label} company file number`,
+        1,
+        9,
+      ),
       investmentAmount: investmentAmount!,
     });
   });
@@ -529,7 +544,8 @@ export function normalizeAmountOverrides(
   const { layoutYear, inputCodes, derivedCodes } = amountOverrideCodes(year);
   const overrides: Record<string, number> = {};
   for (const [index, row] of rows.entries()) {
-    const path = `amountOverrides[${index}]`;
+    // human-readable, 1-based label: the client shows these messages as they are
+    const path = `Amount override ${index + 1}`;
     const code = row.code.trim();
     if (derivedCodes.has(code)) {
       throw badUserInput(

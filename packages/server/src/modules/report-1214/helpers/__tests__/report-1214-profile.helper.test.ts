@@ -219,6 +219,38 @@ describe('normalizeReport1214ProfileInput', () => {
     ).toEqual(Array.from({ length: 6 }, () => investment));
   });
 
+  it('names list items by their 1-based position in messages', () => {
+    expect(
+      badUserInput(() => normalize({ declarations: { reportablePositions: [1, 2, 1000] } }))
+        .message,
+    ).toBe('Reportable position 3 must be an integer between 1 and 999 (got 1000)');
+    expect(
+      badUserInput(() =>
+        normalize({ relatedCompanies: [{ companyName: '  ', relationType: 'OTHER' }] }),
+      ).message,
+    ).toBe('Related company 1: company name is required');
+    expect(
+      badUserInput(() =>
+        normalize({
+          relatedCompanies: [
+            { companyName: 'A', relationType: 'OTHER' },
+            { companyName: 'B', relationType: 'OTHER', companyFileNumber: '12a' },
+          ],
+        }),
+      ).message,
+    ).toMatch(/^Related company 2: company file number must be 1 to 9 digits/);
+    expect(
+      badUserInput(() =>
+        normalize({
+          rdInvestments: [
+            { companyName: 'Lab', investmentAmount: 1 },
+            { companyName: 'Lab', investmentAmount: Number.NaN },
+          ],
+        }),
+      ).message,
+    ).toBe('R&D investment 2: investment amount must be a finite number');
+  });
+
   it('refuses lists over the 50-item size limit', () => {
     const company = { companyName: 'X', relationType: 'OTHER' as const };
     expect(
@@ -321,7 +353,7 @@ describe('amount overrides', () => {
   it('rejects a derived code', () => {
     expect(
       badUserInput(() => normalizeAmountOverrides([{ code: '008', amount: 1 }], YEAR)).message,
-    ).toMatch(/^amountOverrides\[0\]: code 008 is derived/);
+    ).toMatch(/^Amount override 1: code 008 is derived/);
   });
 
   it('rejects an unknown code', () => {
@@ -342,7 +374,7 @@ describe('amount overrides', () => {
           YEAR,
         ),
       ).message,
-    ).toMatch(/^amountOverrides\[1\]: code 072 appears more than once/);
+    ).toMatch(/^Amount override 2: code 072 appears more than once/);
     badUserInput(() => normalizeAmountOverrides([{ code: '072', amount: Number.NaN }], YEAR));
     badUserInput(() =>
       normalizeAmountOverrides([{ code: '072', amount: Number.POSITIVE_INFINITY }], YEAR),

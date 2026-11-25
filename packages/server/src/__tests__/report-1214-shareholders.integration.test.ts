@@ -404,18 +404,18 @@ describe('report 1214 shareholders', () => {
     });
     expect(error.code).toBe('BAD_USER_INPUT');
     expect(error.message).toBe(
-      'Shareholder row 2: ID number 000000042 is already used by shareholder row 1',
+      'Shareholder row 3: ID number 000000042 is already used by shareholder row 2',
     );
     expect((await getShareholders(YEAR)).map(s => s.fullName)).toEqual(['Dana Cohen']);
   });
 
   it('rejects invalid rows before writing, naming the row', async () => {
     const cases: Array<[ShareholderInput, RegExp]> = [
-      [{ ...dana, idNumber: '1234567890' }, /^Shareholder row 1: ID number/],
-      [{ ...dana, idNumber: '12a' }, /^Shareholder row 1: ID number/],
-      [{ ...dana, fullName: '   ' }, /^Shareholder row 1: full name/],
-      [{ ...dana, dividendRightsPercent: 100.5 }, /^Shareholder row 1: dividendRightsPercent/],
-      [{ ...dana, otherRightsPercent: -1 }, /^Shareholder row 1: otherRightsPercent/],
+      [{ ...dana, idNumber: '1234567890' }, /^Shareholder row 2: ID number/],
+      [{ ...dana, idNumber: '12a' }, /^Shareholder row 2: ID number/],
+      [{ ...dana, fullName: '   ' }, /^Shareholder row 2: full name/],
+      [{ ...dana, dividendRightsPercent: 100.5 }, /^Shareholder row 2: dividendRightsPercent/],
+      [{ ...dana, otherRightsPercent: -1 }, /^Shareholder row 2: otherRightsPercent/],
     ];
     for (const [badRow, message] of cases) {
       const error = await expectError(SET_SHAREHOLDERS_MUTATION, {
@@ -443,7 +443,7 @@ describe('report 1214 shareholders', () => {
       shareholders: [{ ...holdco, businessId: OTHER_OWNER_ID }],
     });
     expect(error.code).toBe('BAD_USER_INPUT');
-    expect(error.message).toMatch(/^Shareholder row 0: business /);
+    expect(error.message).toMatch(/^Shareholder row 1: business /);
   });
 
   it("writes the caller's active business when no owner is given", async () => {
@@ -493,7 +493,7 @@ describe('report 1214 shareholders', () => {
       ],
     });
     expect(error.code).toBe('BAD_USER_INPUT');
-    expect(error.message).toMatch(/^Shareholder row 1: business /);
+    expect(error.message).toMatch(/^Shareholder row 2: business /);
   });
 
   describe('copyShareholdersFromYear', () => {
