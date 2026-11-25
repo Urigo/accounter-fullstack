@@ -8,7 +8,6 @@ import {
   type RelatedCompany,
 } from '@accounter/opcn1214-generator';
 import type {
-  Form6111Obligation,
   Report1214AmountOverride,
   Report1214AmountOverrideInput,
   Report1214AttachmentsInput,
@@ -18,6 +17,7 @@ import type {
   Report1214ConsolidatedReport,
   Report1214Declarations,
   Report1214DeclarationsInput,
+  Report1214Form6111Obligation,
   Report1214OtherTaxableIncomeInput,
   Report1214PhoneInput,
   Report1214PreparerInput,
@@ -45,12 +45,13 @@ import type {
   Report1214RelatedCompanyData,
 } from '../types.js';
 
-/** Records 1010 a report can carry (`struct.relatedCompanies.max`). */
-export const MAX_RELATED_COMPANIES = 3;
-/** Records 1030 a report can carry (`struct.rdInvestments.max`). */
-export const MAX_RD_INVESTMENTS = 5;
-/** Reportable position numbers of fields 1034-1046. */
-export const MAX_REPORTABLE_POSITIONS = 5;
+/**
+ * Most items stored in one profile list. This is a size limit against oversized payloads only: the
+ * form's own limits (3 related companies, 5 R&D investments, 5 reportable positions) are reported
+ * by the generator's validation (`struct.relatedCompanies.max`, `struct.rdInvestments.max`,
+ * `main.reportablePositions.max`), so a draft over them can still be saved and shown.
+ */
+export const MAX_PROFILE_LIST_ITEMS = 50;
 /** Longest free text stored; the generator reports its own, shorter field limits. */
 export const MAX_PROFILE_TEXT_LENGTH = 200;
 
@@ -144,13 +145,14 @@ const FORM_6111_OBLIGATION_MAP = {
   OBLIGED: 'obliged',
   NOT_OBLIGED: 'notObliged',
   NOT_RELEVANT: 'notRelevant',
-} as const satisfies Record<Form6111Obligation, StoredForm6111Obligation>;
+} as const satisfies Record<Report1214Form6111Obligation, StoredForm6111Obligation>;
 export type _Form6111ObligationCovered = AssertNever<
-  Exclude<StoredForm6111Obligation, (typeof FORM_6111_OBLIGATION_MAP)[Form6111Obligation]>
+  Exclude<StoredForm6111Obligation, (typeof FORM_6111_OBLIGATION_MAP)[Report1214Form6111Obligation]>
 >;
-export const form6111Obligation = enumConverter<Form6111Obligation, StoredForm6111Obligation>(
-  FORM_6111_OBLIGATION_MAP,
-);
+export const form6111Obligation = enumConverter<
+  Report1214Form6111Obligation,
+  StoredForm6111Obligation
+>(FORM_6111_OBLIGATION_MAP);
 
 type StoredConsolidatedReport = NonNullable<Declarations['consolidatedReport']>;
 const CONSOLIDATED_REPORT_MAP = {
@@ -187,6 +189,15 @@ export const relatedCompanyRelationType = enumConverter<
 
 function badUserInput(message: string): GraphQLError {
   return new GraphQLError(message, { extensions: { code: 'BAD_USER_INPUT' } });
+}
+
+/** Throws `BAD_USER_INPUT` when a list is over the stored size limit (not a form limit). */
+function assertListSize(length: number, path: string): void {
+  if (length > MAX_PROFILE_LIST_ITEMS) {
+    throw badUserInput(
+      `${path} exceeds the size limit of ${MAX_PROFILE_LIST_ITEMS} items (got ${length})`,
+    );
+  }
 }
 
 /** Drops the `undefined` members, so stored JSON carries only what is set. */
@@ -320,11 +331,7 @@ export function normalizeDeclarations(
   }
 
   if (input.reportablePositions != null) {
-    if (input.reportablePositions.length > MAX_REPORTABLE_POSITIONS) {
-      throw badUserInput(
-        `declarations.reportablePositions can hold at most ${MAX_REPORTABLE_POSITIONS} numbers (got ${input.reportablePositions.length})`,
-      );
-    }
+    assertListSize(input.reportablePositions.length, 'declarations.reportablePositions');
     for (const [index, position] of input.reportablePositions.entries()) {
       if (!Number.isInteger(position) || position < 1 || position > 999) {
         throw badUserInput(
@@ -468,11 +475,7 @@ function requireText(value: string, path: string): string {
 function normalizeRelatedCompanies(
   rows: ReadonlyArray<Report1214RelatedCompanyInput>,
 ): Report1214RelatedCompanyData[] {
-  if (rows.length > MAX_RELATED_COMPANIES) {
-    throw badUserInput(
-      `At most ${MAX_RELATED_COMPANIES} related companies can be stored (got ${rows.length})`,
-    );
-  }
+  assertListSize(rows.length, 'relatedCompanies');
   return rows.map((row, index) => {
     const path = `relatedCompanies[${index}]`;
     return compact({
@@ -487,11 +490,7 @@ function normalizeRelatedCompanies(
 function normalizeRdInvestments(
   rows: ReadonlyArray<Report1214RdInvestmentInput>,
 ): Report1214RdInvestmentData[] {
-  if (rows.length > MAX_RD_INVESTMENTS) {
-    throw badUserInput(
-      `At most ${MAX_RD_INVESTMENTS} R&D investments can be stored (got ${rows.length})`,
-    );
-  }
+  assertListSize(rows.length, 'rdInvestments');
   return rows.map((row, index) => {
     const path = `rdInvestments[${index}]`;
     const investmentAmount = normalizeFinite(row.investmentAmount, `${path}.investmentAmount`);
@@ -583,8 +582,8 @@ function block<In, Out>(value: Maybe<In>, empty: Out, normalize: (value: In) => 
  * Validates and normalizes an `updateReport1214Profile` input before anything reaches the
  * database. Errors are `BAD_USER_INPUT` naming the offending path.
  *
- * Only shape and format are checked (phone prefixes and digits, digit-only file numbers, the
- * list caps, known non-derived amount codes, text up to 200 characters). Strings are trimmed and
+ * Only shape and format are checked (phone prefixes and digits, digit-only file numbers, a size
+ * limit of 50 items per list, known non-derived amount codes, text up to 200 characters). Strings are trimmed and
  * empty ones dropped; unset members are left out of the stored JSON. The form's business rules are
  * reported by the 1214 generator's validation.
  */
