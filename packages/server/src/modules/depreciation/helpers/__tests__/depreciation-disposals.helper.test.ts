@@ -423,6 +423,42 @@ describe('checkDisposal', () => {
       expect(remainingAssetCost({ cost: 35_555 }, events)).toBe(0);
     });
 
+    it('allocates a preview after a stored refund of the same date, as once it is stored', async () => {
+      // the stored refund's id sorts after the new one's: creation time decides, not the id
+      const storedId = 'ff000000-0000-4000-8000-000000000001';
+      const newId = 'aa000000-0000-4000-8000-000000000001';
+      const stored = {
+        ...usdRefund(storedId, '2025-07-01', '5000'),
+        created_at: new Date('2025-07-01T10:00:00.000Z'),
+      };
+
+      const check = await checkDisposal(
+        buildInjector(),
+        buildContext({ ...asset, disposals: [stored] }),
+        { ...refund, disposalDate: '2025-07-01', disposedCost: undefined, originalAmount: 5000 },
+      );
+
+      // the preview comes last: the stored refund keeps 17,778, the new one takes 17,777
+      expect(check.errors).toBeUndefined();
+      expect(check.result?.costReduction).toBe(17_777);
+
+      const both = buildContext({
+        ...asset,
+        disposals: [
+          stored,
+          {
+            ...usdRefund(newId, '2025-07-01', '5000'),
+            created_at: new Date('2025-07-01T11:00:00.000Z'),
+          },
+        ],
+      });
+      const events = await loadDisposalInputs(buildInjector(), both.record, both.disposals);
+      expect(Object.fromEntries(events.map(event => [event.id, event.disposedCost]))).toEqual({
+        [storedId]: 17_778,
+        [newId]: 17_777,
+      });
+    });
+
     it('allocates an uneven three-way split in date order, whatever order it is given in', async () => {
       const context = buildContext({
         ...asset,

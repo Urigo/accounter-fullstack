@@ -6,7 +6,10 @@
 - **Foreign-currency depreciation records**: an asset paid for in a foreign currency (e.g. USD) is
   now depreciated, reported and disposed of at its cost in the local currency: the amount converted
   at the Bank of Israel rate of the record's activation date (cost basis at the activation date's
-  rate). A new
+  rate). Known gap: the purchase charge books the asset account at its own rate, so when the
+  activation date differs, the asset account and the cost basis differ by amount × (activation rate
+  − booked rate), which nothing books; a local cost override aligns them (tracked in
+  Urigo/accounter-fullstack#5196). A new
   optional `localAmount` on depreciation records overrides the converted cost; on update, `null`
   clears it and leaving it out keeps it.
 - `DepreciationRecord` exposes `localAmount`, `localAmountOverride`, `exchangeRate` and

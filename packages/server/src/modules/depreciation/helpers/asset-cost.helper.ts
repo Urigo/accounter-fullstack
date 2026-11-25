@@ -36,7 +36,15 @@ export type AssetCostRecord = Pick<
 
 /**
  * The date a foreign-currency asset is converted at: its activation date, the date it was put in
- * use and starts to depreciate
+ * use and starts to depreciate. The cost basis (and so its depreciation, and the cost reductions of
+ * its refunds from activation) is the amount at that date's rate.
+ *
+ * Known gap: the purchase charge books the asset account at its own rate (its document's, or its
+ * misc expense's), and the payment's difference goes to exchange rates. When the activation date
+ * differs from that date, the asset account and the depreciation cost basis differ by
+ * amount × (activation rate − booked rate), a book-versus-tax gap that nothing books. A
+ * `local_amount` override aligns them when needed. Tracked for a later fix in
+ * Urigo/accounter-fullstack#5196.
  */
 export function getAssetRateDate(
   record: Pick<AssetCostRecord, 'activation_date'>,
@@ -126,11 +134,22 @@ export type ForeignRefund = {
   refundMode: CostRefundMode;
   chargeId?: string | null;
   refundDate: TimelessDateString;
+  /** when the refund was stored; null for one not stored yet (a preview, or one being inserted) */
+  createdAt?: Date | null;
 };
 
-function byRefundDateThenId(a: ForeignRefund, b: ForeignRefund): number {
+/**
+ * Refund date, then stored refunds by creation time, then the one not stored yet, then id: a
+ * refund is allocated in the same place in its preview as once stored
+ */
+function byRefundOrder(a: ForeignRefund, b: ForeignRefund): number {
   if (a.refundDate !== b.refundDate) {
     return a.refundDate < b.refundDate ? -1 : 1;
+  }
+  const aCreated = a.createdAt?.getTime() ?? Number.POSITIVE_INFINITY;
+  const bCreated = b.createdAt?.getTime() ?? Number.POSITIVE_INFINITY;
+  if (aCreated !== bCreated) {
+    return aCreated < bCreated ? -1 : 1;
   }
   if (a.id === b.id) {
     return 0;
@@ -142,7 +161,7 @@ function byRefundDateThenId(a: ForeignRefund, b: ForeignRefund): number {
  * Converts an asset's cost refunds entered in its currency to the local currency, by id:
  * - `FROM_ACTIVATION` corrects the original price, so it converts at the asset's cost-basis rate
  *   (local cost ÷ amount): the activation date's rate, or the rate implied by a local cost override.
- *   These refunds are allocated cumulatively in whole shekels, in date then id order: each takes
+ *   These refunds are allocated cumulatively in whole shekels, in date order (then by creation time, a refund not stored yet last): each takes
  *   round(refunded so far × cost ÷ amount) less what the earlier ones took. Refunds of the whole
  *   amount, however split, then add up to exactly the asset's (whole-shekel) cost.
  * - `FROM_REFUND_DATE` is a later rebate, a receivable arising on the refund date: it converts at
@@ -159,7 +178,7 @@ export async function convertForeignRefunds(
 
   const fromActivation = refunds
     .filter(refund => refund.refundMode === 'FROM_ACTIVATION')
-    .sort(byRefundDateThenId);
+    .sort(byRefundOrder);
   if (fromActivation.length > 0) {
     const assetCost = await resolveAssetLocalCost(injector, record);
     const amount = record.amount == null ? null : Number(record.amount);

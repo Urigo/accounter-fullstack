@@ -155,8 +155,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     // the misc-expense entries, also kept in `feeFinancialAccountLedgerEntries`
     const miscExpensesLedgerEntries: LedgerProto[] = [];
 
-    // whether the charge bought an asset recorded in a foreign currency: its cost is fixed at the
-    // purchase's rate, so the asset account must not absorb the difference to the payment's rate.
+    // whether the charge bought an asset recorded in a foreign currency: its cost basis is fixed at
+    // the activation date's rate, so the asset account must not absorb the difference to the
+    // payment's rate (the asset account keeps the charge's own rate: a known gap against the cost
+    // basis when activation is on another date, Urigo/accounter-fullstack#5196).
     // Assets recorded in the local currency keep their stored amount, and their charges keep
     // booking the difference to the documents' tax category.
     let foreignCurrencyAssetsPromise: Promise<boolean> | undefined = undefined;
@@ -525,8 +527,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         }
 
         // a foreign-currency asset purchase entered as misc expenses (no documents): the payment's
-        // rate difference goes to exchange rates, since the assets' cost is fixed at the misc
-        // expenses' rate
+        // rate difference goes to exchange rates, so the asset account keeps the misc expenses'
+        // rate (the cost basis is at the activation date's rate; see
+        // Urigo/accounter-fullstack#5196 for the gap when the dates differ)
         let fromDepreciatedMiscExpenses = false;
         if (!exchangeRateEntry) {
           const miscExpenseEntry = miscExpensesLedgerEntries.find(entry =>
@@ -542,8 +545,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           if (fromDepreciatedMiscExpenses) {
             exchangeRateTaxCategory = exchangeRateTaxCategoryId;
           } else if (documentsTaxCategoryId) {
-            // a foreign-currency asset's cost is fixed at the document date's rate, so the asset
-            // account must not absorb the difference to the payment's rate: book it to exchange rates
+            // a foreign-currency asset's account keeps the document date's rate: the difference to
+            // the payment's rate goes to exchange rates (the cost basis is at the activation date's
+            // rate; see Urigo/accounter-fullstack#5196 for the gap when the dates differ)
             exchangeRateTaxCategory = (await chargeHasForeignCurrencyAssets())
               ? exchangeRateTaxCategoryId
               : documentsTaxCategoryId;

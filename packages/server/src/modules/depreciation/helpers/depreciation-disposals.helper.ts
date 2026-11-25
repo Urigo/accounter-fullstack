@@ -114,7 +114,10 @@ type DisposalCostRow = Pick<
   | 'disposed_cost'
   | 'original_amount'
   | 'original_currency'
->;
+> & {
+  /** null for an event not stored yet */
+  created_at: Date | null;
+};
 
 /**
  * The local cost of an asset's events, by id: their `disposed_cost`, or, for a cost refund entered
@@ -147,6 +150,7 @@ export async function resolveDisposalLocalCosts(
             refundMode: storedRefundMode(disposal) ?? DEFAULT_COST_REFUND_MODE,
             chargeId: disposal.charge_id,
             refundDate: disposal.disposal_date,
+            createdAt: disposal.created_at,
           })),
         )
       : new Map();
@@ -497,6 +501,8 @@ export async function checkDisposal(
               disposed_cost: null,
               original_amount: String(candidate.originalAmount),
               original_currency: foreignCurrency,
+              // an edit keeps its place; a new refund goes after the stored ones of its date
+              created_at: stored?.created_at ?? null,
             },
           ]
         : []),
