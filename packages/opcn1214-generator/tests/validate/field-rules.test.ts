@@ -472,7 +472,8 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
   });
 
   describe('field.percentRange and field.decimals on percent literals', () => {
-    it.each([0.5, 100.01, 0])('reports %s outside 1–100', dividendRightsPercent => {
+    // No 1% floor: shopcn accepted 0.5% (SPEC §15 A-36). 0 is still out of range.
+    it.each([100.01, 0, 0.004])('reports %s outside (0, 100]', dividendRightsPercent => {
       expect(
         issuesOf(withShareholder({ dividendRightsPercent }), 'field.percentRange').map(
           issue => issue.path,
@@ -481,9 +482,28 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
     });
 
     // votingRightsPercent: a lone shareholder's dividend rights must total 100.
-    it.each([1, 10.23, 100])('accepts %s', votingRightsPercent => {
+    it.each([0.01, 0.5, 0.99, 1, 10.23, 100])('accepts %s', votingRightsPercent => {
       const issues = runPipeline(withShareholder({ votingRightsPercent }), OPTIONS).issues;
       expect(issues).toEqual([]);
+    });
+
+    it('accepts dividend rights below 1% that total 100 (99.5 + 0.5, SPEC §15 A-36)', () => {
+      const [first] = minimalInput().shareholders;
+      if (!first) {
+        throw new Error('expected a shareholder');
+      }
+      const input = minimalInput({
+        shareholders: [
+          { ...first, dividendRightsPercent: 99.5 },
+          {
+            idNumber: '200000016',
+            fullName: 'בעל מניות',
+            isControllingShareholder: false,
+            dividendRightsPercent: 0.5,
+          },
+        ],
+      });
+      expect(runPipeline(input, OPTIONS).issues).toEqual([]);
     });
 
     // Float noise: compared as written (hundredths), like field.decimals and the encoder.
@@ -857,7 +877,7 @@ describe('fieldRules on synthetic records', () => {
         return report;
       }
 
-      it.each([1, 10.23, 100, 14.46 + 49.59 + 35.95, 0.7 + 0.2 + 0.1])(
+      it.each([0.01, 0.5, 0.99, 1, 10.23, 100, 14.46 + 49.59 + 35.95, 0.7 + 0.2 + 0.1])(
         'accepts %s',
         ratePercent => {
           expect(fieldRules(withRate(ratePercent))).toEqual([]);
@@ -866,7 +886,7 @@ describe('fieldRules on synthetic records', () => {
 
       it.each([
         [10.234, 'field.decimals'],
-        [0.99, 'field.percentRange'],
+        [0, 'field.percentRange'],
         [100.01, 'field.percentRange'],
       ])('reports %s as %s', (ratePercent, ruleId) => {
         expect(fieldRules(withRate(ratePercent))).toEqual([

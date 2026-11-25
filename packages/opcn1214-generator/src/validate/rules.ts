@@ -200,7 +200,7 @@ export const RULES = deepFreeze([
     source: 'spec',
     scope: 'report',
     description:
-      'A percentage (percentX100, percentLiteral) is outside 1–100, compared as written (rounded to hundredths).',
+      'A percentage (percentX100, percentLiteral) is not above 0 and at most 100, compared as written (rounded to hundredths; no 1% floor, SPEC §15 A-36).',
     specRef: { page: 10 },
   },
   {
@@ -508,7 +508,7 @@ export const RULES = deepFreeze([
     source: 'spec',
     scope: '2000',
     description:
-      'A per-country code written in the 2000 section (442 = 0 included) without a countryBreakdown entry (record 2200).',
+      'A per-country code with a value other than 0 in the 2000 section without a countryBreakdown entry (record 2200); 442 = 0 needs none (SPEC §15 A-24).',
     specRef: { page: 27 },
   },
   {

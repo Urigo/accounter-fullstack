@@ -126,8 +126,10 @@ function breakdownIssue(
 }
 
 /**
- * foreign.breakdown.required: a per-country code written in the 2000 section (442 = 0 included,
- * SPEC §15 A-24) without a 2200 record (p.27). Reported at the missing breakdown.
+ * foreign.breakdown.required: a per-country code written in the 2000 section with a value other
+ * than 0 without a 2200 record (p.27). Reported at the missing breakdown. 442 = 0 (the only
+ * per-country code written as 0) needs none, and a breakdown of it is still allowed: shopcn
+ * accepted both (SPEC §15 A-24).
  */
 function breakdownRequired(report: NormalizedReport): Issue[] {
   const perCountry = new Set(
@@ -136,7 +138,7 @@ function breakdownRequired(report: NormalizedReport): Issue[] {
   const brokenDown = new Set(breakdownRecords(report).map(breakdownCode));
   return foreignRecords(report).flatMap(record =>
     [...record.codes.keys()]
-      .filter(code => perCountry.has(code) && !brokenDown.has(code))
+      .filter(code => perCountry.has(code) && record.codes.get(code) !== 0 && !brokenDown.has(code))
       .map(code =>
         makeIssue('foreign.breakdown.required', {
           message: `Code ${code} of the foreign appendix needs a breakdown by country (record 2200).`,

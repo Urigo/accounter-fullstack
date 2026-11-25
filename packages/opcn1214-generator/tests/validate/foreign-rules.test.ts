@@ -87,8 +87,8 @@ describe('foreign appendix rules (SPEC §10.5)', () => {
   });
 
   describe('country breakdowns (records 2200)', () => {
-    it('foreign.breakdown.required: one issue per per-country code written without a breakdown', () => {
-      const appendix = foreignAppendix({ amounts: { '420': 50_000, '442': 0, '401': 1 } });
+    it('foreign.breakdown.required: one issue per per-country code with a value and no breakdown', () => {
+      const appendix = foreignAppendix({ amounts: { '420': 50_000, '442': 7, '401': 1 } });
       expect(issuesOf(appendix, 'foreign.breakdown.required')).toEqual([
         expect.objectContaining({
           severity: 'error',
@@ -99,9 +99,21 @@ describe('foreign appendix rules (SPEC §10.5)', () => {
           value: 50_000,
           specRef: { page: 27 },
         }),
-        // 442 = 0 is written (zeroAllowed), so it needs a breakdown too (SPEC §15 A-24).
         expect.objectContaining({ path: 'foreignAppendix.countryBreakdown["442"]', code: '442' }),
       ]);
+    });
+
+    it('foreign.breakdown.required: not raised for 442 = 0, which is written (SPEC §15 A-24)', () => {
+      expect(
+        issuesOf(foreignAppendix({ amounts: { '442': 0 } }), 'foreign.breakdown.required'),
+      ).toEqual([]);
+    });
+
+    it('accepts a breakdown of 442 = 0: neither required nor an orphan (SPEC §15 A-24)', () => {
+      const appendix = foreignAppendixWithBreakdown('442', undefined, { amounts: { '442': 0 } });
+      expect(appendix.amounts['442']).toBe(0);
+      expect(appendix.countryBreakdown?.['442']).toBeDefined();
+      expect(runPipeline(minimalInput({ foreignAppendix: appendix }), OPTIONS).issues).toEqual([]);
     });
 
     it('foreign.breakdown.required: not raised for a zero code that is omitted', () => {
