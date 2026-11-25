@@ -1,5 +1,7 @@
+import { z } from 'zod';
 import type { Report1214AmountOverrideInput } from '../../../../../gql/graphql.js';
 import {
+  addRowIssues,
   numberToText,
   parsed,
   parseError,
@@ -128,4 +130,27 @@ export function buildAmountOverridesInput(
     input.push({ code: draft.code, amount });
   }
   return parsed(input);
+}
+
+/** The form state of the amounts editor: the overrides, sorted by code. */
+export type AmountOverridesFormState = { overrides: AmountOverrideDraft[] };
+
+/** Checks every override amount with {@link overrideAmountError}. */
+export const amountOverridesFormSchema = z
+  .object({ overrides: z.array(z.object({ code: z.string(), amount: z.string() })) })
+  .superRefine((form, ctx) => {
+    for (const [index, override] of form.overrides.entries()) {
+      addRowIssues(ctx, 'overrides', index, {
+        amount: overrideAmountError(override.amount) ?? undefined,
+      });
+    }
+  });
+
+/** Where an override for `code` goes in the sorted list. */
+export function overrideInsertIndex(
+  drafts: ReadonlyArray<AmountOverrideDraft>,
+  code: string,
+): number {
+  const index = drafts.findIndex(draft => draft.code.localeCompare(code) > 0);
+  return index === -1 ? drafts.length : index;
 }

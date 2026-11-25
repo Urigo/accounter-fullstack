@@ -1,12 +1,11 @@
 import { useMemo, type ReactElement } from 'react';
-import { useForm, type Control } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Form1214OtherDetailsSectionFragmentDoc,
   type Report1214ProfileInput,
 } from '../../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../../gql/index.js';
-import { useUpdateReport1214Profile } from '../../../../../hooks/use-update-report-1214-profile.js';
 import { Checkbox } from '../../../../ui/checkbox.js';
 import {
   Form,
@@ -27,12 +26,8 @@ import {
   type OtherDetailsField,
   type OtherDetailsFormState,
 } from '../editors/other-details.js';
-import {
-  EditorActions,
-  TriStateControl,
-  useReportDirtyState,
-  useResetAfterSave,
-} from '../profile-editor-parts.js';
+import { useProfileBlockForm } from '../editors/use-profile-block-form.js';
+import { EditorActions, TriStateControl } from '../profile-editor-parts.js';
 import type { TriState } from '../profile-forms.js';
 import { useForm1214Report } from '../report-context.js';
 import { Section } from './section-layout.js';
@@ -111,39 +106,24 @@ function OtherDetailsBlockEditor({
   block: OtherDetailsBlock;
   stored: object | null | undefined;
 }): ReactElement {
-  const { year, refresh } = useForm1214Report();
   const defaults = useMemo(() => otherDetailsFormFromBlock(block, stored), [block, stored]);
-  const schema = useMemo(() => otherDetailsFormSchema(block), [block]);
-  const form = useForm<OtherDetailsFormState>({
-    // Field errors show once a field is left (or on Save); Cancel and Save clear them
-    mode: 'onTouched',
-    resolver: zodResolver(schema),
-    defaultValues: defaults,
+  const resolver = useMemo(() => zodResolver(otherDetailsFormSchema(block)), [block]);
+  const { form, saving, onSubmit, cancel } = useProfileBlockForm<OtherDetailsFormState>({
+    section: `other-details:${block.key}`,
+    blockName: block.title.toLowerCase(),
+    defaults,
+    resolver,
+    toInput: values => {
+      const input = otherDetailsBlockToInput(block, otherDetailsValuesFromForm(block, values));
+      // The schema ran the same checks, so the values are valid here
+      return { [block.key]: input.ok ? input.value : null } as Report1214ProfileInput;
+    },
   });
-  const { markSaved, cancel } = useResetAfterSave(form, defaults);
-  const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
-  useReportDirtyState(`other-details:${block.key}`, form.formState.isDirty);
-
-  const onSubmit = async (values: OtherDetailsFormState): Promise<void> => {
-    const input = otherDetailsBlockToInput(block, otherDetailsValuesFromForm(block, values));
-    if (!input.ok) {
-      return;
-    }
-    const saved = await updateReport1214Profile({
-      year,
-      input: { [block.key]: input.value } as Report1214ProfileInput,
-      blockName: block.title.toLowerCase(),
-    });
-    if (saved) {
-      markSaved(values);
-      refresh();
-    }
-  };
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={onSubmit}
         className="space-y-3 border-t pt-4 first:border-t-0 first:pt-0"
         aria-label={block.title}
       >
@@ -151,17 +131,15 @@ function OtherDetailsBlockEditor({
           <h3 className="font-semibold">{block.title}</h3>
           <p className="text-sm text-muted-foreground">{block.description}</p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <fieldset
+          disabled={saving}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {block.fields.map((field, index) => (
             <FieldControl key={field.path} control={form.control} index={index} field={field} />
           ))}
-        </div>
-        <EditorActions
-          isDirty={form.formState.isDirty}
-          saving={fetching}
-          errorMessage={errorMessage}
-          onCancel={cancel}
-        />
+        </fieldset>
+        <EditorActions isDirty={form.formState.isDirty} saving={saving} onCancel={cancel} />
       </form>
     </Form>
   );

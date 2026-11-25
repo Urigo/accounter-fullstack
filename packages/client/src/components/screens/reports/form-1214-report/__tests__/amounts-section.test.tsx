@@ -84,19 +84,17 @@ function type(element: HTMLInputElement, value: string): void {
   });
 }
 
-function blur(element: HTMLInputElement): void {
-  act(() => {
-    element.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-  });
-}
-
 function click(element: HTMLElement): void {
   act(() => element.click());
 }
 
-function describedText(element: HTMLElement): string | null | undefined {
-  const id = element.getAttribute('aria-describedby');
-  return id ? container.querySelector(`#${id}`)?.textContent : null;
+/** The text of the elements `aria-describedby` names (that exist). */
+function describedText(element: HTMLElement): string {
+  return (element.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map(id => document.getElementById(id)?.textContent ?? '')
+    .join(' ');
 }
 
 beforeEach(() => {
@@ -177,18 +175,39 @@ describe('Form1214AmountsSection', () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
-  it('shows a blank amount error once the field is left, and keeps Save disabled', () => {
+  it('shows a blank amount error once the field is left, tied to the field', async () => {
     render(SAVED);
-    const amount = input('Override of code 018')!;
-    type(amount, '');
-    expect(button('Save').disabled).toBe(true);
-    expect(amount.getAttribute('aria-describedby')).toBeNull();
-    expect(container.textContent).toContain('Enter an amount for every override');
+    type(input('Override of code 018')!, '');
+    expect(input('Override of code 018')!.getAttribute('aria-invalid')).toBe('false');
 
-    blur(amount);
-    expect(describedText(input('Override of code 018')!)).toBe(
+    await act(async () => {
+      input('Override of code 018')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    });
+    expect(describedText(input('Override of code 018')!)).toContain(
       'Enter the amount as a number, or remove the override',
     );
-    expect(container.textContent).toContain('Fix the highlighted fields before saving.');
+  });
+
+  it('validates on Save: shows the errors, focuses the first invalid field and sends nothing', async () => {
+    render(SAVED);
+    type(input('Override of code 018')!, 'abc');
+    expect(button('Save').disabled).toBe(false);
+    await act(async () => button('Save').click());
+
+    expect(updateMock).not.toHaveBeenCalled();
+    const amount = input('Override of code 018')!;
+    expect(amount.getAttribute('aria-invalid')).toBe('true');
+    expect(describedText(amount)).toContain('Enter the amount as a number');
+    expect(document.activeElement).toBe(amount);
+  });
+
+  it('resets to a refreshed report only while it has no unsaved edits', () => {
+    render(SAVED);
+    render([{ code: '018', amount: 7 }]);
+    expect(input('Override of code 018')?.value).toBe('7');
+
+    type(input('Override of code 018')!, '8');
+    render([{ code: '018', amount: 9 }]);
+    expect(input('Override of code 018')?.value).toBe('8');
   });
 });

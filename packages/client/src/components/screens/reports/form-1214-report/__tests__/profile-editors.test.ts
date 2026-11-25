@@ -52,7 +52,7 @@ describe('related companies', () => {
     }
   });
 
-  it('round-trips stored companies, with unique row ids', () => {
+  it('round-trips stored companies', () => {
     const stored = [
       {
         companyName: 'חברה בת',
@@ -68,7 +68,6 @@ describe('related companies', () => {
       },
     ];
     const rows = relatedCompanyRowsFromProfile(stored);
-    expect(new Set(rows.map(row => row.rowId)).size).toBe(2);
     expect(relatedCompanyRowsToInput(rows)).toEqual({ ok: true, value: stored });
   });
 

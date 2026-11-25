@@ -1,10 +1,11 @@
+import { z } from 'zod';
 import {
   Report1214RelatedCompanyRelationType,
   type Report1214RelatedCompanyInput,
 } from '../../../../../gql/graphql.js';
 import {
+  addRowIssues,
   digitsDescription,
-  newRowId,
   numberToText,
   parsed,
   parseError,
@@ -38,7 +39,6 @@ export function relationTypeLabel(relationType: Report1214RelatedCompanyRelation
 
 /** A related company while it is edited: every input as text. */
 export type RelatedCompanyRow = {
-  rowId: string;
   companyName: string;
   companyFileNumber: string;
   relationType: Report1214RelatedCompanyRelationType | '';
@@ -54,7 +54,6 @@ type StoredRelatedCompany = {
 
 export function emptyRelatedCompanyRow(): RelatedCompanyRow {
   return {
-    rowId: newRowId(),
     companyName: '',
     companyFileNumber: '',
     relationType: '',
@@ -66,7 +65,6 @@ export function relatedCompanyRowsFromProfile(
   companies: ReadonlyArray<StoredRelatedCompany>,
 ): RelatedCompanyRow[] {
   return companies.map(company => ({
-    rowId: newRowId(),
     companyName: company.companyName,
     companyFileNumber: company.companyFileNumber ?? '',
     relationType: company.relationType,
@@ -74,7 +72,7 @@ export function relatedCompanyRowsFromProfile(
   }));
 }
 
-export type RelatedCompanyField = Exclude<keyof RelatedCompanyRow, 'rowId'>;
+export type RelatedCompanyField = keyof RelatedCompanyRow;
 export type RelatedCompanyRowErrors = Partial<Record<RelatedCompanyField, string>>;
 
 /** The format errors of a row, by field; the server checks the rest. */
@@ -117,3 +115,24 @@ export function relatedCompanyRowsToInput(
   }
   return parsed(input);
 }
+
+/** The form state of the related-companies editor. */
+export type RelatedCompaniesFormState = { rows: RelatedCompanyRow[] };
+
+/** Checks every row with {@link validateRelatedCompanyRow}, each error on its field. */
+export const relatedCompaniesFormSchema = z
+  .object({
+    rows: z.array(
+      z.object({
+        companyName: z.string(),
+        companyFileNumber: z.string(),
+        relationType: z.union([z.enum(Report1214RelatedCompanyRelationType), z.literal('')]),
+        assessingOfficeCode: z.string(),
+      }),
+    ),
+  })
+  .superRefine((form, ctx) => {
+    for (const [index, row] of form.rows.entries()) {
+      addRowIssues(ctx, 'rows', index, validateRelatedCompanyRow(row));
+    }
+  });

@@ -9,12 +9,10 @@ import { useForm1214Report } from '../report-context.js';
  */
 export function useSaveProfileBlock(): {
   saving: boolean;
-  /** The message of the last failed save, as the server phrased it. */
-  errorMessage: string | undefined;
   save: (input: Report1214ProfileInput, blockName: string) => Promise<boolean>;
 } {
   const { year, refresh } = useForm1214Report();
-  const { fetching, errorMessage, updateReport1214Profile } = useUpdateReport1214Profile();
+  const { fetching, updateReport1214Profile } = useUpdateReport1214Profile();
   const save = useCallback(
     async (input: Report1214ProfileInput, blockName: string) => {
       const saved = await updateReport1214Profile({ year, input, blockName });
@@ -25,5 +23,5 @@ export function useSaveProfileBlock(): {
     },
     [year, refresh, updateReport1214Profile],
   );
-  return { saving: fetching, errorMessage, save };
+  return { saving: fetching, save };
 }

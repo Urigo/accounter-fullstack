@@ -9,13 +9,6 @@ export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string
 export const parsed = <T>(value: T): ParseResult<T> => ({ ok: true, value });
 export const parseError = <T = never>(error: string): ParseResult<T> => ({ ok: false, error });
 
-/** Client-side id of an editable row, for React keys; never sent to the server. */
-let nextRowId = 0;
-export function newRowId(): string {
-  nextRowId += 1;
-  return `row-${nextRowId}`;
-}
-
 /** A blank-or-number text: `null` when blank, `undefined` when not a finite number. */
 export function parseOptionalNumber(text: string): number | null | undefined {
   const trimmed = text.trim().replaceAll(',', '');
@@ -56,4 +49,18 @@ export function digitsDescription(min: number, max: number): string {
 /** The text an input shows for a stored number (blank when unset). */
 export function numberToText(value: number | null | undefined): string {
   return value == null ? '' : String(value);
+}
+
+/** Adds `errors` (by field) of the row at `index` of `listPath` to a zod refinement context. */
+export function addRowIssues(
+  ctx: { addIssue: (issue: { code: 'custom'; path: PropertyKey[]; message: string }) => void },
+  listPath: string,
+  index: number,
+  errors: Partial<Record<string, string>>,
+): void {
+  for (const [field, message] of Object.entries(errors)) {
+    if (message) {
+      ctx.addIssue({ code: 'custom', path: [listPath, index, field], message });
+    }
+  }
 }

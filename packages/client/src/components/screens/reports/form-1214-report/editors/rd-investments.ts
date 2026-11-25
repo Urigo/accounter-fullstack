@@ -1,7 +1,8 @@
+import { z } from 'zod';
 import type { Report1214RdInvestmentInput } from '../../../../../gql/graphql.js';
 import {
+  addRowIssues,
   digitsDescription,
-  newRowId,
   numberToText,
   parsed,
   parseError,
@@ -15,7 +16,6 @@ export const RD_INVESTMENTS_FORM_LIMIT = 5;
 
 /** An R&D investment while it is edited: every input as text. */
 export type RdInvestmentRow = {
-  rowId: string;
   companyName: string;
   companyFileNumber: string;
   investmentAmount: string;
@@ -28,14 +28,13 @@ type StoredRdInvestment = {
 };
 
 export function emptyRdInvestmentRow(): RdInvestmentRow {
-  return { rowId: newRowId(), companyName: '', companyFileNumber: '', investmentAmount: '' };
+  return { companyName: '', companyFileNumber: '', investmentAmount: '' };
 }
 
 export function rdInvestmentRowsFromProfile(
   investments: ReadonlyArray<StoredRdInvestment>,
 ): RdInvestmentRow[] {
   return investments.map(investment => ({
-    rowId: newRowId(),
     companyName: investment.companyName,
     companyFileNumber: investment.companyFileNumber ?? '',
     investmentAmount: numberToText(investment.investmentAmount),
@@ -53,7 +52,7 @@ export function rdInvestmentsTotal(rows: ReadonlyArray<RdInvestmentRow>): number
   }, 0);
 }
 
-export type RdInvestmentField = Exclude<keyof RdInvestmentRow, 'rowId'>;
+export type RdInvestmentField = keyof RdInvestmentRow;
 export type RdInvestmentRowErrors = Partial<Record<RdInvestmentField, string>>;
 
 /** The format errors of a row, by field; the server checks the rest. Amounts may be negative. */
@@ -93,3 +92,23 @@ export function rdInvestmentRowsToInput(
   }
   return parsed(input);
 }
+
+/** The form state of the R&D investments editor. */
+export type RdInvestmentsFormState = { rows: RdInvestmentRow[] };
+
+/** Checks every row with {@link validateRdInvestmentRow}, each error on its field. */
+export const rdInvestmentsFormSchema = z
+  .object({
+    rows: z.array(
+      z.object({
+        companyName: z.string(),
+        companyFileNumber: z.string(),
+        investmentAmount: z.string(),
+      }),
+    ),
+  })
+  .superRefine((form, ctx) => {
+    for (const [index, row] of form.rows.entries()) {
+      addRowIssues(ctx, 'rows', index, validateRdInvestmentRow(row));
+    }
+  });
