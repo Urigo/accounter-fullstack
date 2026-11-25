@@ -19,8 +19,15 @@ const AFFILIATION = '1';
 const COUNTRY_CODE = /^(\d{1,3}|-88)$/;
 const COUNTRY_KEY = /^(\d{3}|-88)$/;
 const ALL_ZEROS = /^0*$/;
-const INCOME_SHAPE: FieldShape = { length: 12, type: 'numeric', kind: 'amount' };
-const COUNTRY_ENTRY_LENGTH = AFFILIATION.length + COUNTRY_LENGTH + INCOME_SHAPE.length;
+/** The income of a country entry (SPEC §3.6): a 12-digit amount. */
+export const COUNTRY_INCOME_SHAPE = {
+  length: 12,
+  type: 'numeric',
+  kind: 'amount',
+} as const satisfies FieldShape;
+/** Characters of one country entry: affiliation, country and income. */
+export const COUNTRY_ENTRY_LENGTH =
+  AFFILIATION.length + COUNTRY_LENGTH + COUNTRY_INCOME_SHAPE.length;
 
 /** One entry of a country-amount section (record 2200). */
 export interface CountryEntry {
@@ -168,7 +175,9 @@ export function encodeCountrySection(entries: readonly CountryEntry[], length: n
       throw new Opcn1214InternalError(`Cannot encode country code "${country}"`);
     }
     return (
-      AFFILIATION + countryKey(country) + codecFor(INCOME_SHAPE.kind).encode(income, INCOME_SHAPE)
+      AFFILIATION +
+      countryKey(country) +
+      codecFor(COUNTRY_INCOME_SHAPE.kind).encode(income, COUNTRY_INCOME_SHAPE)
     );
   });
   return fill(text.join(''), length, 'Country-amount');
@@ -204,7 +213,7 @@ export function decodeCountrySection(raw: string, length: number): CountryEntry[
     const label = `country entry ${entries.length + 1} (${country})`;
     entries.push({
       country,
-      income: numberAt(raw, countryOffset + COUNTRY_LENGTH, INCOME_SHAPE, label),
+      income: numberAt(raw, countryOffset + COUNTRY_LENGTH, COUNTRY_INCOME_SHAPE, label),
     });
     offset += COUNTRY_ENTRY_LENGTH;
   }

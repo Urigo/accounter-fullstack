@@ -883,15 +883,18 @@ export interface ForeignAppendix {
   taxRefundDeclaration: boolean // 247 (required yes/no)
   taxRefundDeclarationAmount?: number
   amounts: Partial<Record<ForeignAppendixCode, number>>
-  countryBreakdown?: Partial<
-    Record<
-      CountryBreakdownCode,
-      {
-        deductionsOffsetsAndExemptions?: number // 2200@140
-        countries: Array<{ country: CountryCode; income: number }> // 1–10
-      }
-    >
-  >
+  countryBreakdown?: Partial<Record<CountryBreakdownCode, CountryBreakdown>>
+}
+
+export interface CountryBreakdown {
+  // 2200
+  deductionsOffsetsAndExemptions?: number // 2200@140
+  countries: CountryIncome[] // 1–10, each country at most once
+}
+
+export interface CountryIncome {
+  country: CountryCode // zero-padded to 3 digits when written; '-88' only for code 439
+  income: number // whole shekels
 }
 
 export type CapitalGainsAppendix =
@@ -1042,6 +1045,13 @@ already explain it (no `untransmittedCount > 0`, no capital-gains appendix in th
 When parsing, `foreignAppendix` exists exactly when the file has a 2000 record; 1000@832 is not read
 back (a disagreeing 832 is `parse.derivedMismatch`).
 
+Records 2200 are keyed by the 2000 code they break down: 2200@137 (`code`) is the key of
+`foreignAppendix.countryBreakdown` and the input path of the breakdown itself
+(`foreignAppendix.countryBreakdown["420"]`); 2200@140 is its `deductionsOffsetsAndExemptions`, and
+the n-th country entry is `foreignAppendix.countryBreakdown["420"].countries[n]` (paths `.country`
+and `.income`). When parsing, every 2200 record is grouped under the 2000 record's
+`countryBreakdown`; there is no `countryBreakdown` without 2200 records.
+
 Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
 notice at `declarations.reportablePositions[5]` (the first position not written), and the first five
 are still written.
@@ -1125,7 +1135,12 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    parse error (codec reason `format`, `parse.fieldValue`).
 5. Decode sections: read `code(3)` + value(width of that code) repeatedly; stop at the first
    position where the remaining text is all `0` (padding). An unknown code, a truncated entry or a
-   non-zero tail is a parse error. Duplicate codes are a parse error.
+   non-zero tail is a parse error. Duplicate codes are a parse error. Country-amount sections (2200)
+   are read the same way, entry by entry (§3.6); an affiliation other than `1`, a malformed country
+   code, a truncated entry, a non-zero tail or more than 10 entries is `parse.countrySection` (a
+   non-digit income stays `parse.numeric`). A 2200 code (2200@137) that is not a per-country code of
+   record 2000, or that an earlier 2200 record of the report already has, is `parse.fieldValue`; a
+   2200 record with no 2000 record before it is `parse.order`.
 6. Verify 9999 counts against the records actually present.
 7. Build `NormalizedReport`, denormalize to `Report1214Input`, and run the rule engine on it; return
    its issues in `ParseResult.issues` (they are not thrown), together with
@@ -1162,14 +1177,15 @@ included, is `parse.order`, and the 9999 counts are compared with the records be
 `canonicalize(input)` returns the input as the parser would reconstruct it:
 
 - text normalized (§4.3); optional properties that encode to the empty/zero value removed (`false`
-  flags, absent yes/no, empty strings, empty `relatedCompanies` and `rdInvestments` lists);
-  `amounts` and `foreignAppendix.amounts` entries with value `0` for non `zeroAllowed` codes
-  removed; derived values not present in the input;
+  flags, absent yes/no, empty strings, empty `relatedCompanies` and `rdInvestments` lists, an empty
+  `foreignAppendix.countryBreakdown`); `amounts` and `foreignAppendix.amounts` entries with value
+  `0` for non `zeroAllowed` codes removed; derived values not present in the input;
 - `meta.saveDate` and `meta.softwareName` set to the values actually written
   (`canonicalize(input, options)` takes the same options as generation, for `today`);
 - digit-string inputs of numeric fields (`id9`, `shareholderId`, `digits`) zero-padded to the field
   width (`'12'` → `'012'` for a 3-digit branch); `bankAccount.account` zero-padded to 9 digits, as
-  code 277 holds it (`'678'` → `'000000678'`);
+  code 277 holds it (`'678'` → `'000000678'`); breakdown country codes zero-padded to 3 digits
+  (`'40'` → `'040'`), incomes of 0 kept;
 - optional numeric header values equal to `0` removed (exception: `amountX` 1000@1091, where 0 is
   meaningful).
 
@@ -1313,6 +1329,11 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `field.phonePrefix`       | W   | spec    | prefix not in the allowed list: the prefix is dropped (SHAAM deletes it, p.6); for the required 1000@493 the follow-up `field.required` is the error | p.6–7          |
 | `field.phoneNumber`       | E   | derived | phone/fax number is not exactly 7 digits (shorter numbers would be silently zero-padded)                                                             | p.6            |
 
+The income of every country entry of a 2200 record is a 12-digit `amount` (§3.6) and is checked like
+a code value: `field.negative`, `field.integer`, `field.length`, at
+`foreignAppendix.countryBreakdown["420"].countries[n].income`. Country codes are checked by the
+`foreign.breakdown.country.*` rules (§10.5).
+
 ### 10.3 Record 1000 — conditional and cross-field rules
 
 | Rule ID                                     | Sev | Source  | Condition (violation)                                                                                | Ref      |
@@ -1368,17 +1389,17 @@ and `values` columns.)
 
 ### 10.5 Records 2000 / 2200
 
-| Rule ID                                       | Sev | Source  | Condition (violation)                                                                 | Ref         |
-| --------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------------- | ----------- |
-| `foreign.otherIncome.description`             | E   | spec    | `otherTaxableIncome` > 0 without `otherTaxableIncomeDescription`                      | p.26        |
-| `foreign.refund.amount`                       | W   | derived | `taxRefundDeclaration` true without `taxRefundDeclarationAmount` > 0                  | p.26        |
-| `foreign.breakdown.required`                  | E   | spec    | a `perCountryBreakdown` code has a value in `amounts` but no `countryBreakdown` entry | p.27        |
-| `foreign.breakdown.orphan`                    | E   | spec    | a `countryBreakdown` entry for a code with no value in `amounts`                      | p.30        |
-| `foreign.breakdown.countries.min`             | E   | derived | a breakdown with no countries                                                         | p.31        |
-| `foreign.breakdown.countries.max`             | E   | spec    | more than 10 countries for one code                                                   | p.30        |
-| `foreign.breakdown.country.unknown`           | E   | spec    | country code not in `countries.csv`                                                   | p.32, 63–71 |
-| `foreign.breakdown.country.unknownOnlyFor439` | E   | spec    | `-88` used for a code other than 439                                                  | p.32        |
-| `foreign.breakdown.country.duplicate`         | W   | derived | the same country twice within one breakdown                                           | —           |
+| Rule ID                                       | Sev | Source  | Condition (violation)                                                                                                    | Ref         |
+| --------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| `foreign.otherIncome.description`             | E   | spec    | `otherTaxableIncome` > 0 without `otherTaxableIncomeDescription`                                                         | p.26        |
+| `foreign.refund.amount`                       | W   | derived | `taxRefundDeclaration` true without `taxRefundDeclarationAmount` > 0                                                     | p.26        |
+| `foreign.breakdown.required`                  | E   | spec    | a `perCountryBreakdown` code is written in the 2000 section (442 = 0 included, A-24) but has no `countryBreakdown` entry | p.27        |
+| `foreign.breakdown.orphan`                    | E   | spec    | a `countryBreakdown` entry for a code not written in the 2000 section (absent, or 0 and omitted)                         | p.30        |
+| `foreign.breakdown.countries.min`             | E   | derived | a breakdown with no countries                                                                                            | p.31        |
+| `foreign.breakdown.countries.max`             | E   | spec    | more than 10 countries for one code                                                                                      | p.30        |
+| `foreign.breakdown.country.unknown`           | E   | spec    | country code not in `countries.csv`                                                                                      | p.32, 63–71 |
+| `foreign.breakdown.country.unknownOnlyFor439` | E   | spec    | `-88` used for a code other than 439                                                                                     | p.32        |
+| `foreign.breakdown.country.duplicate`         | E   | spec    | the same country twice within one breakdown (p.30: up to 10 _different_ countries)                                       | p.30        |
 
 ### 10.6 Capital-gains appendices
 
@@ -1395,25 +1416,25 @@ date; 3054 purchase date and code-15 date; 3077 code-15 and code-20 dates) and r
 
 ### 10.7 Parse-only rules (`Opcn1214ParseError` issues)
 
-| Rule ID                 | Condition                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `parse.empty`           | no records                                                                                                   |
-| `parse.encoding`        | bytes that do not decode in the selected encoding                                                            |
-| `parse.lineLength`      | line length ≠ record length                                                                                  |
-| `parse.formType`        | positions 1–4 ≠ `1214`                                                                                       |
-| `parse.recordType`      | unknown record type                                                                                          |
-| `parse.prefixFiller`    | positions 9–136 not all `0`                                                                                  |
-| `parse.order`           | record out of the §3.3 order, a second 1000 before a 9999, or any record after the 9999 (a second 9999 too)  |
-| `parse.occurrences`     | maximum record counts of §3.2 exceeded (minimums are business rules)                                         |
-| `parse.control.missing` | report not terminated by 9999                                                                                |
-| `parse.control.counts`  | 9999 counts differ from the records present                                                                  |
-| `parse.multipleReports` | `parse1214` given a batch (use `parse1214Batch`)                                                             |
-| `parse.numeric`         | non-digit in a numeric field                                                                                 |
-| `parse.date`            | invalid `DD/MM/YYYY`                                                                                         |
-| `parse.codeSection`     | unknown code, duplicate code, truncated entry, or non-zero data after the last entry                         |
-| `parse.fieldValue`      | header value well-formed for its type but not one it can hold (flag/yes-no digit, phone prefix)              |
-| `parse.countrySection`  | malformed country entry (affiliation ≠ 1, bad country, > 10 entries)                                         |
-| `parse.derivedMismatch` | a derived value disagrees with its source (e.g. code 273 vs 1029/1030, 832 vs 2000 presence, serial numbers) |
+| Rule ID                 | Condition                                                                                                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parse.empty`           | no records                                                                                                                                                                              |
+| `parse.encoding`        | bytes that do not decode in the selected encoding                                                                                                                                       |
+| `parse.lineLength`      | line length ≠ record length                                                                                                                                                             |
+| `parse.formType`        | positions 1–4 ≠ `1214`                                                                                                                                                                  |
+| `parse.recordType`      | unknown record type                                                                                                                                                                     |
+| `parse.prefixFiller`    | positions 9–136 not all `0`                                                                                                                                                             |
+| `parse.order`           | record out of the §3.3 order, a 2200 record with no 2000 record before it, a second 1000 before a 9999, or any record after the 9999 (a second 9999 too)                                |
+| `parse.occurrences`     | maximum record counts of §3.2 exceeded (minimums are business rules)                                                                                                                    |
+| `parse.control.missing` | report not terminated by 9999                                                                                                                                                           |
+| `parse.control.counts`  | 9999 counts differ from the records present                                                                                                                                             |
+| `parse.multipleReports` | `parse1214` given a batch (use `parse1214Batch`)                                                                                                                                        |
+| `parse.numeric`         | non-digit in a numeric field                                                                                                                                                            |
+| `parse.date`            | invalid `DD/MM/YYYY`                                                                                                                                                                    |
+| `parse.codeSection`     | unknown code, duplicate code, truncated entry, or non-zero data after the last entry                                                                                                    |
+| `parse.fieldValue`      | header value well-formed for its type but not one it can hold (flag/yes-no digit, phone prefix, a 2200 code that is not a per-country code of 2000 or repeats an earlier 2200 record's) |
+| `parse.countrySection`  | malformed country-amount section (affiliation ≠ 1, bad country, truncated entry, non-zero tail, > 10 entries)                                                                           |
+| `parse.derivedMismatch` | a derived value disagrees with its source (e.g. code 273 vs 1029/1030, 832 vs 2000 presence, serial numbers)                                                                            |
 
 ---
 
@@ -1637,6 +1658,7 @@ phase noted, and this table updated with the outcome.
 | A-21 | 1091 amortization amount                                       | Type alphanumeric; "0 may be entered"                                                                                              | Digits with alphanumeric padding (`amountX`); 0 is written as `0`                                          | P1        |
 | A-22 | Code order in sections                                         | Not stated                                                                                                                         | Ascending code order                                                                                       | P1        |
 | A-23 | Data provenance, 3051 header                                   | The PDF table on p.39 lost the position column during extraction                                                                   | Positions 137/139/142/192/193/194/224 taken from the PDF text layer and verified to chain with the lengths | —         |
+| A-24 | Breakdown of code 442 = 0                                      | A per-country code that "has a value" needs a 2200 record (p.27); 442 is the only per-country code that may be 0                   | "Has a value" = written in the 2000 section, so 442 = 0 needs a breakdown; omitted zero codes need none    | P3        |
 | A-34 | 1000@1090 qualifying-company mark                              | p.12 gives 1090 the same name and notes as 1065 ("סימון – רכישה של \"חברה מזכה\"", 1-כן 2-לא)                                      | Inferred from 1091 (the amount): `amortizationClaimed`, amortization is claimed for the purchase           | —         |
 
 ---

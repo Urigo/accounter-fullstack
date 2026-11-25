@@ -7,7 +7,7 @@ const LAYOUT = getLayout(2024);
 const OPTIONS = { today: () => '2024-06-30' };
 
 const FIRST: RdInvestment = {
-  companyName: '  חברת  מו"פ בע"מ ',
+  companyName: '  חברת  מו"פ\u00A0בע"מ ',
   companyFileNumber: '520000001',
   investmentAmount: 250_000,
 };

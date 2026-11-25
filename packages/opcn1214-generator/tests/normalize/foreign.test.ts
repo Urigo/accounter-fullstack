@@ -1,9 +1,12 @@
 import { getLayout } from '../../src/layout/registry.js';
+import type { CountryCode } from '../../src/model/codes.generated.js';
 import type { ForeignAppendix } from '../../src/model/input.js';
 import type { ValidateOptions } from '../../src/model/options.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import {
+  breakdownCountries,
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -159,5 +162,112 @@ describe('normalizeReport: record 2000 (foreign appendix)', () => {
     );
     expect(main()?.values.hasForeignAppendix).toBe(false);
     expect(main(foreignAppendix())?.paths.hasForeignAppendix).toBe('');
+  });
+});
+
+describe('normalizeReport: records 2200 (country breakdowns)', () => {
+  function breakdownRecords(appendix: ForeignAppendix, options = OPTIONS) {
+    return reportWith(appendix, options).records.filter(r => r.recordType === '2200');
+  }
+
+  it('writes one record per breakdown, sorted by code and indexed in that order', () => {
+    const records = breakdownRecords(
+      foreignAppendix({
+        amounts: { '439': 1, '420': 2, '442': 0 },
+        countryBreakdown: {
+          '442': { countries: breakdownCountries(1) },
+          '439': { countries: [{ country: '-88', income: 1 }] },
+          '420': { countries: breakdownCountries(2) },
+        },
+      }),
+    );
+    expect(records.map(r => [r.index, r.values.code])).toEqual([
+      [0, 420],
+      [1, 439],
+      [2, 442],
+    ]);
+    expect(records.every(r => r.codes.size === 0)).toBe(true);
+  });
+
+  it('sets 137 to the code and 140 to the deductions, with paths into the breakdown', () => {
+    const [record] = breakdownRecords(
+      foreignAppendixWithBreakdown('420', {
+        deductionsOffsetsAndExemptions: 1234,
+        countries: [
+          { country: '40' as CountryCode, income: 3000 },
+          { country: '-88', income: 0 },
+        ],
+      }),
+    );
+    expect(record?.values).toEqual({ code: 420, deductionsOffsetsAndExemptions: 1234 });
+    // Countries as their layout keys ('40' → '040'); '-88' as is; an income of 0 kept.
+    expect(record?.countries).toEqual([
+      { country: '040', income: 3000 },
+      { country: '-88', income: 0 },
+    ]);
+    const breakdown = 'foreignAppendix.countryBreakdown["420"]';
+    expect(record?.paths).toEqual({
+      code: breakdown,
+      deductionsOffsetsAndExemptions: `${breakdown}.deductionsOffsetsAndExemptions`,
+      'countries[0].country': `${breakdown}.countries[0].country`,
+      'countries[0].income': `${breakdown}.countries[0].income`,
+      'countries[1].country': `${breakdown}.countries[1].country`,
+      'countries[1].income': `${breakdown}.countries[1].income`,
+    });
+  });
+
+  it('keeps a country code that is not 1–3 digits as given, for the rules', () => {
+    const [record] = breakdownRecords(
+      foreignAppendixWithBreakdown('420', {
+        countries: [{ country: 'ab' as CountryCode, income: 1 }],
+      }),
+    );
+    expect(record?.countries).toEqual([{ country: 'ab', income: 1 }]);
+  });
+
+  it('rounds the deductions and the incomes per options.rounding', () => {
+    const [record] = breakdownRecords(
+      foreignAppendixWithBreakdown('420', {
+        deductionsOffsetsAndExemptions: 99.5,
+        countries: [{ country: '840', income: 2.5 }],
+      }),
+      { ...OPTIONS, rounding: 'halfUp' },
+    );
+    expect(record?.values.deductionsOffsetsAndExemptions).toBe(100);
+    expect(record?.countries).toEqual([{ country: '840', income: 3 }]);
+  });
+
+  it('places the 2200 records right after 2000', () => {
+    const report = normalizeReport(
+      minimalInput({
+        rdInvestments: rdInvestments(1),
+        amounts: { '165': rdInvestmentsTotal(1) },
+        foreignAppendix: foreignAppendix({
+          amounts: { '439': 1, '420': 2 },
+          countryBreakdown: {
+            '439': { countries: breakdownCountries(1) },
+            '420': { countries: breakdownCountries(1) },
+          },
+        }),
+      }),
+      LAYOUT,
+      OPTIONS,
+    );
+    expect(report.records.map(r => [r.recordType, r.index])).toEqual([
+      ['1000', 0],
+      ['1020', 0],
+      ['1030', 0],
+      ['2000', 0],
+      ['2200', 0],
+      ['2200', 1],
+    ]);
+  });
+
+  it('emits no 2200 record without breakdowns or for an empty breakdown map', () => {
+    expect(breakdownRecords(foreignAppendix())).toEqual([]);
+    expect(breakdownRecords({ ...foreignAppendix(), countryBreakdown: {} })).toEqual([]);
+    expect(
+      breakdownRecords({ ...foreignAppendix(), countryBreakdown: { '420': undefined } }),
+    ).toEqual([]);
   });
 });
