@@ -1,7 +1,7 @@
 import { encodeWindows1255 } from '../../src/codec/windows1255.js';
 import { generate1214, Opcn1214ParseError, parse1214, type Issue } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
 import { dropLine, goldenText, tamper as tamperAt } from '../fixtures/files.js';
 
 const OPTIONS = { today: () => '2025-03-31' };
@@ -283,20 +283,48 @@ describe('parse1214', () => {
     ]);
   });
 
-  it('does not throw an internal error for record types without an input mapping yet', () => {
-    // 1010 records have the length of 1020 records; their issues have no input path yet.
-    let related = tamper(text, 2, 5, '1010');
-    related = tamper(tamper(related, 3, 139, '01'), 3, 141, '00');
-    let issues: readonly Issue[];
-    try {
-      issues = parse1214(related).issues;
-    } catch (error) {
-      expect(error).toBeInstanceOf(Opcn1214ParseError);
-      issues = (error as Opcn1214ParseError).issues;
-    }
-    const onRelated = issues.filter(issue => issue.recordType === '1010');
-    expect(onRelated.length).toBeGreaterThan(0);
-    expect(onRelated.every(issue => issue.path === '')).toBe(true);
+  describe('related companies (1010)', () => {
+    const related = generate1214(
+      minimalInput({ relatedCompanies: relatedCompanies(2) }),
+      OPTIONS,
+    ).text;
+
+    it('reads 1010 records between 1000 and 1020 back as relatedCompanies', () => {
+      const result = parse1214(related);
+      expect(result.report.relatedCompanies).toEqual(relatedCompanies(2));
+      expect(result.issues).toEqual([]);
+    });
+
+    it.each([
+      ['before 1000', [1, 0, 2, 3, 4], 1],
+      ['after 1020', [0, 1, 3, 2, 4], 4],
+    ])('reports a 1010 record %s as parse.order', (_, order, line) => {
+      const lines = related.split(CRLF);
+      const reordered = [...order.map(index => lines[index]), ''].join(CRLF);
+      expect(parseErrorIssues(() => parse1214(reordered))).toContainEqual(
+        expect.objectContaining({ ruleId: 'parse.order', recordType: '1010', line }),
+      );
+    });
+
+    it('locates issues of 1010 records by their input index', () => {
+      // 1010@198 relation type 9 is not an allowed value.
+      const result = parse1214(tamper(related, 3, 198, '9'));
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'field.enum',
+          path: 'relatedCompanies[1].relationType',
+          recordType: '1010',
+          recordIndex: 1,
+        }),
+      ]);
+      expect(result.report.relatedCompanies?.[1]?.relationType).toBe(9);
+    });
+
+    it('reports 1010 records the 9999 record does not count (9999@139)', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(related, 5, 139, '01')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 5, column: 139 }),
+      ]);
+    });
   });
 
   it('never lets anything but Opcn1214ParseError escape for corrupted golden files', () => {

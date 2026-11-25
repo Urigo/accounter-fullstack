@@ -61,6 +61,14 @@ export const RULES = deepFreeze([
       'A derived code (008, 028, 273, 277, 278, 280, 297) passed in a code map; the message names the input property that controls it.',
   },
   {
+    id: 'struct.relatedCompanies.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '1010',
+    description: 'More than 3 related companies.',
+    specRef: { page: 2 },
+  },
+  {
     id: 'struct.shareholders.min',
     severity: 'error',
     source: 'spec',

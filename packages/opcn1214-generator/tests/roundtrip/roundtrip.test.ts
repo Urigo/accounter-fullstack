@@ -10,7 +10,12 @@ import {
   type Report1214Input,
 } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
+import {
+  fullDeclarationsInput,
+  fullMainInput,
+  minimalInput,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 
 const OPTIONS: GenerateOptions = { today: () => '2025-03-31' };
 const GOLDEN_DIR = new URL('../fixtures/golden/', import.meta.url);
@@ -197,6 +202,27 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
       declarations: { form6111Obligation: 'notObliged' },
       capitalGainsSummary: { untransmittedCount: 2 },
     }),
+    OPTIONS,
+  ],
+  ['no related companies (an empty list)', minimalInput({ relatedCompanies: [] }), OPTIONS],
+  [
+    'one related company, optional members written as absent or padded',
+    minimalInput({
+      relatedCompanies: [
+        {
+          companyName: '  חברה\u00A0 קשורה ',
+          companyFileNumber: '77',
+          relationType: 'jointlyControlled',
+          assessingOfficeCode: 0,
+        },
+      ],
+    }),
+    OPTIONS,
+  ],
+  ['three related companies', minimalInput({ relatedCompanies: relatedCompanies(3) }), OPTIONS],
+  [
+    'three related companies with the other relation types',
+    minimalInput({ relatedCompanies: relatedCompanies(8).slice(5) }),
     OPTIONS,
   ],
   [

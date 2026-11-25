@@ -23,6 +23,28 @@ export function mainCodePairsMax(report: NormalizedReport): Issue[] {
     );
 }
 
+/**
+ * struct.relatedCompanies.max: more related companies (1010 records) than the layout allows (3,
+ * p.2).
+ */
+export function relatedCompaniesMax(report: NormalizedReport): Issue[] {
+  const max = report.layout.records['1010'].maxOccurs;
+  const count = report.records.filter(record => record.recordType === '1010').length;
+  if (count <= max) {
+    return [];
+  }
+  return [
+    makeIssue('struct.relatedCompanies.max', {
+      message: `The report has ${count} related companies; at most ${max} are allowed.`,
+      path: 'relatedCompanies',
+      recordType: '1010',
+      value: count,
+      expected: `at most ${max}`,
+      specRef: { page: 2 },
+    }),
+  ];
+}
+
 function shareholderCount(report: NormalizedReport): number {
   return report.records.filter(record => record.recordType === '1020').length;
 }

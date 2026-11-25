@@ -110,6 +110,22 @@ const qualifyingCompany = z.strictObject({
   amortizationAmount: z.number().optional(),
 });
 
+const relatedCompany = z.strictObject({
+  companyName: z.string(),
+  companyFileNumber: z.string().optional(),
+  relationType: z.enum([
+    'parent',
+    'subsidiary',
+    'partnership',
+    'kibbutzRelatedCorporation',
+    'jointlyControlled',
+    'granddaughter',
+    'grandmother',
+    'other',
+  ]),
+  assessingOfficeCode: z.number().optional(),
+});
+
 const shareholder = z.strictObject({
   idNumber: z.string(),
   fullName: z.string(),
@@ -144,6 +160,8 @@ export const report1214InputSchema = z.strictObject({
     .strictObject({ bank: z.string(), branch: z.string(), account: z.string() })
     .optional(),
   amounts: z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), z.number().optional()),
+  /** Any length: struct.relatedCompanies.max reports more than three. */
+  relatedCompanies: z.array(relatedCompany).optional(),
   shareholders: z.array(shareholder),
 });
 

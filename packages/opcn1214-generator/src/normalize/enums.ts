@@ -3,7 +3,7 @@
  * denormalizer reads the literal back.
  */
 import type { Primitive } from '../codec/types.js';
-import type { Declarations } from '../model/input.js';
+import type { Declarations, RelatedCompany } from '../model/input.js';
 
 /** A literal → code map of an enum input member. */
 type EnumCodes<L extends string> = Readonly<Record<L, number>>;
@@ -21,6 +21,21 @@ export const CONSOLIDATED_REPORT_CODES = {
   consolidatesWithParent: 2,
   notRelevant: 3,
 } as const satisfies EnumCodes<NonNullable<Declarations['consolidatedReport']>>;
+
+/**
+ * 1010@198: 1 parent, 2 subsidiary, 3 partnership, 4 corporation related to a kibbutz, 5 jointly
+ * controlled company, 6 granddaughter company, 7 grandmother company, 8 other.
+ */
+export const RELATION_TYPE_CODES = {
+  parent: 1,
+  subsidiary: 2,
+  partnership: 3,
+  kibbutzRelatedCorporation: 4,
+  jointlyControlled: 5,
+  granddaughter: 6,
+  grandmother: 7,
+  other: 8,
+} as const satisfies EnumCodes<RelatedCompany['relationType']>;
 
 /** The enum header keys of record 1000 (each its own input path) and their maps. */
 export const ENUM_INPUTS: Readonly<Partial<Record<string, EnumCodes<string>>>> = {

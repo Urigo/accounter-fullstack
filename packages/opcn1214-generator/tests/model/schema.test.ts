@@ -2,7 +2,12 @@ import type { z } from 'zod';
 import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
 import { checkShape, zodIssuesToIssues } from '../../src/validate/shape.js';
-import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
+import {
+  fullDeclarationsInput,
+  fullMainInput,
+  minimalInput,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 
 /** The input.shape issues of `input` against the schema of its year (2024 by default). */
 function shapeIssues(input: unknown) {
@@ -25,6 +30,26 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(
       shapeIssues(minimalInput({ shareholders: Array.from({ length: 100 }, () => shareholder) })),
     ).toEqual([]);
+  });
+
+  it('accepts any number of related companies (struct.relatedCompanies.max counts them)', () => {
+    expect(shapeIssues(minimalInput({ relatedCompanies: [] }))).toEqual([]);
+    expect(shapeIssues(minimalInput({ relatedCompanies: relatedCompanies(8) }))).toEqual([]);
+  });
+
+  it('rejects an unknown relation type and an unknown related-company member', () => {
+    const [company] = relatedCompanies(1);
+    const input = {
+      ...minimalInput(),
+      relatedCompanies: [
+        { ...company, relationType: 'sister' },
+        { ...company, country: 'IL' },
+      ],
+    };
+    expect(shapePaths(input)).toEqual([
+      'relatedCompanies[0].relationType',
+      'relatedCompanies[1].country',
+    ]);
   });
 
   it('shares one schema between the supported years', () => {
