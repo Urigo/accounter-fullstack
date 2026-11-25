@@ -7,6 +7,7 @@ import { decodeRecord } from '../codec/record.js';
 import { CODE_LENGTH, COUNTRY_ENTRY_LENGTH } from '../codec/sections.js';
 import { CodecDecodeError, type CodecDecodeReason } from '../codec/types.js';
 import { Opcn1214InternalError, Opcn1214ParseError, unsupportedTaxYearIssue } from '../errors.js';
+import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import { getLayout, supportedTaxYears } from '../layout/registry.js';
 import type { CodeDef, FieldDef, RecordDef, RecordType, YearLayout } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -263,35 +264,40 @@ const BREAKDOWN_CODE = { start: 136, end: 139 } as const;
 const CODE_DIGITS = /^\d{3}$/;
 
 /**
- * The pathFor `inputIndex` of the record of type `def.type` on `line`, before it is decoded: its
- * index, or for a 2200 record the code at 2200@137 (undefined when that is not 3 digits).
+ * The pathFor `inputIndex` of the record of type `def.type` on `line`, before it is decoded:
+ * `inputIndex` (its index, or for a capital-gains record its index among all capital-gains
+ * records), or for a 2200 record the code at 2200@137 (undefined when that is not 3 digits).
  */
-function lineInputIndex(def: RecordDef, line: string, recordIndex: number): number | undefined {
+function lineInputIndex(def: RecordDef, line: string, inputIndex: number): number | undefined {
   if (def.type !== '2200') {
-    return recordIndex;
+    return inputIndex;
   }
   const code = line.slice(BREAKDOWN_CODE.start, BREAKDOWN_CODE.end);
   return CODE_DIGITS.test(code) ? Number(code) : undefined;
 }
 
-/** The parse issue of undecodable content of a record (offset within the line). */
+/**
+ * The parse issue of undecodable content of a record (offset within the line);
+ * `recordInputIndex` is the `inputIndex` lineInputIndex takes.
+ */
 function decodeIssue(
   def: RecordDef,
   line: string,
   error: CodecDecodeError,
-  at: Location & { recordIndex: number },
+  at: Location,
+  recordInputIndex: number,
 ): Issue {
   const field = fieldAt(def, error.offset);
   const location = { ...at, column: error.offset + 1 };
   const ruleId = decodeRule(def.type, error.reason, error.offset);
-  const inputIndex = lineInputIndex(def, line, at.recordIndex);
+  const inputIndex = lineInputIndex(def, line, recordInputIndex);
   if (!field) {
     // Inside a code-amount section: the code of the entry and its input path (SPEC §9.1).
     const code = codeAt(def, line, error.offset);
-    return code
+    return code && inputIndex !== undefined
       ? parseIssue(ruleId, error.message, location, {
           code: code.code,
-          path: pathFor(def.type, at.recordIndex, codeKey(code.code)),
+          path: pathFor(def.type, inputIndex, codeKey(code.code)),
         })
       : parseIssue(ruleId, error.message, location);
   }
@@ -305,7 +311,8 @@ function decodeIssue(
 
 /**
  * `record` with the input path of every value, code and country entry (emission index = input
- * index; a 2200 record is keyed by its code).
+ * index: among records of the type, or among all capital-gains records for a 30xx record, whose
+ * inputIndex the parser sets; a 2200 record is keyed by its code).
  */
 function withPaths(record: NormalizedRecord): NormalizedRecord {
   const keys = [
@@ -463,6 +470,9 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
   const records: NormalizedRecord[] = [];
   let control: { record: NormalizedRecord; line: number } | undefined;
   const breakdownCodes = new Set<string>();
+  // Capital-gains records are read back in file order, so their index among all of them is the
+  // index of their appendix in `capitalGains` (denormalize).
+  let capitalGainsCount = 0;
   for (const [offset, line] of lines.entries()) {
     const lineNumber = offset + 1;
     const { type, decodable } = checkLine(line, lineNumber, layout, issues);
@@ -471,6 +481,8 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
     }
     const recordIndex = counts.get(type) ?? 0;
     counts.set(type, recordIndex + 1);
+    const isCapitalGains = isCapitalGainsRecordType(type);
+    const inputIndex = isCapitalGains ? capitalGainsCount++ : recordIndex;
     const at = { line: lineNumber, column: RECORD_TYPE.start + 1, recordType: type, recordIndex };
     const order = orderProblem(type, types);
     if (order) {
@@ -483,6 +495,9 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
     const def = layout.records[type];
     try {
       const record = decodeRecord(def, line.text, recordIndex);
+      if (isCapitalGains) {
+        record.inputIndex = inputIndex;
+      }
       if (type === '9999') {
         control ||= { record, line: lineNumber };
       } else {
@@ -495,7 +510,7 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
       if (!(error instanceof CodecDecodeError)) {
         throw error;
       }
-      issues.push(decodeIssue(def, line.text, error, at));
+      issues.push(decodeIssue(def, line.text, error, at, inputIndex));
     }
   }
   if (!types.includes('9999')) {

@@ -4,6 +4,7 @@
  * keyed by the 3-digit code string.
  */
 import type {
+  CapitalGainsCode,
   CountryBreakdownCode,
   CountryCode,
   ForeignAppendixCode,
@@ -85,7 +86,10 @@ export interface Report1214Input {
   capitalGainsSummary?: {
     /** 960: all appendices, transmitted and not. */
     totalAppendicesCount?: number;
-    /** 962 (→ 833 = yes when > 0, SPEC §7.4). */
+    /**
+     * 962 (→ 833 = yes when > 0, SPEC §7.4). Code 028 is `capitalGains.length` plus this count, at
+     * most 99 (`field.length` here otherwise).
+     */
     untransmittedCount?: number;
     /** 964–968: why appendices were not transmitted. */
     reasons?: {
@@ -137,6 +141,11 @@ export interface Report1214Input {
   rdInvestments?: RdInvestment[];
   /** Record 2000 (0–1); its presence derives 1000@832 and 9999@143 (SPEC §7.4). */
   foreignAppendix?: ForeignAppendix;
+  /**
+   * Records 30xx: at most 14 in total (struct.capitalGains.max); they derive 1000@833, code 028 and
+   * 9999@145 (SPEC §7.4). Written grouped by record type, input order within a type (SPEC §3.3).
+   */
+  capitalGains?: CapitalGainsAppendix[];
 }
 
 /** Company identity (SPEC §7.2), record 1000@137–512. */
@@ -359,4 +368,22 @@ export interface CountryIncome {
   country: CountryCode;
   /** Income before deductions, offsets and exemptions, whole shekels. */
   income: number;
+}
+
+/**
+ * A capital-gains appendix, discriminated by its transaction symbol (record 30xx = 3000 + symbol,
+ * SPEC §3.7). Its transaction symbol (30xx@137) and appendix number (30xx@139) are derived
+ * (SPEC §7.4).
+ */
+export type CapitalGainsAppendix = Section6SecuritiesAppendix;
+
+/** Capital gains from securities under section 6, record 3063 (SPEC §7.2). */
+export interface Section6SecuritiesAppendix {
+  symbol: 63;
+  /** 3063@142 "נכס חו"ל" (yes/no). */
+  foreignAsset?: boolean;
+  /** 3063@143, losses carried forward, whole shekels. */
+  lossesCarriedForward?: number;
+  /** Record 3063 code-amount section; no code of 3063 is zeroAllowed (SPEC §4.5). */
+  amounts: Partial<Record<CapitalGainsCode<63>, number>>;
 }

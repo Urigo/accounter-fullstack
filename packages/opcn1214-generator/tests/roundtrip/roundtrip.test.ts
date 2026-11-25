@@ -25,6 +25,8 @@ import {
   rdInvestments,
   rdInvestmentsTotal,
   relatedCompanies,
+  section6Appendices,
+  section6Appendix,
 } from '../fixtures/builders.js';
 
 const OPTIONS: GenerateOptions = { today: () => '2025-03-31' };
@@ -329,6 +331,47 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'capital gains: 3063 appendices, complete, empty and with zero values',
+    minimalInput({
+      capitalGains: [
+        section6Appendix(),
+        { symbol: 63, amounts: {} },
+        {
+          symbol: 63,
+          foreignAsset: false,
+          lossesCarriedForward: 0,
+          amounts: { '022': 0, '023': 9_999_999_999, '026': 1, '029': 2, '056': 3 },
+        },
+      ],
+    }),
+    OPTIONS,
+  ],
+  [
+    'capital gains: 14 appendices with untransmitted ones and the 833 override',
+    minimalInput({
+      declarations: { hasCapitalGainsAppendix: true },
+      capitalGains: section6Appendices(14),
+      capitalGainsSummary: {
+        totalAppendicesCount: 16,
+        untransmittedCount: 2,
+        reasons: { over14Appendices: true },
+      },
+    }),
+    OPTIONS,
+  ],
+  [
+    'every record type of E, F and G1: related companies, R&D, foreign appendix and capital gains',
+    fullMainInput({
+      relatedCompanies: relatedCompanies(3),
+      rdInvestments: rdInvestments(5),
+      amounts: { '165': rdInvestmentsTotal(5) },
+      foreignAppendix: foreignAppendixWithBreakdown('420'),
+      capitalGains: section6Appendices(2),
+      capitalGainsSummary: { totalAppendicesCount: 6 },
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
@@ -347,6 +390,9 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
           },
         },
       }),
+      capitalGains: [
+        section6Appendix({ lossesCarriedForward: 0.4, amounts: { '022': 2.5, '023': 0.4 } }),
+      ],
     }),
     { ...OPTIONS, rounding: 'halfUp' },
   ],

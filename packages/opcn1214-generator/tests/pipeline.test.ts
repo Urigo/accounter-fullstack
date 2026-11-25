@@ -1,5 +1,5 @@
 import { runPipeline } from '../src/pipeline.js';
-import { minimalInput } from './fixtures/builders.js';
+import { minimalInput, section6Appendices } from './fixtures/builders.js';
 
 const OPTIONS = { today: () => '2024-06-30' };
 
@@ -153,4 +153,29 @@ describe('runPipeline', () => {
       ).toEqual([[ruleId, 'capitalGainsSummary.untransmittedCount']]);
     },
   );
+
+  it('reports code 028 above 99 (appendices + untransmittedCount) once, at untransmittedCount', () => {
+    const input = (untransmittedCount: number) =>
+      minimalInput({
+        capitalGains: section6Appendices(2),
+        capitalGainsSummary: { untransmittedCount, reasons: { lossOrNoGain: true } },
+      });
+    const errors = runPipeline(input(98), OPTIONS).issues.filter(
+      issue => issue.severity === 'error',
+    );
+    expect(errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'field.length',
+        path: 'capitalGainsSummary.untransmittedCount',
+        recordType: '1000',
+        code: '028',
+        value: 100,
+        expected: 'at most 99',
+      }),
+    ]);
+    expect(errors[0]?.message).toContain('code 028');
+    const fits = runPipeline(input(97), OPTIONS);
+    expect(fits.issues.filter(issue => issue.severity === 'error')).toEqual([]);
+    expect(fits.report?.records[0]?.codes.get('028')).toBe(99);
+  });
 });

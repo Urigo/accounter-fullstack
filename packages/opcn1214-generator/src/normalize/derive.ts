@@ -8,7 +8,7 @@ import type { Declarations, Report1214Input } from '../model/input.js';
  */
 export const DERIVED_MAIN_CODE_SOURCES: Readonly<Record<DerivedMainCode, readonly string[]>> = {
   '008': ['declarations.appliesAccountingStandards'],
-  '028': ['capitalGainsSummary.untransmittedCount'],
+  '028': ['capitalGains', 'capitalGainsSummary.untransmittedCount'],
   '273': ['declarations.directorsReceivedOpinion', 'declarations.tookReportablePosition'],
   '277': ['bankAccount'],
   '278': ['bankAccount'],
@@ -94,22 +94,44 @@ export function deriveCode008(
 }
 
 /** The largest count code 028 and 1000@962 hold: both are 2 digits wide. */
-const MAX_APPENDIX_COUNT = 99;
+export const MAX_APPENDIX_COUNT = 99;
 
 /**
- * Code 028, the number of capital-gains forms attached (SPEC §7.4): the untransmitted count when it
- * is a valid count greater than 0 (an integer up to 99), else omitted. An invalid count is reported
- * once, by the field rules of 1000@962, not again through 028. The transmitted appendices are added
- * by step G1.
+ * `capitalGainsSummary.untransmittedCount` when it is a valid count greater than 0 (an integer up
+ * to 99), else 0. An invalid count is reported once, by the field rules of 1000@962.
  */
-export function deriveCode028(summary: Report1214Input['capitalGainsSummary']): number | undefined {
+export function validUntransmittedCount(summary: Report1214Input['capitalGainsSummary']): number {
   const count = summary?.untransmittedCount;
   return typeof count === 'number' &&
     Number.isInteger(count) &&
     count > 0 &&
     count <= MAX_APPENDIX_COUNT
     ? count
-    : undefined;
+    : 0;
+}
+
+/**
+ * The number of capital-gains forms attached, transmitted and not (SPEC §7.4, p.14): the
+ * capital-gains appendices plus the valid untransmitted count (validUntransmittedCount). It may
+ * exceed MAX_APPENDIX_COUNT; deriveCode028 then omits 028.
+ */
+export function capitalGainsFormCount(
+  input: Pick<Report1214Input, 'capitalGains' | 'capitalGainsSummary'>,
+): number {
+  return (input.capitalGains?.length ?? 0) + validUntransmittedCount(input.capitalGainsSummary);
+}
+
+/**
+ * Code 028, the number of capital-gains forms attached (capitalGainsFormCount), omitted when 0.
+ * An invalid untransmitted count adds 0 (1000@962 reports it, not 028 again). A count above 99 does
+ * not fit the 2 digits of 028: it is omitted and reported once, as `field.length` at
+ * `capitalGainsSummary.untransmittedCount` (the normalizer of record 1000).
+ */
+export function deriveCode028(
+  input: Pick<Report1214Input, 'capitalGains' | 'capitalGainsSummary'>,
+): number | undefined {
+  const count = capitalGainsFormCount(input);
+  return count > 0 && count <= MAX_APPENDIX_COUNT ? count : undefined;
 }
 
 /** Whether `capitalGainsSummary.untransmittedCount` is greater than 0 (→ 833 = yes, SPEC §7.4). */
@@ -121,16 +143,17 @@ export function hasUntransmittedAppendices(
 }
 
 /**
- * 1000@833, has a capital-gains appendix (SPEC §7.4): yes when `hasCapitalGainsAppendix` is true
- * or `capitalGainsSummary.untransmittedCount` is greater than 0, otherwise no. The input model has
- * no capital-gains appendices yet (step G1).
+ * 1000@833, has a capital-gains appendix (SPEC §7.4): yes when `hasCapitalGainsAppendix` is true,
+ * `capitalGainsSummary.untransmittedCount` is greater than 0 or any capital-gains appendix exists,
+ * otherwise no.
  */
 export function deriveHasCapitalGainsAppendix(
-  input: Pick<Report1214Input, 'declarations' | 'capitalGainsSummary'>,
+  input: Pick<Report1214Input, 'declarations' | 'capitalGainsSummary' | 'capitalGains'>,
 ): boolean {
   return (
     input.declarations.hasCapitalGainsAppendix === true ||
-    hasUntransmittedAppendices(input.capitalGainsSummary)
+    hasUntransmittedAppendices(input.capitalGainsSummary) ||
+    (input.capitalGains?.length ?? 0) > 0
   );
 }
 

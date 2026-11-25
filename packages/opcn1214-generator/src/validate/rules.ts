@@ -50,7 +50,7 @@ export const RULES = deepFreeze([
     source: 'spec',
     scope: 'input',
     description:
-      'A code-map key (amounts, foreignAppendix.amounts) that is not a code of that record for the tax year, or a foreignAppendix.countryBreakdown key that is not a per-country code of record 2000.',
+      'A code-map key (amounts, foreignAppendix.amounts, capitalGains[i].amounts) that is not a code of that record for the tax year, or a foreignAppendix.countryBreakdown key that is not a per-country code of record 2000.',
     specRef: { page: 13 },
   },
   {
@@ -92,6 +92,15 @@ export const RULES = deepFreeze([
     scope: '1030',
     description: 'More than 5 R&D investments.',
     specRef: { page: 2 },
+  },
+  {
+    id: 'struct.capitalGains.max',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description:
+      'More than 14 capital-gains appendices (records 30xx); report the excess on 1000@962 with reasons 964–967 instead.',
+    specRef: { page: 32 },
   },
   {
     id: 'struct.mainCodePairs.max',
@@ -334,6 +343,15 @@ export const RULES = deepFreeze([
     specRef: { page: 17 },
   },
   {
+    id: 'main.capitalGains.flag',
+    severity: 'error',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'declarations.hasCapitalGainsAppendix is false while capital-gains appendices exist, transmitted or not (833 is derived from them as yes).',
+    specRef: { page: 7 },
+  },
+  {
     id: 'main.cgUntransmitted.reason',
     severity: 'warning',
     source: 'derived',
@@ -349,6 +367,15 @@ export const RULES = deepFreeze([
     scope: '1000',
     description:
       'A reason 964–967 marked while capitalGainsSummary.untransmittedCount (962) is 0 or absent.',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'main.appendixTotal.min',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'capitalGainsSummary.totalAppendicesCount (960) is given (> 0) and lower than the transmitted appendices (2000 and 30xx records) plus capitalGainsSummary.untransmittedCount (962).',
     specRef: { page: 10 },
   },
   {

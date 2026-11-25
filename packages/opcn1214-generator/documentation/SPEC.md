@@ -1052,33 +1052,40 @@ the n-th country entry is `foreignAppendix.countryBreakdown["420"].countries[n]`
 and `.income`). When parsing, every 2200 record is grouped under the 2000 record's
 `countryBreakdown`; there is no `countryBreakdown` without 2200 records.
 
+Capital-gains appendices are keyed by their index in `capitalGains`: a header key of a 30xx record
+maps to `capitalGains[i].<key>` and a code to `capitalGains[i].amounts["022"]`, where `i` is the
+appendix's input index, not its position in the file (records are grouped by type, §3.3). The
+transaction symbol (30xx@137) and the appendix number (30xx@139) are derived and have no input path.
+When parsing, `capitalGains` lists the appendices in file order (grouped by type ascending), the
+symbol comes from the record type, and `capitalGains` exists only when the file has 30xx records.
+
 Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
 notice at `declarations.reportablePositions[5]` (the first position not written), and the first five
 are still written.
 
 ### 7.4 Derived values (never taken from the caller)
 
-| Output                                                          | Derivation                                                                                                               | Enforces (spec)                            |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| Prefix (1–136) of every record                                  | `1214` + record type + 128 × `0`                                                                                         | p.4                                        |
-| 1000@150 software name                                          | `meta.softwareName` after text normalization (§4.3), or `'ACCOUNTER'` when that is absent or empty                       | required field                             |
-| 1000@165 save date                                              | `meta.saveDate ?? options.today()` (Asia/Jerusalem)                                                                      | required field                             |
-| 1000@832 has foreign appendix                                   | `foreignAppendix ? yes : no`                                                                                             | consistency with 2000 record               |
-| 1000@833 has capital-gains appendix                             | yes if `capitalGains.length > 0` or `untransmittedCount > 0` or `declarations.hasCapitalGainsAppendix === true`, else no | consistency with 30xx records              |
-| code 008                                                        | `1` if `appliesAccountingStandards`, else omitted                                                                        | p.9 (882 → "fill 008 with 1")              |
-| code 028                                                        | `capitalGains.length + (untransmittedCount ?? 0)`, omitted if 0; a count not an integer 0–99 adds 0 (962 reports it)     | p.14 "forms attached, transmitted and not" |
-| code 273                                                        | 1029/1030: yes/no → 1, no/yes → 2, yes/yes → 3, no/no → 9                                                                | p.19 mapping                               |
-| codes 277 / 278 / 280                                           | from `bankAccount`: 277 = account; 278 = bank(2) + branch(3); 280 = 1                                                    | p.19–20                                    |
-| code 297                                                        | `form6111Obligation`: obliged → 8, notObliged → 9, otherwise omitted                                                     | p.7 (834 → "fill 297 with 8/9")            |
-| 1010@137, 1020@137                                              | 1-based index in input order                                                                                             | serial numbers                             |
-| 1030@137                                                        | `1` (company)                                                                                                            | p.25                                       |
-| 2200@137 and entry affiliation                                  | the breakdown's 2000 code; affiliation `1`                                                                               | p.31                                       |
-| 30xx@137 transaction symbol                                     | `symbol`                                                                                                                 | p.34 ff.                                   |
-| 30xx@139 appendix number                                        | 1-based index among appendices **of the same symbol**, in emission order                                                 | §15 A-7                                    |
-| "מספר בתל"ם" (3027@255, 3051@234, 3065@325, 3066@154, 3077@487) | 1-based index among **all** capital-gains appendices in emission order                                                   | p.35 "running number"                      |
-| 3077@245 improvement count                                      | `improvements.length`                                                                                                    | p.55                                       |
-| 3077 codes 501–505                                              | `improvements[i].code50Amount`                                                                                           | p.58                                       |
-| 9999@137–150                                                    | counts from the generated records (§3.8)                                                                                 | p.60                                       |
+| Output                                                          | Derivation                                                                                                                                                                                                                     | Enforces (spec)                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| Prefix (1–136) of every record                                  | `1214` + record type + 128 × `0`                                                                                                                                                                                               | p.4                                        |
+| 1000@150 software name                                          | `meta.softwareName` after text normalization (§4.3), or `'ACCOUNTER'` when that is absent or empty                                                                                                                             | required field                             |
+| 1000@165 save date                                              | `meta.saveDate ?? options.today()` (Asia/Jerusalem)                                                                                                                                                                            | required field                             |
+| 1000@832 has foreign appendix                                   | `foreignAppendix ? yes : no`                                                                                                                                                                                                   | consistency with 2000 record               |
+| 1000@833 has capital-gains appendix                             | yes if `capitalGains.length > 0` or `untransmittedCount > 0` or `declarations.hasCapitalGainsAppendix === true`, else no                                                                                                       | consistency with 30xx records              |
+| code 008                                                        | `1` if `appliesAccountingStandards`, else omitted                                                                                                                                                                              | p.9 (882 → "fill 008 with 1")              |
+| code 028                                                        | `capitalGains.length + (untransmittedCount ?? 0)`, omitted if 0; a count not an integer 0–99 adds 0 (962 reports it); a sum above 99 is omitted and reported once (`field.length` at `capitalGainsSummary.untransmittedCount`) | p.14 "forms attached, transmitted and not" |
+| code 273                                                        | 1029/1030: yes/no → 1, no/yes → 2, yes/yes → 3, no/no → 9                                                                                                                                                                      | p.19 mapping                               |
+| codes 277 / 278 / 280                                           | from `bankAccount`: 277 = account; 278 = bank(2) + branch(3); 280 = 1                                                                                                                                                          | p.19–20                                    |
+| code 297                                                        | `form6111Obligation`: obliged → 8, notObliged → 9, otherwise omitted                                                                                                                                                           | p.7 (834 → "fill 297 with 8/9")            |
+| 1010@137, 1020@137                                              | 1-based index in input order                                                                                                                                                                                                   | serial numbers                             |
+| 1030@137                                                        | `1` (company)                                                                                                                                                                                                                  | p.25                                       |
+| 2200@137 and entry affiliation                                  | the breakdown's 2000 code; affiliation `1`                                                                                                                                                                                     | p.31                                       |
+| 30xx@137 transaction symbol                                     | `symbol`                                                                                                                                                                                                                       | p.34 ff.                                   |
+| 30xx@139 appendix number                                        | 1-based index among appendices **of the same symbol**, in emission order                                                                                                                                                       | §15 A-7                                    |
+| "מספר בתל"ם" (3027@255, 3051@234, 3065@325, 3066@154, 3077@487) | 1-based index among **all** capital-gains appendices in emission order                                                                                                                                                         | p.35 "running number"                      |
+| 3077@245 improvement count                                      | `improvements.length`                                                                                                                                                                                                          | p.55                                       |
+| 3077 codes 501–505                                              | `improvements[i].code50Amount`                                                                                                                                                                                                 | p.58                                       |
+| 9999@137–150                                                    | counts from the generated records (§3.8)                                                                                                                                                                                       | p.60                                       |
 
 Passing a derived code in an `amounts` map is an error (`input.derivedCode`) whose message names the
 input property that controls it.
@@ -1336,33 +1343,33 @@ a code value: `field.negative`, `field.integer`, `field.length`, at
 
 ### 10.3 Record 1000 — conditional and cross-field rules
 
-| Rule ID                                     | Sev | Source  | Condition (violation)                                                                                | Ref      |
-| ------------------------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------- | -------- |
-| `main.familyCompany.fileNumber`             | E   | spec    | family company (836) without the taxpayer file number (837)                                          | p.7      |
-| `main.familyCompany.code080`                | E   | spec    | family company (836) without code 080 (0 allowed)                                                    | p.15     |
-| `main.houseCompany.code084`                 | E   | spec    | house company (846) without code 084 (0 allowed)                                                     | p.15     |
-| `main.investmentLaw.flag`                   | E   | spec    | code 101 or 102 filled but 849 not marked                                                            | p.8      |
-| `main.beneficiaryEnterprise.noticeDate`     | E   | spec    | 851 marked without 852 (guaranteed by the input type; checked for JS callers and parsed files)       | p.8      |
-| `main.specialYear.balanceSheetDate`         | E   | spec    | 863 marked without 864 (same as above)                                                               | p.8      |
-| `main.kibbutz.code226`                      | E   | spec\*  | `isKibbutz` but code 226 not filled                                                                  | p.9, 18  |
-| `main.kibbutz.code226Other`                 | W   | derived | code 226 = 9 ("other cooperative, not kibbutz") while `isKibbutz`                                    | p.18     |
-| `main.buildingIncome.code259`               | E   | spec    | `hasBuildingIncome` (884 = 1) without code 259                                                       | p.9      |
-| `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                       | p.11     |
-| `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                          | p.11     |
-| `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                | p.11     |
-| `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                     | p.11     |
-| `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                     | p.17     |
-| `main.rd.total`                             | W   | derived | 1030 records present and the sum of their amounts ≠ code 165 (absent is 0), in whole shekels         | p.17     |
-| `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                | p.7      |
-| `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                      | p.10–11  |
-| `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                       | p.10–11  |
-| `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount` | p.10     |
-| `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                  | p.12, 19 |
-| `main.bankAccount.format`                   | E   | spec    | bank not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits                    | p.19     |
-| `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                        | p.12     |
-| `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                     | p.12     |
-| `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                      | p.10     |
-| `main.attachments.code010`                  | W   | derived | withholding certificates count > 0 but code 010 absent                                               | p.10     |
+| Rule ID                                     | Sev | Source  | Condition (violation)                                                                                        | Ref      |
+| ------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------------------ | -------- |
+| `main.familyCompany.fileNumber`             | E   | spec    | family company (836) without the taxpayer file number (837)                                                  | p.7      |
+| `main.familyCompany.code080`                | E   | spec    | family company (836) without code 080 (0 allowed)                                                            | p.15     |
+| `main.houseCompany.code084`                 | E   | spec    | house company (846) without code 084 (0 allowed)                                                             | p.15     |
+| `main.investmentLaw.flag`                   | E   | spec    | code 101 or 102 filled but 849 not marked                                                                    | p.8      |
+| `main.beneficiaryEnterprise.noticeDate`     | E   | spec    | 851 marked without 852 (guaranteed by the input type; checked for JS callers and parsed files)               | p.8      |
+| `main.specialYear.balanceSheetDate`         | E   | spec    | 863 marked without 864 (same as above)                                                                       | p.8      |
+| `main.kibbutz.code226`                      | E   | spec\*  | `isKibbutz` but code 226 not filled                                                                          | p.9, 18  |
+| `main.kibbutz.code226Other`                 | W   | derived | code 226 = 9 ("other cooperative, not kibbutz") while `isKibbutz`                                            | p.18     |
+| `main.buildingIncome.code259`               | E   | spec    | `hasBuildingIncome` (884 = 1) without code 259                                                               | p.9      |
+| `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                               | p.11     |
+| `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                                  | p.11     |
+| `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                        | p.11     |
+| `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                             | p.11     |
+| `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                             | p.17     |
+| `main.rd.total`                             | W   | derived | 1030 records present and the sum of their amounts ≠ code 165 (absent is 0), in whole shekels                 | p.17     |
+| `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while `capitalGains.length > 0` or `untransmittedCount > 0` | p.7      |
+| `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                              | p.10–11  |
+| `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                               | p.10–11  |
+| `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount`         | p.10     |
+| `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                          | p.12, 19 |
+| `main.bankAccount.format`                   | E   | spec    | bank not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits                            | p.19     |
+| `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                                | p.12     |
+| `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                             | p.12     |
+| `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                              | p.10     |
+| `main.attachments.code010`                  | W   | derived | withholding certificates count > 0 but code 010 absent                                                       | p.10     |
 
 \* The spec text for 877 is "required in the case of a kibbutz and when field 226 is filled" (§15
 A-13).
@@ -1371,6 +1378,9 @@ A field these rules require is missing when the file would read it back as absen
 or, in an optional field, 0 or an all-zero digit string. So `reportablePositions: [0]` does not
 satisfy `main.reportablePositions.required`, nor `representativeFileNumber: '000000000'`
 `main.familyCompany.fileNumber`: the input and the file parsed from it are judged alike.
+
+For `main.appendixTotal.min`, 960 counts as given only when it is above 0: an optional count of 0 is
+written as absent (§8.4), so input and parsed files are judged alike.
 
 Spec rules that are **enforced by derivation** and therefore need no runtime rule: 834 ⇒ code 297
 (8/9); 882 ⇒ code 008 = 1; code 273 ↔ 1029/1030; 832/833 ↔ appendix records; code 028; serial and

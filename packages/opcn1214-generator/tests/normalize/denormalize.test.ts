@@ -8,6 +8,8 @@ import {
   minimalInput,
   rdInvestments,
   relatedCompanies,
+  section6Appendices,
+  section6Appendix,
 } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
@@ -152,5 +154,43 @@ describe('denormalize: foreign appendix (record 2000)', () => {
       main.values.hasForeignAppendix = true;
     });
     expect(denormalize(report)).not.toHaveProperty('foreignAppendix');
+  });
+});
+
+describe('denormalize: capital-gains appendices (records 30xx)', () => {
+  it('reads 3063 records back as capitalGains, without the derived symbol fields', () => {
+    const appendices = [section6Appendix(), section6Appendix({ foreignAsset: false })];
+    const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
+    expect(denormalize(report).capitalGains).toEqual(appendices);
+  });
+
+  it('keeps an appendix with no header member and no codes', () => {
+    const appendices = [{ symbol: 63 as const, amounts: {} }];
+    const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
+    expect(denormalize(report).capitalGains).toEqual(appendices);
+  });
+
+  it('leaves no capitalGains without capital-gains records', () => {
+    expect(denormalize(reportWith(() => undefined))).not.toHaveProperty('capitalGains');
+  });
+
+  it('reads 833 = yes back as hasCapitalGainsAppendix only when nothing else explains it', () => {
+    const marked = (input: Parameters<typeof minimalInput>[0]) => {
+      const report = normalizeReport(minimalInput(input), LAYOUT, OPTIONS);
+      return denormalize(report).declarations.hasCapitalGainsAppendix;
+    };
+    expect(marked({ declarations: { hasCapitalGainsAppendix: true } })).toBe(true);
+    expect(
+      marked({
+        declarations: { hasCapitalGainsAppendix: true },
+        capitalGains: section6Appendices(1),
+      }),
+    ).toBeUndefined();
+    expect(
+      marked({
+        declarations: { hasCapitalGainsAppendix: true },
+        capitalGainsSummary: { untransmittedCount: 1 },
+      }),
+    ).toBeUndefined();
   });
 });

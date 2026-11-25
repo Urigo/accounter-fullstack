@@ -1,5 +1,6 @@
 /** Normalizer of record 1000, the main form (SPEC §7.2–§7.4, §4.5). */
-import type { YearLayout } from '../layout/types.js';
+import { Opcn1214InternalError } from '../errors.js';
+import type { RecordDef, YearLayout } from '../layout/types.js';
 import type { DerivedMainCode } from '../model/codes.generated.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord } from '../model/normalized.js';
@@ -7,6 +8,7 @@ import type { ValidateOptions } from '../model/options.js';
 import { makeIssue, type Issue } from '../validate/issue.js';
 import {
   BANK_ACCOUNT_FORMAT,
+  capitalGainsFormCount,
   deriveBankCodes,
   deriveCode008,
   deriveCode028,
@@ -14,7 +16,10 @@ import {
   deriveCode297,
   deriveHasCapitalGainsAppendix,
   deriveHasForeignAppendix,
+  hasUntransmittedAppendices,
   malformedBankAccountMembers,
+  MAX_APPENDIX_COUNT,
+  validUntransmittedCount,
   type BankAccount,
 } from './derive.js';
 import { CONSOLIDATED_REPORT_CODES, enumCode, FORM_6111_OBLIGATION_CODES } from './enums.js';
@@ -33,8 +38,9 @@ export interface NormalizedMain {
   omittedZeroCodes: string[];
   /**
    * Raised while normalizing: invalid phone prefixes, which are dropped (field.phonePrefix), a
-   * malformed bank account (main.bankAccount.format) and positions after the fifth
-   * (main.reportablePositions.max).
+   * malformed bank account (main.bankAccount.format), positions after the fifth
+   * (main.reportablePositions.max) and an explicit "no capital-gains appendix" while appendices
+   * exist (main.capitalGains.flag).
    */
   notices: Issue[];
 }
@@ -87,6 +93,74 @@ function checkReportablePositionCount(positions: readonly number[] | undefined, 
       value: positions.length,
       expected: `at most ${max} positions`,
       specRef: { page: 11 },
+    }),
+  );
+}
+
+/** The key of 1000@962, the number of capital-gains appendices not transmitted. */
+const UNTRANSMITTED_COUNT = 'capitalGainsSummary.untransmittedCount';
+
+/** The key of 1000@833, which is derived but is also an input property (SPEC §7.3). */
+const HAS_CAPITAL_GAINS_APPENDIX = 'declarations.hasCapitalGainsAppendix';
+
+/**
+ * main.capitalGains.flag: `hasCapitalGainsAppendix` false while capital-gains appendices exist
+ * (p.7), transmitted (30xx records) or not (`capitalGainsSummary.untransmittedCount` > 0, 1000@962).
+ * 833 is derived as yes from either (SPEC §7.4), so the explicit false exists only in the input and
+ * is reported as a notice (IMPLEMENTATION_PLAN.md §1.2).
+ */
+function checkCapitalGainsFlag(input: Report1214Input, def: RecordDef, notices: Issue[]) {
+  const count = input.capitalGains?.length ?? 0;
+  const untransmitted = hasUntransmittedAppendices(input.capitalGainsSummary);
+  if (input.declarations.hasCapitalGainsAppendix !== false || (count === 0 && !untransmitted)) {
+    return;
+  }
+  const field = def.fields.find(candidate => candidate.key === HAS_CAPITAL_GAINS_APPENDIX);
+  if (!field) {
+    throw new Opcn1214InternalError(`Record 1000 has no field "${HAS_CAPITAL_GAINS_APPENDIX}"`);
+  }
+  notices.push(
+    makeIssue('main.capitalGains.flag', {
+      message: `${HAS_CAPITAL_GAINS_APPENDIX} is false, but the report has ${count} capital-gains appendices and ${UNTRANSMITTED_COUNT} ${input.capitalGainsSummary?.untransmittedCount ?? 0} (1000@833 is derived from them as yes).`,
+      path: HAS_CAPITAL_GAINS_APPENDIX,
+      recordType: '1000',
+      recordIndex: 0,
+      field: { position: field.position, length: field.length, nameHe: field.nameHe },
+      value: false,
+      expected: 'true or absent',
+      specRef: { page: 7 },
+    }),
+  );
+}
+
+/**
+ * field.length of code 028 (SPEC §7.4): the capital-gains forms attached, the appendices plus the
+ * untransmitted count, are more than its 2 digits hold. Reported once, at the untransmitted count
+ * (the value to lower); deriveCode028 omits 028, so the code itself raises nothing. Without an
+ * untransmitted count, only more than 99 appendices overflow, and struct.capitalGains.max already
+ * reports those.
+ */
+function checkCode028Overflow(input: Report1214Input, def: RecordDef, notices: Issue[]) {
+  const count = capitalGainsFormCount(input);
+  const untransmitted = validUntransmittedCount(input.capitalGainsSummary);
+  if (count <= MAX_APPENDIX_COUNT || untransmitted === 0) {
+    return;
+  }
+  const field = def.fields.find(candidate => candidate.key === UNTRANSMITTED_COUNT);
+  if (!field) {
+    throw new Opcn1214InternalError(`Record 1000 has no field "${UNTRANSMITTED_COUNT}"`);
+  }
+  notices.push(
+    makeIssue('field.length', {
+      message: `${UNTRANSMITTED_COUNT} (${untransmitted}) plus ${count - untransmitted} capital-gains appendices is ${count} forms; code 028 (forms attached, transmitted and not) holds at most ${MAX_APPENDIX_COUNT}.`,
+      path: UNTRANSMITTED_COUNT,
+      recordType: '1000',
+      recordIndex: 0,
+      code: '028',
+      field: { position: field.position, length: field.length, nameHe: field.nameHe },
+      value: count,
+      expected: `at most ${MAX_APPENDIX_COUNT}`,
+      specRef: { page: 14 },
     }),
   );
 }
@@ -151,7 +225,7 @@ export function normalizeMain(
       'preparer.phone.prefix': prefix('preparer.phone.prefix', preparer?.phone?.prefix),
       'preparer.phone.number': preparer?.phone?.number,
       hasForeignAppendix: deriveHasForeignAppendix(input),
-      'declarations.hasCapitalGainsAppendix': deriveHasCapitalGainsAppendix(input),
+      [HAS_CAPITAL_GAINS_APPENDIX]: deriveHasCapitalGainsAppendix(input),
       'declarations.form6111Obligation': enumCode(
         FORM_6111_OBLIGATION_CODES,
         declarations.form6111Obligation,
@@ -224,10 +298,12 @@ export function normalizeMain(
   );
 
   checkReportablePositionCount(declarations.reportablePositions, notices);
+  checkCapitalGainsFlag(input, def, notices);
+  checkCode028Overflow(input, def, notices);
   const bank = bankCodes(input.bankAccount, notices);
   const derivedCodes: Readonly<Record<DerivedMainCode, number | undefined>> = {
     '008': deriveCode008(declarations),
-    '028': deriveCode028(capitalGainsSummary),
+    '028': deriveCode028(input),
     '273': deriveCode273(declarations),
     '277': bank['277'],
     '278': bank['278'],
