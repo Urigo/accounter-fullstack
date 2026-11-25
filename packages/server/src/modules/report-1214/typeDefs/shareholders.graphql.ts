@@ -1,5 +1,7 @@
 import { gql } from 'graphql-modules';
 
+// The `@requiresAnyRole` role lists below must match REPORT_1214_ROLES (helpers/owner.helper.ts),
+// which also gates an explicit `ownerId` by the caller's role in that business.
 export default gql`
   extend type Query {
     " The owner's shareholders for a tax year (form 1214 records 1020), in report order "

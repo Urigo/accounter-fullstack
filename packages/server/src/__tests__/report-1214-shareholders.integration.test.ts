@@ -52,6 +52,8 @@ const USER_ID = makeUUID('user', 'report-1214-shareholders-user');
 /** A second tenant, with its own user, that must not see the admin's shareholders */
 const OTHER_OWNER_ID = makeUUID('business', 'report-1214-shareholders-other-owner');
 const OTHER_USER_ID = makeUUID('user', 'report-1214-shareholders-other-user');
+/** Owner of the suite's owner, but only an `employee` of the other owner */
+const WEAK_MEMBER_USER_ID = makeUUID('user', 'report-1214-shareholders-weak-member');
 /** A business in the admin's books, linkable as a shareholder's financial entity */
 const LINKED_BUSINESS_ID = makeUUID('business', 'report-1214-shareholders-linked');
 /** Businesses in the owner's books that the merge and delete tests consume */
@@ -153,6 +155,7 @@ type GraphQLResponse<T> = {
 let db: TestDatabase;
 let yoga: { fetch: (url: string, init: RequestInit) => Response | Promise<Response> };
 let otherYoga: typeof yoga;
+let weakMemberYoga: typeof yoga;
 
 async function executeRaw<T>(
   query: string,
@@ -340,6 +343,7 @@ beforeAll(async () => {
     });
   yoga = yogaFor(USER_ID);
   otherYoga = yogaFor(OTHER_USER_ID);
+  weakMemberYoga = yogaFor(WEAK_MEMBER_USER_ID);
 });
 
 beforeEach(removeShareholders);
@@ -355,7 +359,7 @@ afterAll(async () => {
       OWNER_ID,
     ]);
     await client.query(`DELETE FROM ${qualifyTable('business_users')} WHERE user_id = ANY($1)`, [
-      [USER_ID, OTHER_USER_ID],
+      [USER_ID, OTHER_USER_ID, WEAK_MEMBER_USER_ID],
     ]);
     await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = ANY($1)`, [
       [OWNER_ID, OTHER_OWNER_ID],
@@ -623,6 +627,50 @@ describe('report 1214 shareholders', () => {
       expect(copy.code).toBe('FORBIDDEN');
 
       expect((await getShareholders(YEAR)).map(s => s.fullName)).toEqual(['Dana Cohen']);
+    });
+
+    it("refuses another business's 1214 data to a member whose role there is too weak", async () => {
+      // business_owner of the suite's owner (the active business, most recent) and only an
+      // employee of the other owner: the directive passes on the active business's role
+      await withSuperuserClient(async client => {
+        await client.query(
+          `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id, updated_at)
+           VALUES ($1, $2, 'employee', now() - interval '1 day'),
+                  ($1, $3, 'business_owner', now())
+           ON CONFLICT DO NOTHING`,
+          [WEAK_MEMBER_USER_ID, OTHER_OWNER_ID, OWNER_ID],
+        );
+      });
+      await setShareholders(YEAR, [dana]);
+
+      const read = await expectError(
+        SHAREHOLDERS_QUERY,
+        { ownerId: OTHER_OWNER_ID, year: YEAR },
+        weakMemberYoga,
+      );
+      expect(read.code).toBe('FORBIDDEN');
+      expect(read.message).toBe(
+        `Your role in business ${OTHER_OWNER_ID} does not allow access to its 1214 data`,
+      );
+
+      const write = await expectError(
+        SET_SHAREHOLDERS_MUTATION,
+        { ownerId: OTHER_OWNER_ID.toUpperCase(), year: YEAR, shareholders: [] },
+        weakMemberYoga,
+      );
+      expect(write.code).toBe('FORBIDDEN');
+      expect(write.message).toMatch(/^Your role in business /);
+
+      // their own business, explicitly or by default, still works
+      for (const ownerId of [OWNER_ID, null]) {
+        const own = await executeRaw<{ shareholders: Shareholder[] }>(
+          SHAREHOLDERS_QUERY,
+          { ownerId, year: YEAR },
+          weakMemberYoga,
+        );
+        expect(own.errors).toBeUndefined();
+        expect(own.data?.shareholders.map(s => s.fullName)).toEqual(['Dana Cohen']);
+      }
     });
 
     it('refuses a write to a business of the user other than the active one', async () => {
