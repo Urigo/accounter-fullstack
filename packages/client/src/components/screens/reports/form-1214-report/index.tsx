@@ -19,7 +19,7 @@ import {
 } from '../../../ui/select.js';
 import { Spinner } from '../../../ui/spinner.js';
 import { Form1214DownloadButton } from './download-button.js';
-import { Form1214ReportProvider } from './report-context.js';
+import { Form1214ReportProvider, useForm1214DirtySections } from './report-context.js';
 import { Form1214ReportSections } from './report-sections.js';
 import { Form1214ValidationPanel } from './validation-panel.js';
 import { resolveForm1214Year, sortForm1214Years } from './years.js';
@@ -90,14 +90,25 @@ export function Form1214Report(): ReactElement {
     }
   }, [selectedYear, yearParam, location.search, location.hash, navigate]);
 
-  // A year picked by hand starts at the top of the page: the section anchor is dropped
+  const { setDirty, hasDirtySections } = useForm1214DirtySections();
+
+  // A year picked by hand starts at the top of the page: the section anchor is dropped. Switching
+  // unmounts the sections, so unsaved edits would be lost: ask first
   const selectYear = useCallback(
     (year: string) => {
+      if (
+        hasDirtySections() &&
+        !window.confirm(
+          'You have unsaved changes in the 1214 report. Discard them and switch year?',
+        )
+      ) {
+        return;
+      }
       const next = new URLSearchParams(location.search);
       next.set('year', year);
       navigate({ search: `?${next.toString()}` }, { replace: true });
     },
-    [location.search, navigate],
+    [location.search, navigate, hasDirtySections],
   );
 
   // The report omits `ownerId`: the server reports on the active business, the only one whose 1214
@@ -186,7 +197,7 @@ export function Form1214Report(): ReactElement {
         </Alert>
       )}
       {report ? (
-        <Form1214ReportProvider year={report.year} refresh={refresh}>
+        <Form1214ReportProvider year={report.year} refresh={refresh} setDirty={setDirty}>
           <Form1214ValidationPanel validation={report.validation} />
           <Form1214ReportSections report={report} />
         </Form1214ReportProvider>
