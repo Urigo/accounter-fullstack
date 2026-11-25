@@ -538,6 +538,62 @@ describe('disposal amounts with agorot', () => {
       "Disposed cost (100001) exceeds the asset's cost (100000), both rounded to whole shekels",
     ]);
   });
+
+  describe('several disposals (rounded cumulatively)', () => {
+    const refund = (id: string, disposalDate: string, amount: number): AssetDisposalInput => ({
+      id,
+      disposalDate: d(disposalDate),
+      disposedCost: amount,
+      proceeds: amount,
+    });
+
+    it('closes an asset refunded in thirds at 0', () => {
+      const thirds = [
+        refund('a', '2025-03-01', 33_333.33),
+        refund('b', '2025-06-01', 33_333.33),
+        refund('c', '2025-09-01', 33_333.34),
+      ];
+      expect(validateAssetDisposals(asset(100_000), thirds)).toEqual([]);
+      const result = calculateAssetYear(asset(100_000), thirds, 2025);
+      // round(33,333.33) = 33,333; round(66,666.66) − 33,333 = 33,334; 100,000 − 66,667 = 33,333
+      expect(result.disposals.map(disposal => disposal.disposedCost)).toEqual([
+        33_333, 33_334, 33_333,
+      ]);
+      expect(result.disposedCost).toBe(100_000);
+      expect(result.closingCost).toBe(0);
+      expect(result.closingAccumulatedDepreciation).toBe(0);
+      expect(result.netBookValue).toBe(0);
+      expect(remainingAssetCost(asset(100_000), thirds)).toBe(0);
+      // proceeds are kept as given
+      expect(result.disposals.map(disposal => disposal.proceeds)).toEqual([
+        33_333.33, 33_333.33, 33_333.34,
+      ]);
+    });
+
+    it('accepts a split whose halves round up and down, and closes at 0', () => {
+      const halves = [refund('a', '2025-03-01', 50_000.5), refund('b', '2025-09-01', 49_999.5)];
+      expect(validateAssetDisposals(asset(100_000), halves)).toEqual([]);
+      const result = calculateAssetYear(asset(100_000), halves, 2025);
+      expect(result.disposals.map(disposal => disposal.disposedCost)).toEqual([50_001, 49_999]);
+      expect(result.closingCost).toBe(0);
+      expect(result.netBookValue).toBe(0);
+      expect(remainingAssetCost(asset(100_000), halves)).toBe(0);
+    });
+
+    it('does not change an earlier disposal or its year when a later one is added', () => {
+      const first = refund('a', '2025-07-01', 33_333.33);
+      const later = refund('b', '2026-03-01', 50_000.5);
+      expect(computeDisposal(asset(100_000), [first, later], 'a')).toEqual(
+        computeDisposal(asset(100_000), [first], 'a'),
+      );
+      expect(calculateAssetYear(asset(100_000), [first, later], 2025)).toEqual(
+        calculateAssetYear(asset(100_000), [first], 2025),
+      );
+      // 83,333.83 rounds to 83,334, so the later slice is 50,001
+      expect(computeDisposal(asset(100_000), [first, later], 'b')?.disposedCost).toBe(50_001);
+      expect(remainingAssetCost(asset(100_000), [first, later])).toBe(16_666);
+    });
+  });
 });
 
 describe('validateAssetDisposals', () => {
@@ -580,11 +636,22 @@ describe('validateAssetDisposals', () => {
         { id: 'a', disposalDate: d('2025-01-01'), disposedCost: -5, proceeds: 0 },
         { id: 'b', disposalDate: d('2025-01-02'), disposedCost: Number.NaN, proceeds: 0 },
       ]),
+    ).toEqual(['Disposed cost must be positive', 'Disposed cost must be positive']);
+    expect(validateAssetDisposals({ ...asset, cost: 0 }, [])).toHaveLength(1);
+  });
+
+  it('does not let an invalid amount shift the slices of later disposals', () => {
+    // without the NaN taking a slice, 0.4 + 0.4 = 0.8 rounds to a 1-shekel slice
+    expect(
+      validateAssetDisposals(asset, [
+        { id: 'a', disposalDate: d('2025-01-01'), disposedCost: 0.4, proceeds: 0 },
+        { id: 'b', disposalDate: d('2025-01-02'), disposedCost: Number.NaN, proceeds: 0 },
+        { id: 'c', disposalDate: d('2025-01-03'), disposedCost: 0.4, proceeds: 0 },
+      ]),
     ).toEqual([
       'Disposed cost must be at least 1 (amounts are rounded to whole shekels)',
-      'Disposed cost must be at least 1 (amounts are rounded to whole shekels)',
+      'Disposed cost must be positive',
     ]);
-    expect(validateAssetDisposals({ ...asset, cost: 0 }, [])).toHaveLength(1);
   });
 });
 
