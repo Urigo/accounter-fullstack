@@ -15,11 +15,12 @@ const INVESTMENT_FUND = 'gainFromInvestmentFund';
 
 /**
  * The one value 30xx@145 may hold per record type (SPEC §15 A-8): the PDF lists only "2 - לא" for
- * 3060 (p.43) and only "1 – כן" for 3064 (p.48). Absent is always allowed.
+ * 3060 (p.43) and 3065 (p.50), and only "1 – כן" for 3064 (p.48). Absent is always allowed.
  */
 const INVESTMENT_FUND_VALUES: Readonly<Partial<Record<RecordType, boolean>>> = {
   '3060': false,
   '3064': true,
+  '3065': false,
 };
 
 /**

@@ -22,6 +22,8 @@ import {
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -404,6 +406,32 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'capital gains: 3065 and 3066 appendices with every withholding status, mixed (input order 66, 63, 65, 60, 66, 65, 65)',
+    minimalInput({
+      capitalGains: [
+        noWithholding1326Appendix(),
+        section6Appendix(),
+        noWithholding1322Appendix({
+          withholders: [{}, { name: '  בנק\u00A0 יהב ', branch: '4', account: '56' }],
+        }),
+        securitiesAppendix(),
+        {
+          symbol: 66,
+          foreignAsset: false,
+          withholdingStatus: 'notWithheldFirstHalf',
+          lossesCarriedForward: 0,
+          amounts: { '022': 0, '023': 1, '026': 2, '029': 3, '056': 9_999_999_999 },
+        },
+        { symbol: 65, withholders: [], amounts: {} },
+        noWithholding1322Appendix({
+          withholdingStatus: 'notWithheldSecondHalf',
+          withholders: withholders(4),
+        }),
+      ],
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
@@ -426,6 +454,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
         section6Appendix({ lossesCarriedForward: 0.4, amounts: { '022': 2.5, '023': 0.4 } }),
         securitiesAppendix({ lossesCarriedForward: 10.5, amounts: { '012': 0.4, '010': 1.5 } }),
         reitAppendix({ lossesCarriedForward: 0.4, amounts: { '013': 2.5 } }),
+        noWithholding1322Appendix({ lossesCarriedForward: 2.5, amounts: { '012': 0.4 } }),
+        noWithholding1326Appendix({ lossesCarriedForward: 0.5, amounts: { '022': 1.5 } }),
       ],
     }),
     { ...OPTIONS, rounding: 'halfUp' },

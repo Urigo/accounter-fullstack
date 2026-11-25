@@ -381,11 +381,17 @@ export interface CountryIncome {
  * SPEC §3.7). Its transaction symbol (30xx@137) and appendix number (30xx@139) are derived
  * (SPEC §7.4).
  */
-export type CapitalGainsAppendix = SecuritiesAppendix | Section6SecuritiesAppendix | ReitAppendix;
+export type CapitalGainsAppendix =
+  | SecuritiesAppendix
+  | Section6SecuritiesAppendix
+  | ReitAppendix
+  | NoWithholding1322Appendix
+  | NoWithholding1326Appendix;
 
 /**
- * A withholding agent of a securities appendix (records 3060, 3064): one of the four slots
- * "מנכה", "סניף", "חשבון" at 146–313 (SPEC §7.3). An empty slot is written as absent.
+ * A withholding agent of a securities appendix (records 3060, 3064, 3065): one of the four slots
+ * "מנכה", "סניף", "חשבון" (3060/3064: 146–313, 3065: 147–314; SPEC §7.3). An empty slot is
+ * written as absent.
  */
 export interface Withholder {
   /** "מנכה", up to 30 characters; must start with a Hebrew letter (field.hebrewFirstLetter). */
@@ -407,12 +413,12 @@ export interface SecuritiesAppendix {
   boughtFromRelatedParty?: boolean;
   /**
    * 30xx@145 "רווח מקרן השקעות" (yes/no). Only one value is allowed per appendix type (SPEC §15
-   * A-8, cg.investmentFund.value): 3060 `false`, 3064 `true`, or absent.
+   * A-8, cg.investmentFund.value): 3060 and 3065 `false`, 3064 `true`, or absent.
    */
   gainFromInvestmentFund?: boolean;
-  /** 30xx@146–313: at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
+  /** 3060/3064@146–313 (3065: 147–314): at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
   withholders?: Withholder[];
-  /** 30xx@314, losses carried forward, whole shekels. */
+  /** 3060/3064@314 (3065: 315), losses carried forward, whole shekels. */
   lossesCarriedForward?: number;
   /** Record 3060 code-amount section; no code of 3060 is zeroAllowed (SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<60>, number>>;
@@ -437,4 +443,44 @@ export interface ReitAppendix extends Omit<SecuritiesAppendix, 'symbol' | 'amoun
   symbol: 64;
   /** Record 3064 code-amount section; no code of 3064 is zeroAllowed (SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<64>, number>>;
+}
+
+/**
+ * "מס במקור" of records 3065 (146) and 3066 (143): tax was not withheld on gains accrued in the
+ * first (January–June, → 2) or second (July–December, → 3) half of the tax year (SPEC §15 A-18);
+ * absent → 0.
+ */
+export type WithholdingStatus = 'notWithheldFirstHalf' | 'notWithheldSecondHalf';
+
+/**
+ * Capital gains from securities without tax withholding, form 1322, record 3065 (SPEC §7.2,
+ * p.50–52): the header of record 3060 with a withholding status; its "מספר בתל"ם" sequence
+ * (3065@325) is derived (SPEC §7.4).
+ */
+export interface NoWithholding1322Appendix extends Omit<SecuritiesAppendix, 'symbol' | 'amounts'> {
+  symbol: 65;
+  /** 3065@146 "מס במקור": notWithheldFirstHalf → 2, notWithheldSecondHalf → 3, absent → 0. */
+  withholdingStatus?: WithholdingStatus;
+  /** 3065@147–314: at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
+  withholders?: Withholder[];
+  /** 3065@315, losses carried forward, whole shekels. */
+  lossesCarriedForward?: number;
+  /** Record 3065 code-amount section; no code of 3065 is zeroAllowed (SPEC §4.5). */
+  amounts: Partial<Record<CapitalGainsCode<65>, number>>;
+}
+
+/**
+ * Capital gains from securities without tax withholding, form 1326, record 3066 (SPEC §7.2,
+ * p.53–54); its "מספר בתל"ם" sequence (3066@154) is derived (SPEC §7.4).
+ */
+export interface NoWithholding1326Appendix {
+  symbol: 66;
+  /** 3066@142 "נכס חו"ל" (yes/no). */
+  foreignAsset?: boolean;
+  /** 3066@143 "מס במקור": notWithheldFirstHalf → 2, notWithheldSecondHalf → 3, absent → 0. */
+  withholdingStatus?: WithholdingStatus;
+  /** 3066@144, losses carried forward, whole shekels. */
+  lossesCarriedForward?: number;
+  /** Record 3066 code-amount section; no code of 3066 is zeroAllowed (SPEC §4.5). */
+  amounts: Partial<Record<CapitalGainsCode<66>, number>>;
 }

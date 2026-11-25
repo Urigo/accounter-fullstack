@@ -4,7 +4,12 @@ import { validate1214 } from '../../src/api/validate.js';
 import type { CapitalGainsAppendix, Report1214Input } from '../../src/model/input.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
-import { minimalInput, reitAppendix, securitiesAppendix } from '../fixtures/builders.js';
+import {
+  minimalInput,
+  noWithholding1322Appendix,
+  reitAppendix,
+  securitiesAppendix,
+} from '../fixtures/builders.js';
 import { goldenText, tamper } from '../fixtures/files.js';
 
 const OPTIONS = { today: () => '2025-03-31' };
@@ -48,6 +53,23 @@ describe('capital-gains appendix rules (SPEC §10.6)', () => {
         value: false,
         expected: 'true (1) or absent',
         specRef: { page: 48 },
+      }),
+    ]);
+  });
+
+  it('cg.investmentFund.value: 3065 allows only "no" (2) at 30xx@145 (p.50)', () => {
+    expect(issuesOf([noWithholding1322Appendix({ gainFromInvestmentFund: false })])).toEqual([]);
+    expect(issuesOf([noWithholding1322Appendix({ gainFromInvestmentFund: undefined })])).toEqual(
+      [],
+    );
+    expect(issuesOf([noWithholding1322Appendix({ gainFromInvestmentFund: true })])).toEqual([
+      expect.objectContaining({
+        ruleId: RULE,
+        path: 'capitalGains[0].gainFromInvestmentFund',
+        recordType: '3065',
+        value: true,
+        expected: 'false (2) or absent',
+        specRef: { page: 50 },
       }),
     ]);
   });
