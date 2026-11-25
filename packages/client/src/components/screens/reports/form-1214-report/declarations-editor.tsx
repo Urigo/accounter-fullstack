@@ -29,6 +29,7 @@ import {
   TextField,
   TriStateControl,
   UNSET_OPTION,
+  useReportDirtyState,
   useResetAfterSave,
 } from './profile-editor-parts.js';
 import {
@@ -320,11 +321,14 @@ export function Form1214DeclarationsEditor({
   const { year, refresh } = useForm1214Report();
   const defaults = useMemo(() => declarationsToForm(declarations), [declarations]);
   const form = useForm<DeclarationsFormState>({
+    // Field errors show once a field is left (or on Save); Cancel and Save clear them
+    mode: 'onTouched',
     resolver: zodResolver(declarationsFormSchema),
     defaultValues: defaults,
   });
   const { markSaved, cancel } = useResetAfterSave(form, defaults);
   const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  useReportDirtyState('declarations', form.formState.isDirty);
 
   const { control } = form;
   const [isFamilyCompany, isBeneficiaryEnterprise, isSpecialYear] = useWatch({

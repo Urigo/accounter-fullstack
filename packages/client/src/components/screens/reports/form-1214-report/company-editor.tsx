@@ -8,6 +8,7 @@ import {
   EditorActions,
   PhoneFields,
   TextField,
+  useReportDirtyState,
   useResetAfterSave,
 } from './profile-editor-parts.js';
 import {
@@ -39,11 +40,14 @@ export function Form1214CompanyEditor({
   const { year, refresh } = useForm1214Report();
   const defaults = useMemo(() => companyToForm(company), [company]);
   const form = useForm<CompanyFormState>({
+    // Field errors show once a field is left (or on Save); Cancel and Save clear them
+    mode: 'onTouched',
     resolver: zodResolver(companyFormSchema),
     defaultValues: defaults,
   });
   const { markSaved, cancel } = useResetAfterSave(form, defaults);
   const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  useReportDirtyState('company', form.formState.isDirty);
 
   const onSubmit = async (values: CompanyFormState): Promise<void> => {
     const saved = await updateReport1214Profile({
@@ -138,11 +142,14 @@ export function Form1214PreparerEditor({
   const { year, refresh } = useForm1214Report();
   const defaults = useMemo(() => preparerToForm(preparer), [preparer]);
   const form = useForm<PreparerFormState>({
+    // Field errors show once a field is left (or on Save); Cancel and Save clear them
+    mode: 'onTouched',
     resolver: zodResolver(preparerFormSchema),
     defaultValues: defaults,
   });
   const { markSaved, cancel } = useResetAfterSave(form, defaults);
   const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  useReportDirtyState('preparer', form.formState.isDirty);
 
   const onSubmit = async (values: PreparerFormState): Promise<void> => {
     const saved = await updateReport1214Profile({
