@@ -1,31 +1,37 @@
 import { act, type ReactElement } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FragmentType } from '../../../../../gql/index.js';
 import type { Form1214AmountsSectionFragmentDoc } from '../../../../../gql/graphql.js';
+import type { FragmentType } from '../../../../../gql/index.js';
+import { Form1214ReportProvider } from '../report-context.js';
+import { Form1214AmountsSection } from '../sections/amounts-section.js';
+import {
+  buttonByText,
+  byLabel,
+  clickAndSettle,
+  clickOn,
+  describedText,
+  leave,
+  mountRoot,
+  pressKey,
+  typeInto,
+} from './editor-test-dom.js';
 
 type UpdateVariables = {
   year: number;
   input: { amountOverrides?: Array<{ code: string; amount: number }> | null };
 };
 
-const { updateMock } = vi.hoisted(() => ({
+const { updateMock, hookState } = vi.hoisted(() => ({
   updateMock: vi.fn<(variables: UpdateVariables, blockName: string) => Promise<boolean>>(),
+  hookState: { fetching: false },
 }));
 
 vi.mock('../../../../../hooks/use-update-report-1214-profile.js', () => ({
   useUpdateReport1214Profile: () => ({
     updateReport1214Profile: updateMock,
-    fetching: false,
-    errorMessage: undefined,
+    fetching: hookState.fetching,
   }),
 }));
-
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true;
-
-import { Form1214ReportProvider } from '../report-context.js';
-import { Form1214AmountsSection } from '../sections/amounts-section.js';
 
 const YEAR = 2025;
 
@@ -37,6 +43,7 @@ function report(overrides: Override[]): FragmentType<typeof Form1214AmountsSecti
     profile: { id: 'profile', amountOverrides: overrides },
     amounts: [
       { code: '018', amount: 0, source: 'OVERRIDE', computedAmount: 500, label: 'Income' },
+      { code: '030', amount: 12.5, source: 'COMPUTED', computedAmount: 12.5, label: 'Other' },
       { code: '165', amount: 2001, source: 'COMPUTED', computedAmount: 2001, label: 'R&D total' },
     ],
   } as unknown as FragmentType<typeof Form1214AmountsSectionFragmentDoc>;
@@ -44,8 +51,7 @@ function report(overrides: Override[]): FragmentType<typeof Form1214AmountsSecti
 
 const SAVED: Override[] = [{ code: '018', amount: 0 }];
 
-let container: HTMLDivElement;
-let root: Root;
+let mounted: ReturnType<typeof mountRoot>;
 let refresh: ReturnType<typeof vi.fn<() => void>>;
 let setDirty: ReturnType<typeof vi.fn<(section: string, dirty: boolean) => void>>;
 
@@ -58,107 +64,149 @@ function Harness({ overrides }: { overrides: Override[] }): ReactElement {
 }
 
 function render(overrides: Override[]): void {
-  act(() => root.render(<Harness overrides={overrides} />));
+  act(() => mounted.root.render(<Harness overrides={overrides} />));
 }
 
-function button(text: string): HTMLButtonElement {
-  const found = [...container.querySelectorAll('button')].find(
-    candidate => candidate.textContent?.trim() === text,
-  );
-  if (!found) {
-    throw new Error(`no "${text}" button`);
-  }
-  return found;
-}
-
-function input(label: string): HTMLInputElement | null {
-  return container.querySelector(`input[aria-label="${label}"]`);
-}
-
-function type(element: HTMLInputElement, value: string): void {
-  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  act(() => {
-    setValue?.call(element, value);
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-}
-
-function click(element: HTMLElement): void {
-  act(() => element.click());
-}
-
-/** The text of the elements `aria-describedby` names (that exist). */
-function describedText(element: HTMLElement): string {
-  return (element.getAttribute('aria-describedby') ?? '')
-    .split(' ')
-    .filter(Boolean)
-    .map(id => document.getElementById(id)?.textContent ?? '')
-    .join(' ');
-}
+const container = (): HTMLDivElement => mounted.container;
+const input = (label: string): HTMLInputElement | null => byLabel(container(), label);
+const button = (text: string): HTMLButtonElement => buttonByText(container(), text);
 
 beforeEach(() => {
-  container = document.createElement('div');
-  document.body.append(container);
-  root = createRoot(container);
+  mounted = mountRoot();
   refresh = vi.fn<() => void>();
   setDirty = vi.fn<(section: string, dirty: boolean) => void>();
   updateMock.mockReset();
+  hookState.fetching = false;
 });
 
 afterEach(() => {
-  act(() => root.unmount());
-  container.remove();
+  mounted.unmount();
 });
 
 describe('Form1214AmountsSection', () => {
   it('shows code 165 read-only and the saved override of 0', () => {
     render(SAVED);
     expect(input('Override of code 165')).toBeNull();
-    expect(container.querySelector('[aria-label="Override code 165"]')).toBeNull();
-    expect(container.textContent).toContain('From R&D investments');
+    expect(byLabel(container(), 'Override code 165')).toBeNull();
+    expect(container().textContent).toContain('From R&D investments');
     expect(input('Override of code 018')?.value).toBe('0');
     expect(button('Save').disabled).toBe(true);
   });
 
   it('saves the whole overrides list, keeping 0, and refreshes the report', async () => {
     render(SAVED);
-    type(input('Code of the new override')!, '263');
-    type(input('Amount of the new override')!, '-5');
-    click(button('Add override'));
+    typeInto(input('Code of the new override')!, '263');
+    typeInto(input('Amount of the new override')!, '-5');
+    clickOn(button('Add override'));
     expect(setDirty).toHaveBeenLastCalledWith('amounts', true);
 
     updateMock.mockResolvedValue(true);
-    await act(async () => button('Save').click());
+    await clickAndSettle(button('Save'));
 
     expect(updateMock).toHaveBeenCalledTimes(1);
-    const [variables] = updateMock.mock.calls[0];
-    expect(variables.year).toBe(YEAR);
-    expect(variables.input).toEqual({
-      amountOverrides: [
-        { code: '018', amount: 0 },
-        { code: '263', amount: -5 },
-      ],
-    });
+    expect(updateMock).toHaveBeenCalledWith(
+      {
+        year: YEAR,
+        input: {
+          amountOverrides: [
+            { code: '018', amount: 0 },
+            { code: '263', amount: -5 },
+          ],
+        },
+      },
+      'amount overrides',
+    );
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(setDirty).toHaveBeenLastCalledWith('amounts', false);
     // the saved override stays on screen until the refreshed report arrives
     expect(input('Override of code 263')?.value).toBe('-5');
   });
 
-  it('removes an override, back to the computed amount', async () => {
+  it('overrides a computed code from its row, focusing the new input', async () => {
     render(SAVED);
-    click(container.querySelector<HTMLButtonElement>('[aria-label="Remove the override of code 018"]')!);
-    expect(input('Override of code 018')).toBeNull();
+    clickOn(byLabel<HTMLButtonElement>(container(), 'Override code 030')!);
+    const amount = input('Override of code 030')!;
+    expect(amount.value).toBe('12.5');
+    expect(document.activeElement).toBe(amount);
+
     updateMock.mockResolvedValue(true);
-    await act(async () => button('Save').click());
+    await clickAndSettle(button('Save'));
+    expect(updateMock.mock.calls[0][0].input).toEqual({
+      amountOverrides: [
+        { code: '018', amount: 0 },
+        { code: '030', amount: 12.5 },
+      ],
+    });
+  });
+
+  it('adds the pending override on Enter instead of saving the block', () => {
+    render(SAVED);
+    typeInto(input('Code of the new override')!, '263');
+    const amount = input('Amount of the new override')!;
+    typeInto(amount, '4');
+    const event = pressKey(amount, 'Enter');
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(input('Override of code 263')?.value).toBe('4');
+    expect(input('Code of the new override')?.value).toBe('');
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('removes an override, back to the computed amount, and focuses "Add override"', async () => {
+    render(SAVED);
+    clickOn(byLabel<HTMLButtonElement>(container(), 'Remove the override of code 018')!);
+    expect(input('Override of code 018')).toBeNull();
+    expect(document.activeElement).toBe(button('Add override'));
+
+    updateMock.mockResolvedValue(true);
+    await clickAndSettle(button('Save'));
     expect(updateMock.mock.calls[0][0].input).toEqual({ amountOverrides: [] });
+  });
+
+  it('keeps an API-set override of 165 read-only, round-trips it and lets it be removed', async () => {
+    render([...SAVED, { code: '165', amount: 999 }]);
+    expect(input('Override of code 165')).toBeNull();
+    expect(container().textContent).toContain('999');
+
+    typeInto(input('Override of code 018')!, '1');
+    updateMock.mockResolvedValue(true);
+    await clickAndSettle(button('Save'));
+    expect(updateMock.mock.calls[0][0].input).toEqual({
+      amountOverrides: [
+        { code: '018', amount: 1 },
+        { code: '165', amount: 999 },
+      ],
+    });
+
+    clickOn(byLabel<HTMLButtonElement>(container(), 'Remove the override of code 165')!);
+    await clickAndSettle(button('Save'));
+    expect(updateMock.mock.calls[1][0].input).toEqual({
+      amountOverrides: [{ code: '018', amount: 1 }],
+    });
+  });
+
+  it('keeps the draft when the server rejects a code (a derived one), without refreshing', async () => {
+    render(SAVED);
+    typeInto(input('Code of the new override')!, '100');
+    typeInto(input('Amount of the new override')!, '1');
+    clickOn(button('Add override'));
+
+    // The hook shows the server's message as a toast and resolves to false
+    updateMock.mockResolvedValue(false);
+    await clickAndSettle(button('Save'));
+
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    expect(refresh).not.toHaveBeenCalled();
+    expect(input('Override of code 100')?.value).toBe('1');
+    expect(container().textContent).toContain('Unsaved changes');
+    expect(setDirty).toHaveBeenLastCalledWith('amounts', true);
   });
 
   it('is not dirty once an edit is reverted', () => {
     render(SAVED);
-    type(input('Override of code 018')!, '10');
+    typeInto(input('Override of code 018')!, '10');
     expect(setDirty).toHaveBeenLastCalledWith('amounts', true);
-    type(input('Override of code 018')!, '0');
+    typeInto(input('Override of code 018')!, '0');
     expect(setDirty).toHaveBeenLastCalledWith('amounts', false);
     expect(button('Save').disabled).toBe(true);
   });
@@ -166,9 +214,9 @@ describe('Form1214AmountsSection', () => {
   it('refuses an override of code 165 with the error tied to the code input', () => {
     render(SAVED);
     const code = input('Code of the new override')!;
-    type(code, '165');
-    type(input('Amount of the new override')!, '1');
-    click(button('Add override'));
+    typeInto(code, '165');
+    typeInto(input('Amount of the new override')!, '1');
+    clickOn(button('Add override'));
     expect(code.getAttribute('aria-invalid')).toBe('true');
     expect(describedText(code)).toMatch(/R&D investments/);
     expect(updateMock).not.toHaveBeenCalled();
@@ -176,12 +224,10 @@ describe('Form1214AmountsSection', () => {
 
   it('shows a blank amount error once the field is left, tied to the field', async () => {
     render(SAVED);
-    type(input('Override of code 018')!, '');
+    typeInto(input('Override of code 018')!, '');
     expect(input('Override of code 018')!.getAttribute('aria-invalid')).toBe('false');
 
-    await act(async () => {
-      input('Override of code 018')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-    });
+    await leave(input('Override of code 018')!);
     expect(describedText(input('Override of code 018')!)).toContain(
       'Enter the amount as a number, or remove the override',
     );
@@ -189,9 +235,9 @@ describe('Form1214AmountsSection', () => {
 
   it('validates on Save: shows the errors, focuses the first invalid field and sends nothing', async () => {
     render(SAVED);
-    type(input('Override of code 018')!, 'abc');
+    typeInto(input('Override of code 018')!, 'abc');
     expect(button('Save').disabled).toBe(false);
-    await act(async () => button('Save').click());
+    await clickAndSettle(button('Save'));
 
     expect(updateMock).not.toHaveBeenCalled();
     const amount = input('Override of code 018')!;
@@ -205,7 +251,7 @@ describe('Form1214AmountsSection', () => {
     render([{ code: '018', amount: 7 }]);
     expect(input('Override of code 018')?.value).toBe('7');
 
-    type(input('Override of code 018')!, '8');
+    typeInto(input('Override of code 018')!, '8');
     render([{ code: '018', amount: 9 }]);
     expect(input('Override of code 018')?.value).toBe('8');
   });

@@ -1,8 +1,18 @@
 import { act, type ReactElement } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FragmentType } from '../../../../../gql/index.js';
 import type { Form1214RelatedCompaniesSectionFragmentDoc } from '../../../../../gql/graphql.js';
+import type { FragmentType } from '../../../../../gql/index.js';
+import { Form1214ReportProvider } from '../report-context.js';
+import { Form1214RelatedCompaniesSection } from '../sections/related-companies-section.js';
+import {
+  buttonByText,
+  byLabel,
+  clickAndSettle,
+  clickOn,
+  describedText,
+  mountRoot,
+  typeInto,
+} from './editor-test-dom.js';
 
 type UpdateVariables = {
   year: number;
@@ -14,22 +24,17 @@ const { updateMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../../hooks/use-update-report-1214-profile.js', () => ({
-  useUpdateReport1214Profile: () => ({
-    updateReport1214Profile: updateMock,
-    fetching: false,
-    errorMessage: undefined,
-  }),
+  useUpdateReport1214Profile: () => ({ updateReport1214Profile: updateMock, fetching: false }),
 }));
-
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true;
-
-import { Form1214ReportProvider } from '../report-context.js';
-import { Form1214RelatedCompaniesSection } from '../sections/related-companies-section.js';
 
 const YEAR = 2025;
 
-type Company = { companyName: string; companyFileNumber: string | null; relationType: string; assessingOfficeCode: number | null };
+type Company = {
+  companyName: string;
+  companyFileNumber: string | null;
+  relationType: string;
+  assessingOfficeCode: number | null;
+};
 
 function report(
   companies: Company[],
@@ -41,11 +46,15 @@ function report(
 }
 
 const SAVED: Company[] = [
-  { companyName: 'חברה בת', companyFileNumber: '513000000', relationType: 'SUBSIDIARY', assessingOfficeCode: 34 },
+  {
+    companyName: 'חברה בת',
+    companyFileNumber: '513000000',
+    relationType: 'SUBSIDIARY',
+    assessingOfficeCode: 34,
+  },
 ];
 
-let container: HTMLDivElement;
-let root: Root;
+let mounted: ReturnType<typeof mountRoot>;
 let refresh: ReturnType<typeof vi.fn<() => void>>;
 let setDirty: ReturnType<typeof vi.fn<(section: string, dirty: boolean) => void>>;
 
@@ -58,65 +67,33 @@ function Harness({ companies }: { companies: Company[] }): ReactElement {
 }
 
 function render(companies: Company[]): void {
-  act(() => root.render(<Harness companies={companies} />));
+  act(() => mounted.root.render(<Harness companies={companies} />));
 }
 
-function button(text: string): HTMLButtonElement {
-  const found = [...container.querySelectorAll('button')].find(
-    candidate => candidate.textContent?.trim() === text,
-  );
-  if (!found) {
-    throw new Error(`no "${text}" button`);
-  }
-  return found;
-}
-
-function input(label: string): HTMLInputElement | null {
-  return container.querySelector(`input[aria-label="${label}"]`);
-}
-
-function type(element: HTMLInputElement, value: string): void {
-  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  act(() => {
-    setValue?.call(element, value);
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-}
-
-function click(element: HTMLElement): void {
-  act(() => element.click());
-}
-
-/** The text of the elements `aria-describedby` names (that exist). */
-function describedText(element: HTMLElement): string {
-  return (element.getAttribute('aria-describedby') ?? '')
-    .split(' ')
-    .filter(Boolean)
-    .map(id => document.getElementById(id)?.textContent ?? '')
-    .join(' ');
-}
+const container = (): HTMLDivElement => mounted.container;
+const input = (label: string): HTMLInputElement | null => byLabel(container(), label);
+const button = (text: string): HTMLButtonElement => buttonByText(container(), text);
 
 beforeEach(() => {
-  container = document.createElement('div');
-  document.body.append(container);
-  root = createRoot(container);
+  mounted = mountRoot();
   refresh = vi.fn<() => void>();
   setDirty = vi.fn<(section: string, dirty: boolean) => void>();
   updateMock.mockReset();
 });
 
 afterEach(() => {
-  act(() => root.unmount());
-  container.remove();
+  mounted.unmount();
 });
 
 describe('Form1214RelatedCompaniesSection', () => {
   it('sends the whole list, an empty one once every company is removed', async () => {
     render(SAVED);
-    click(container.querySelector<HTMLButtonElement>('[aria-label="Remove related company 1"]')!);
+    clickOn(byLabel<HTMLButtonElement>(container(), 'Remove related company 1')!);
     expect(setDirty).toHaveBeenLastCalledWith('related-companies', true);
+    expect(document.activeElement).toBe(button('Add company'));
+
     updateMock.mockResolvedValue(true);
-    await act(async () => button('Save').click());
+    await clickAndSettle(button('Save'));
     expect(updateMock).toHaveBeenCalledWith(
       { year: YEAR, input: { relatedCompanies: [] } },
       'related companies',
@@ -126,9 +103,9 @@ describe('Form1214RelatedCompaniesSection', () => {
 
   it('sends edited rows as stored, trimmed', async () => {
     render(SAVED);
-    type(input('Related company 1 name')!, ' New name ');
+    typeInto(input('Related company 1 name')!, ' New name ');
     updateMock.mockResolvedValue(true);
-    await act(async () => button('Save').click());
+    await clickAndSettle(button('Save'));
     expect(updateMock.mock.calls[0][0].input).toEqual({
       relatedCompanies: [
         {
@@ -143,15 +120,24 @@ describe('Form1214RelatedCompaniesSection', () => {
 
   it('refuses to save a new row without a name or relation, naming both fields', async () => {
     render(SAVED);
-    click(button('Add company'));
-    await act(async () => button('Save').click());
+    clickOn(button('Add company'));
+    await clickAndSettle(button('Save'));
     expect(updateMock).not.toHaveBeenCalled();
     const name = input('Related company 2 name')!;
     expect(name.getAttribute('aria-invalid')).toBe('true');
     expect(describedText(name)).toContain('Enter the company name');
-    const relation = container.querySelector<HTMLElement>(
-      '[aria-label="Related company 2 relation"]',
-    )!;
+    const relation = byLabel<HTMLElement>(container(), 'Related company 2 relation')!;
     expect(describedText(relation)).toContain('Choose the relation type');
+  });
+
+  it('focuses the relation Select when it is the first invalid field on Save', async () => {
+    render(SAVED);
+    clickOn(button('Add company'));
+    typeInto(input('Related company 2 name')!, 'Partner Ltd');
+    await clickAndSettle(button('Save'));
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(
+      byLabel<HTMLElement>(container(), 'Related company 2 relation'),
+    );
   });
 });
