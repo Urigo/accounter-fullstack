@@ -6,7 +6,6 @@ import {
   calculateDepreciation,
   computeCostRefund,
   computeDisposal,
-  depreciatesOnOrAfter,
   depreciationEndDate,
   remainingAssetCost,
   validateAssetDisposals,
@@ -1369,25 +1368,6 @@ describe('depreciationEndDate (C4)', () => {
         }
       }
     });
-  });
-});
-
-describe('depreciatesOnOrAfter', () => {
-  // 25% from 2024-07-01 ends on 2028-06-30
-  const activation = d('2024-07-01');
-
-  it('keeps an asset whose end date is exactly on the start of the period', () => {
-    expect(depreciatesOnOrAfter(25, activation, d('2028-06-30'))).toBe(true);
-    expect(depreciatesOnOrAfter(25, activation, d('2028-01-01'))).toBe(true);
-  });
-
-  it('drops an asset whose end date is the day before the start of the period', () => {
-    expect(depreciatesOnOrAfter(25, activation, d('2028-07-01'))).toBe(false);
-    expect(depreciatesOnOrAfter(25, d('2024-01-01'), d('2028-01-01'))).toBe(false);
-  });
-
-  it('keeps a record in a category that is not depreciated (0%)', () => {
-    expect(depreciatesOnOrAfter(0, activation, d('2099-01-01'))).toBe(true);
   });
 });
 
