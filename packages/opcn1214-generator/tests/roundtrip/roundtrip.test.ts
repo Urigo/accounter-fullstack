@@ -16,7 +16,9 @@ import {
 } from '../../src/model/codes.generated.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  bettermentTaxAppendix,
   breakdownCountries,
+  forcedVirtualCurrencyAppendix,
   foreignAppendix,
   foreignAppendixWithBreakdown,
   fullDeclarationsInput,
@@ -24,6 +26,7 @@ import {
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  oilPartnershipAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -31,6 +34,7 @@ import {
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  sharesAppendix,
   withholders,
 } from '../fixtures/builders.js';
 
@@ -432,6 +436,34 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'capital gains: 3027, 3050, 3051 and 3054 appendices, mixed (input order 54, 27, 65, 51, 50, 27, 51, 54)',
+    minimalInput({
+      capitalGains: [
+        oilPartnershipAppendix({ amounts: { '015': 0, '016': 0, '074': 3, '076': 4 } }),
+        sharesAppendix({
+          assetDetails: '  מניות\u00A0 \u201Cהנגב\u201D ',
+          assetLocation: 'israel',
+          dates: { code20: undefined },
+          amounts: { '020': 0.01, '027': 99_999_999.99, '053': 0, '018': 50 },
+        }),
+        noWithholding1322Appendix(),
+        forcedVirtualCurrencyAppendix({
+          walletAddresses: ['', ' 0xdef '],
+          assetLocation: 'abroad',
+        }),
+        bettermentTaxAppendix({ expropriation: false, amounts: { '014': 20, '018': 23 } }),
+        { symbol: 27, dates: {}, amounts: {} },
+        {
+          symbol: 51,
+          dates: { code15: '2024-02-29' },
+          amounts: { '071': 1, '016': 1, '074': 2, '076': 3 },
+        },
+        { symbol: 54, purchaseDate: '2000-01-01', dates: { code15: '2024-01-01' }, amounts: {} },
+      ],
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
@@ -456,6 +488,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
         reitAppendix({ lossesCarriedForward: 0.4, amounts: { '013': 2.5 } }),
         noWithholding1322Appendix({ lossesCarriedForward: 2.5, amounts: { '012': 0.4 } }),
         noWithholding1326Appendix({ lossesCarriedForward: 0.5, amounts: { '022': 1.5 } }),
+        sharesAppendix({ amounts: { '015': 2.5, '020': 0.5, '074': 0.4 } }),
+        oilPartnershipAppendix({ amounts: { '015': 1.5, '016': 0.4 } }),
       ],
     }),
     { ...OPTIONS, rounding: 'halfUp' },

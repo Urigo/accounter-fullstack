@@ -5,17 +5,21 @@
  */
 import { COUNTRY_CODES } from '../../src/model/codes.generated.js';
 import type {
+  BettermentTaxAppendix,
   CountryBreakdown,
   CountryIncome,
+  ForcedVirtualCurrencyAppendix,
   ForeignAppendix,
   NoWithholding1322Appendix,
   NoWithholding1326Appendix,
+  OilPartnershipAppendix,
   RdInvestment,
   ReitAppendix,
   RelatedCompany,
   Report1214Input,
   Section6SecuritiesAppendix,
   SecuritiesAppendix,
+  SharesAppendix,
   Withholder,
 } from '../../src/model/input.js';
 import { isValidIsraeliCheckDigit } from '../../src/validate/check-digit.js';
@@ -385,4 +389,82 @@ export function noWithholding1326Appendix(
     amounts: { '022': 18_000, '056': 900 },
   };
   return deepMerge(base, overrides) as NoWithholding1326Appendix;
+}
+
+/**
+ * A valid capital-gains appendix for shares (SPEC §7.2, record 3027) with every header member set
+ * to a value that is written to the file (the three dates included) and four codes: 020 with
+ * agorot (×100), the rate 018 and two whole-shekel amounts (015, 074). `overrides` are deep-merged
+ * into it.
+ */
+export function sharesAppendix(overrides: DeepPartial<SharesAppendix> = {}): SharesAppendix {
+  const base: SharesAppendix = {
+    symbol: 27,
+    expropriation: false,
+    assetDetails: 'מניות חברה פרטית',
+    assetLocation: 'abroad',
+    relatedParty: true,
+    buyerName: 'קונה בע"מ',
+    dates: { code15: '2024-03-15', code20: '2015-06-01', code53: '2010-01-31' },
+    amounts: { '015': 90_000, '018': 23, '020': 1234.56, '074': 5000 },
+  };
+  return deepMerge(base, overrides) as SharesAppendix;
+}
+
+/**
+ * A valid capital-gains appendix for an asset sale under betterment tax (SPEC §7.2, record 3050)
+ * with every header member set to a value that is written to the file and four codes (014, 015,
+ * 016, 018). `overrides` are deep-merged into it.
+ */
+export function bettermentTaxAppendix(
+  overrides: DeepPartial<BettermentTaxAppendix> = {},
+): BettermentTaxAppendix {
+  const base: BettermentTaxAppendix = {
+    symbol: 50,
+    expropriation: true,
+    assetDetails: 'דירת מגורים',
+    purchaseDate: '2012-04-01',
+    dates: { code15: '2024-05-20' },
+    amounts: { '014': 10, '015': 1_200_000, '016': 700_000, '018': 50 },
+  };
+  return deepMerge(base, overrides) as BettermentTaxAppendix;
+}
+
+/**
+ * A valid capital-gains appendix for an oil-partnership asset (SPEC §7.2, record 3054) with every
+ * header member set to a value that is written to the file and two codes (015, 016). `overrides`
+ * are deep-merged into it.
+ */
+export function oilPartnershipAppendix(
+  overrides: DeepPartial<OilPartnershipAppendix> = {},
+): OilPartnershipAppendix {
+  const base: OilPartnershipAppendix = {
+    symbol: 54,
+    assetDetails: 'יחידות השתתפות',
+    purchaseDate: '2018-09-10',
+    dates: { code15: '2024-08-01' },
+    amounts: { '015': 40_000, '016': 25_000 },
+  };
+  return deepMerge(base, overrides) as OilPartnershipAppendix;
+}
+
+/**
+ * A valid capital-gains appendix for a forced virtual-currency transaction (SPEC §7.2, record 3051)
+ * with every header member set to a value that is written to the file (two wallet addresses) and
+ * the required codes 071 (= 1) and 016 plus 015. `overrides` are deep-merged into it.
+ */
+export function forcedVirtualCurrencyAppendix(
+  overrides: DeepPartial<ForcedVirtualCurrencyAppendix> = {},
+): ForcedVirtualCurrencyAppendix {
+  const base: ForcedVirtualCurrencyAppendix = {
+    symbol: 51,
+    assetDetails: 'ביטקוין',
+    assetLocation: 'israel',
+    relatedParty: false,
+    buyerName: 'בורסת מטבעות',
+    dates: { code15: '2024-12-31' },
+    walletAddresses: ['bc1qwalletaddressone', 'bc1qwalletaddresstwo'],
+    amounts: { '071': 1, '015': 80_000, '016': 30_000 },
+  };
+  return deepMerge(base, overrides) as ForcedVirtualCurrencyAppendix;
 }
