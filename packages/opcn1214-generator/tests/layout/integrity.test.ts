@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { parseCsvRecords } from '../../scripts/layout/csv.js';
 import { parseValues } from '../../scripts/layout/values.js';
 import { countryKey } from '../../src/layout/countries.js';
-import { getLayout } from '../../src/layout/registry.js';
+import { getLayout, supportedTaxYears } from '../../src/layout/registry.js';
 import {
   CODE_KINDS,
   FIELD_KINDS,
@@ -65,42 +65,6 @@ describe('layout 2024 — records and header fields', () => {
     );
   });
 
-  describe.each(records.map(record => [record.type, record] as const))('record %s', (_, record) => {
-    it('has header fields sorted by position, contiguous from 137 to the header end', () => {
-      expect(record.fields[0]?.position).toBe(PREFIX_LENGTH + 1);
-      let next = PREFIX_LENGTH + 1;
-      for (const field of record.fields) {
-        expect(field.record).toBe(record.type);
-        expect(field.position).toBe(next);
-        expect(field.length).toBeGreaterThan(0);
-        next = field.position + field.length;
-      }
-      expect(next - 1).toBe(PREFIX_LENGTH + record.headerLength);
-    });
-
-    it('adds up prefix, header and section to the record length', () => {
-      expect(PREFIX_LENGTH + record.headerLength + (record.section?.length ?? 0)).toBe(
-        record.length,
-      );
-      if (record.section) {
-        expect(record.section.start).toBe(PREFIX_LENGTH + record.headerLength + 1);
-      }
-    });
-
-    it('has unique keys (fillers aside)', () => {
-      const keys = record.fields.filter(field => field.kind !== 'filler').map(field => field.key);
-      expect(new Set(keys).size).toBe(keys.length);
-    });
-
-    it('uses only known field kinds and no "(derived) " key prefix', () => {
-      const kinds: readonly string[] = FIELD_KINDS;
-      for (const field of record.fields) {
-        expect(kinds).toContain(field.kind satisfies FieldKind);
-        expect(field.key.startsWith(DERIVED_PREFIX)).toBe(false);
-      }
-    });
-  });
-
   it('marks exactly the "(derived) " rows of fields.csv as derived', () => {
     const expected = csvFields
       .filter(row => row.key?.startsWith(DERIVED_PREFIX))
@@ -132,45 +96,6 @@ describe('layout 2024 — code-amount sections', () => {
     expect(count(records.map(record => record.type).filter(type => type.startsWith('30')))).toBe(
       107,
     );
-  });
-
-  describe.each(records.map(record => [record.type, record] as const))('record %s', (_, record) => {
-    it('has codes only when it has a code-amount section', () => {
-      if (record.section?.kind !== 'codeAmount') {
-        expect(record.codes).toEqual([]);
-      } else {
-        expect(record.codes.length).toBeGreaterThan(0);
-      }
-    });
-
-    it('has unique 3-digit codes sorted ascending, each 1–12 wide with a known kind', () => {
-      const kinds: readonly string[] = CODE_KINDS;
-      const codes = record.codes.map(code => code.code);
-      expect(new Set(codes).size).toBe(codes.length);
-      expect(codes).toEqual([...codes].sort());
-      for (const code of record.codes) {
-        expect(code.record).toBe(record.type);
-        expect(code.code).toMatch(/^\d{3}$/);
-        expect(code.length).toBeGreaterThanOrEqual(1);
-        expect(code.length).toBeLessThanOrEqual(12);
-        expect(kinds).toContain(code.kind satisfies CodeKind);
-      }
-    });
-
-    it('fits every code of the record into its section at once (D-10: no overflow)', () => {
-      if (record.section?.kind === 'codeAmount') {
-        const used = record.codes.reduce((sum, code) => sum + 3 + code.length, 0);
-        expect(used).toBeLessThanOrEqual(record.section.length);
-      }
-    });
-
-    it('limits the section entries: 1000 → 61, 2200 → 10, otherwise its number of codes', () => {
-      if (record.section) {
-        const expected =
-          record.type === '1000' ? 61 : record.type === '2200' ? 10 : record.codes.length;
-        expect(record.section.maxEntries).toBe(expected);
-      }
-    });
   });
 
   it('flags exactly 23 codes of 2000 for a per-country breakdown, and no other code', () => {
@@ -249,4 +174,99 @@ describe('layout 2024 — countries and limits', () => {
       countriesPerRecord: 10,
     });
   });
+});
+
+/**
+ * Year-independent structure checks (SPEC §13.2), run for every supported tax year so a newly
+ * registered year is covered automatically. Counts and CSV cross-checks above stay 2024-specific.
+ */
+describe.each(supportedTaxYears().map(taxYear => [taxYear]))('layout %i — structure', taxYear => {
+  const yearRecords: RecordDef[] = Object.values(getLayout(taxYear).records);
+
+  it('keys every record by its own type', () => {
+    for (const [type, record] of Object.entries(getLayout(taxYear).records)) {
+      expect(record.type).toBe(type);
+    }
+  });
+
+  describe.each(yearRecords.map(record => [record.type, record] as const))(
+    'record %s — header fields',
+    (_, record) => {
+      it('has header fields sorted by position, contiguous from 137 to the header end', () => {
+        expect(record.fields[0]?.position).toBe(PREFIX_LENGTH + 1);
+        let next = PREFIX_LENGTH + 1;
+        for (const field of record.fields) {
+          expect(field.record).toBe(record.type);
+          expect(field.position).toBe(next);
+          expect(field.length).toBeGreaterThan(0);
+          next = field.position + field.length;
+        }
+        expect(next - 1).toBe(PREFIX_LENGTH + record.headerLength);
+      });
+
+      it('adds up prefix, header and section to the record length', () => {
+        expect(PREFIX_LENGTH + record.headerLength + (record.section?.length ?? 0)).toBe(
+          record.length,
+        );
+        if (record.section) {
+          expect(record.section.start).toBe(PREFIX_LENGTH + record.headerLength + 1);
+        }
+      });
+
+      it('has unique keys (fillers aside)', () => {
+        const keys = record.fields.filter(field => field.kind !== 'filler').map(field => field.key);
+        expect(new Set(keys).size).toBe(keys.length);
+      });
+
+      it('uses only known field kinds and no "(derived) " key prefix', () => {
+        const kinds: readonly string[] = FIELD_KINDS;
+        for (const field of record.fields) {
+          expect(kinds).toContain(field.kind satisfies FieldKind);
+          expect(field.key.startsWith(DERIVED_PREFIX)).toBe(false);
+        }
+      });
+    },
+  );
+
+  describe.each(yearRecords.map(record => [record.type, record] as const))(
+    'record %s — code-amount section',
+    (_, record) => {
+      it('has codes only when it has a code-amount section', () => {
+        if (record.section?.kind !== 'codeAmount') {
+          expect(record.codes).toEqual([]);
+        } else {
+          expect(record.codes.length).toBeGreaterThan(0);
+        }
+      });
+
+      it('has unique 3-digit codes sorted ascending, each 1–12 wide with a known kind', () => {
+        const kinds: readonly string[] = CODE_KINDS;
+        const codes = record.codes.map(code => code.code);
+        expect(new Set(codes).size).toBe(codes.length);
+        expect(codes).toEqual([...codes].sort());
+        for (const code of record.codes) {
+          expect(code.record).toBe(record.type);
+          expect(code.code).toMatch(/^\d{3}$/);
+          expect(code.length).toBeGreaterThanOrEqual(1);
+          expect(code.length).toBeLessThanOrEqual(12);
+          expect(kinds).toContain(code.kind satisfies CodeKind);
+        }
+      });
+
+      it('fits every code of the record into its section at once (D-10: no overflow)', () => {
+        if (record.section?.kind === 'codeAmount') {
+          const used = record.codes.reduce((sum, code) => sum + 3 + code.length, 0);
+          expect(used).toBeLessThanOrEqual(record.section.length);
+        }
+      });
+
+      it('limits the section entries: 1000 → 61, 2200 → 10, otherwise its number of codes', () => {
+        if (record.section) {
+          const expected =
+            record.type === '1000' ? 61 : record.type === '2200' ? 10 : record.codes.length;
+          expect(record.section.maxEntries).toBe(expected);
+        }
+      });
+    },
+  );
 });
