@@ -173,14 +173,15 @@ jobs:
         shell: bash
         run: yarn generate:sql
 
-      # The server resolves these four sibling packages through their `dist`, so `tsc` can't
+      # The server resolves these five sibling packages through their `dist`, so `tsc` can't
       # type-resolve it until they are built (see packages/server/README.md). Same list as
       # the server's `server:build:prod`.
       - name: Build Server Workspace Generators
         run:
           yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql
-          --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator
-          --include @accounter/shaam6111-generator run build
+          --include @accounter/opcn1214-generator --include @accounter/pcn874-generator --include
+          @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run
+          build
 
       # The server's `yarn build` compiles through `tsconfig.build.json`, which leaves tests out,
       # and lint and vitest both skip type checking, so nothing else in CI typechecks the
