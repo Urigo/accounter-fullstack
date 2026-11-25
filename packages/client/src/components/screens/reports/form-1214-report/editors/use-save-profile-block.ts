@@ -15,7 +15,7 @@ export function useSaveProfileBlock(): {
   const { fetching, updateReport1214Profile } = useUpdateReport1214Profile();
   const save = useCallback(
     async (input: Report1214ProfileInput, blockName: string) => {
-      const saved = await updateReport1214Profile({ year, input, blockName });
+      const saved = await updateReport1214Profile({ year, input }, blockName);
       if (saved) {
         refresh();
       }

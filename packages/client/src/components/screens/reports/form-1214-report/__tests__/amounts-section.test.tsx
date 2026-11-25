@@ -7,11 +7,10 @@ import type { Form1214AmountsSectionFragmentDoc } from '../../../../../gql/graph
 type UpdateVariables = {
   year: number;
   input: { amountOverrides?: Array<{ code: string; amount: number }> | null };
-  blockName: string;
 };
 
 const { updateMock } = vi.hoisted(() => ({
-  updateMock: vi.fn<(variables: UpdateVariables) => Promise<boolean>>(),
+  updateMock: vi.fn<(variables: UpdateVariables, blockName: string) => Promise<boolean>>(),
 }));
 
 vi.mock('../../../../../hooks/use-update-report-1214-profile.js', () => ({

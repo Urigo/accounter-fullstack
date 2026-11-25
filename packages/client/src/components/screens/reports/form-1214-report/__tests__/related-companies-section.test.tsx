@@ -7,11 +7,10 @@ import type { Form1214RelatedCompaniesSectionFragmentDoc } from '../../../../../
 type UpdateVariables = {
   year: number;
   input: { relatedCompanies?: Array<{ companyName: string }> | null };
-  blockName: string;
 };
 
 const { updateMock } = vi.hoisted(() => ({
-  updateMock: vi.fn<(variables: UpdateVariables) => Promise<boolean>>(),
+  updateMock: vi.fn<(variables: UpdateVariables, blockName: string) => Promise<boolean>>(),
 }));
 
 vi.mock('../../../../../hooks/use-update-report-1214-profile.js', () => ({
@@ -118,11 +117,10 @@ describe('Form1214RelatedCompaniesSection', () => {
     expect(setDirty).toHaveBeenLastCalledWith('related-companies', true);
     updateMock.mockResolvedValue(true);
     await act(async () => button('Save').click());
-    expect(updateMock.mock.calls[0][0]).toMatchObject({
-      year: YEAR,
-      input: { relatedCompanies: [] },
-      blockName: 'related companies',
-    });
+    expect(updateMock).toHaveBeenCalledWith(
+      { year: YEAR, input: { relatedCompanies: [] } },
+      'related companies',
+    );
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 

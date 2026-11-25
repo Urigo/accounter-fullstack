@@ -1,7 +1,6 @@
-import { useCallback, useEffect } from 'react';
 import { useForm, type DefaultValues, type FieldValues, type Resolver } from 'react-hook-form';
 import type { Report1214ProfileInput } from '../../../../../gql/graphql.js';
-import { useReportDirtyState } from '../profile-editor-parts.js';
+import { useReportDirtyState, useResetAfterSave } from '../profile-editor-parts.js';
 import { useSaveProfileBlock } from './use-save-profile-block.js';
 
 /**
@@ -31,21 +30,15 @@ export function useProfileBlockForm<T extends FieldValues>({
     resolver,
     defaultValues: defaults as DefaultValues<T>,
   });
-  // A refreshed report replaces the form only while it holds no unsaved edits, so a refresh that
-  // another editor's save started never discards this one's draft
-  useEffect(() => {
-    if (!form.formState.isDirty) {
-      form.reset(defaults);
-    }
-  }, [defaults, form]);
-  const cancel = useCallback(() => form.reset(defaults), [defaults, form]);
+  // A refreshed report resets the form only while it holds no unsaved edits
+  const { markSaved, cancel } = useResetAfterSave(form, defaults);
   const { saving, save } = useSaveProfileBlock();
   useReportDirtyState(section, form.formState.isDirty);
 
   const onSubmit = form.handleSubmit(async values => {
     if (await save(toInput(values), blockName)) {
       // What was sent shows until the refreshed report replaces it
-      form.reset(values);
+      markSaved(values);
     }
   });
 
