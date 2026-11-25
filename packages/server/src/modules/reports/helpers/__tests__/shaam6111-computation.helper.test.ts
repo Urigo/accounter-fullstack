@@ -475,6 +475,18 @@ describe('selectWithholdingTaxFileNumber', () => {
     ).toBeUndefined();
   });
 
+  it("skips the company's own number when it is stored with surrounding whitespace", () => {
+    expect(
+      selectWithholdingTaxFileNumber(
+        { company_tax_id: COMPANY_NUMBER, tax_nikuim_pinkas_number: WITHHOLDING },
+        ` ${COMPANY_NUMBER} `,
+      ),
+    ).toBe(WITHHOLDING);
+    expect(
+      selectWithholdingTaxFileNumber({ company_tax_id: COMPANY_NUMBER }, `${COMPANY_NUMBER}\n`),
+    ).toBeUndefined();
+  });
+
   it('skips numbers that are not valid Israeli IDs', () => {
     expect(
       selectWithholdingTaxFileNumber(
