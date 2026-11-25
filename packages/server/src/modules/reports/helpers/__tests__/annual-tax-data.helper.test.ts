@@ -53,8 +53,8 @@ const LEDGER = [
   record('2025-06-30', 'rnd', 'bank', 900),
 ];
 
-function fakeInjector() {
-  const getLedgerRecordsByDates = vi.fn(async () => LEDGER);
+function fakeInjector(ledger: IGetLedgerRecordsByDatesResult[] = LEDGER) {
+  const getLedgerRecordsByDates = vi.fn(async () => ledger);
   const providers = new Map<unknown, unknown>([
     [LedgerProvider, { getLedgerRecordsByDates }],
     [FinancialEntitiesProvider, { getAllFinancialEntities: async () => FINANCIAL_ENTITIES }],
@@ -95,9 +95,42 @@ describe('loadAnnualTaxData', () => {
     expect(data.decoratedLedgerRecords[0].credit_entity_sort_code1).toBe(800);
     expect(data.profitLoss.revenue.amount).toBe(5000);
     expect(data.profitLoss.profitBeforeTax.amount).toBe(4100);
-    expect([...data.profitLossByYear.keys()].sort()).toEqual([2023, 2024, 2025]);
+    expect(data.profitLossByYear.get(2025)).toBe(data.profitLoss);
     expect(data.researchAndDevelopmentAddBack).toBe(900);
     expect(data.taxableCumulativeResearchAndDevelopment).toBe(-600);
+  });
+
+  it('handles an empty ledger: empty decorated years and no R&D', async () => {
+    const { injector } = fakeInjector([]);
+    const data = await loadAnnualTaxData(injector, OWNER_ID, 2025);
+
+    expect(data.ledgerByYear.size).toBe(0);
+    expect(data.ledgerByYear.has(2023)).toBe(false);
+    expect(data.ledgerByYear.has(2024)).toBe(false);
+    expect(data.decoratedLedgerByYear.get(2023)).toEqual([]);
+    expect(data.decoratedLedgerByYear.get(2024)).toEqual([]);
+    expect(data.decoratedLedgerRecords).toEqual([]);
+    expect(data.profitLoss.profitBeforeTax.amount).toBeCloseTo(0);
+    expect(data.researchAndDevelopmentAddBack).toBeCloseTo(0);
+    expect(data.taxableCumulativeResearchAndDevelopment).toBeCloseTo(0);
+  });
+
+  it('buckets records on the last day of a year into that year', async () => {
+    const lastDayOfYear = record('2025-12-31', 'rnd', 'bank', 30);
+    const lastDayBeforeWindow = record('2022-12-31', 'rnd', 'bank', 60);
+    const firstDayOfWindow = record('2023-01-01', 'rnd', 'bank', 90);
+    const { injector } = fakeInjector([lastDayBeforeWindow, firstDayOfWindow, lastDayOfYear]);
+    const data = await loadAnnualTaxData(injector, OWNER_ID, 2025);
+
+    expect(data.ledgerByYear.get(2025)).toEqual([lastDayOfYear]);
+    expect(data.ledgerByYear.get(2022)).toEqual([lastDayBeforeWindow]);
+    expect(data.ledgerByYear.get(2023)).toEqual([firstDayOfWindow]);
+    expect(data.decoratedLedgerByYear.has(2022)).toBe(false);
+    expect(data.decoratedLedgerByYear.get(2023)).toHaveLength(1);
+    expect(data.decoratedLedgerRecords).toHaveLength(1);
+    expect(data.researchAndDevelopmentAddBack).toBe(30);
+    // R&D of 2023 and 2025 only: the 2022-12-31 record is outside the three-year window
+    expect(data.taxableCumulativeResearchAndDevelopment).toBe(-40);
   });
 
   it("hands the year's amounts to the tax report computation", async () => {
