@@ -51,10 +51,11 @@ export interface Codec {
   /** Returns exactly `shape.length` characters. Throws Opcn1214InternalError for a value that
    *  validation should have rejected (encoders never repair data). */
   encode(value: Primitive, shape: FieldShape): string
-  /** Inverse of encode. All-zero numeric text decodes to 0 and all-space text to undefined; the
-   *  record codec (B4) decides whether 0 means "absent" (it does for non-required header fields,
-   *  except amountX). Throws CodecDecodeError for raw text that cannot be decoded; the parser
-   *  converts it into a parse.* issue. */
+  /** Inverse of encode. All-zero text decodes to 0 (digit-string kinds: to the all-zero string)
+   *  and all-space text in an alphanumeric field to undefined; spaces in a numeric field are not
+   *  digits (CodecDecodeError 'numeric'). The record codec (B4) decides whether 0 means "absent"
+   *  (it does for non-required header fields, except amountX). Throws CodecDecodeError for raw
+   *  text that cannot be decoded; the parser converts it into a parse.* issue. */
   decode(raw: string, shape: FieldShape): Primitive
 }
 
