@@ -29,13 +29,17 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
         return;
       }
 
+      // the end of depreciation follows from the category rate and the activation date
       const { yearlyDepreciationAmount } = calculateDepreciation(
         Number(depreciationCategory.percentage),
         Number(record.amount),
         record.activation_date,
         year,
-        record.expiration_date ?? undefined,
       );
+      // nothing to add, e.g. a record in a category that is not depreciated (0%)
+      if (yearlyDepreciationAmount === 0) {
+        return;
+      }
 
       switch (record.type) {
         case 'RESEARCH_AND_DEVELOPMENT':
