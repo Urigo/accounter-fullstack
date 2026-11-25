@@ -26,6 +26,10 @@ import type {
   IGetDepreciationDisposalsByIdsResult,
   IGetDepreciationRecordsByIdsResult,
 } from '../../depreciation/types.js';
+import {
+  netCreditToAccount,
+  REFUND_ACCOUNT_HINT,
+} from './depreciation-refund-exchange-ledger.helper.js';
 
 export type DisposalLedgerAccounts = {
   /** The asset's cost account: the tax category of the charge that bought it */
@@ -33,8 +37,9 @@ export type DisposalLedgerAccounts = {
   accumulatedDepreciationAccountId: string;
   /**
    * Where the event's charge booked the money (its tax category): a sale's proceeds, or the refund
-   * of a cost refund. When it is not the asset account, the money is moved from it to the asset
-   * account.
+   * of a cost refund. For a cost refund the charge has no credit note for, the charge's counterparty
+   * instead: the refund record itself books the refund against it. When it is not the asset
+   * account, the money is moved from it to the asset account.
    */
   proceedsAccountId?: string | null;
   gainAccountId?: string | null;
@@ -72,10 +77,12 @@ export function correctedYears(
  * Together they credit the asset with exactly the disposed cost beyond the proceeds, so the asset
  * account keeps the remaining cost and accumulated depreciation the remaining depreciation.
  *
- * A cost refund corrects the cost: it is ordinary income, never a gain or loss. The refund charge's
- * own entries credit the refund to `proceedsAccountId`. On top of those:
- * - the cost reduction is moved from there to the asset account (Dr proceeds account / Cr asset),
- *   unless the refund was booked to the asset account already;
+ * A cost refund corrects the cost: it is ordinary income, never a gain or loss. Either the refund
+ * charge's own entries (a credit note) credit the refund to `proceedsAccountId`, or, without one,
+ * `proceedsAccountId` is the charge's counterparty and the refund record is the refund document.
+ * On top of those:
+ * - the cost reduction is moved from there to the asset account (Dr proceeds account or
+ *   counterparty / Cr asset), unless the refund was booked to the asset account already;
  * - the depreciation the refund reverses (the recapture, or the excess over book value) is released
  *   as income (Dr AD / Cr depreciation correction).
  *
@@ -232,30 +239,83 @@ export type DisposalsLedger = {
   entries: LedgerProto[];
   errors: string[];
   /**
-   * What the charge's own entries should credit to its proceeds account for these events, in local
-   * currency: the sales' proceeds plus the cost refunds' cost reductions. `null` when there is
-   * nothing to check: no sale or cost refund among the events, or an event's rows could not be built
-   * (its error is reported in `errors`), so that no check or exchange row acts on money that was
-   * never moved out of the proceeds account.
+   * What the charge's own entries should credit to its proceeds account for the events in
+   * `proceedsDisposals`, in local currency: the sales' proceeds plus the cost refunds' cost
+   * reductions. `null` when there is nothing to check: no sale or cost refund among those events,
+   * or an event's rows could not be built (its error is reported in `errors`), so that no check or
+   * exchange row acts on money that was never moved out of the proceeds account.
    */
   expectedProceeds: number | null;
+  /**
+   * The events whose money the charge books to its tax category (the sales, and the cost refunds
+   * of a credit note), which `expectedProceeds` covers
+   */
+  proceedsDisposals: IGetDepreciationDisposalsByIdsResult[];
+  /**
+   * The cost refunds whose record books them against the charge's counterparty (no credit note to
+   * the tax category): nothing to check here, the counterparty's balance checks them
+   */
+  counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[];
+  /**
+   * Whether the charge's tax category is the asset account of an event in `proceedsDisposals`. The
+   * asset account carries the charge's other movements too (e.g. a misc expense refunding an asset
+   * that is not depreciated), which are meant to leave a balance there, so the proceeds checks
+   * then count only the charge's documents. A clearing tax category keeps every entry counted, so
+   * that a stray credit to it is still caught.
+   */
+  proceedsToAssetAccount: boolean;
 };
 
 /**
  * Ledger entries for events booked on `charge`: the sales and cost refunds the charge carries the
  * money for, or the yearly depreciation charge's write-offs that have no charge of their own.
  *
- * `proceedsAccountId` is the tax category the charge credits the money to; leave it unset for
- * events without money booked by the charge.
+ * `chargeProceedsAccountId` is the tax category the charge credits the money to; leave it unset
+ * for events without money booked by the charge.
+ *
+ * `chargeEntries` are the charge's own document, transaction, fee and misc-expense entries, without
+ * the disposal rows, and `documentEntries` the document entries among them. With them, a cost
+ * refund is booked one of two ways:
+ * - by a credit note: a document (a credit invoice) net-credits the charge's tax category in the
+ *   refund's currency (its foreign currency when entered in one, else the local currency). The cost
+ *   reduction is moved from there (Dr tax category / Cr asset), and the refund is checked with the
+ *   sales in `expectedProceeds` (`checkDisposalProceeds`, or the in-currency check and exchange
+ *   entry of `generateCostRefundExchangeLedger`). Those count every entry of the charge when the
+ *   tax category is a clearing account, but only its documents when it is the asset account (see
+ *   `proceedsToAssetAccount`);
+ * - by the refund record itself, without such a document: the cost reduction is booked against
+ *   `counterpartyAccountId`, the charge's main business (Dr counterparty / Cr asset, in the refund's
+ *   currency), and settles against the money the charge receives from it. The refund is left out of
+ *   `expectedProceeds`; the charge's business balance checks it, and books the exchange-rate
+ *   difference to the payment's rate. A refund with neither a credit note nor a counterparty is an
+ *   error.
+ * Only documents count as a credit note: misc expenses, transactions and fees crediting the tax
+ * category don't stand in for one, whatever the tax category is (the asset account included, which
+ * carries the charge's other movements, such as the refund of an asset that is not depreciated).
+ * Booking both (a credit note crediting the asset account, and the record) counts the refund twice;
+ * the counterparty is then left unbalanced, which the charge's business balance reports.
+ *
+ * Sales always take the charge's tax category. Without `chargeEntries` (the yearly depreciation
+ * charge), every event takes it.
  */
 export async function generateDepreciationDisposalsLedger(
   disposals: readonly IGetDepreciationDisposalsByIdsResult[],
   charge: { id: string; owner_id: string },
   injector: Injector,
-  proceedsAccountId?: string | null,
+  chargeProceedsAccountId?: string | null,
+  chargeEntries?: readonly LedgerProto[],
+  counterpartyAccountId?: string | null,
+  documentEntries?: readonly LedgerProto[],
 ): Promise<DisposalsLedger> {
   if (disposals.length === 0) {
-    return { entries: [], errors: [], expectedProceeds: null };
+    return {
+      entries: [],
+      errors: [],
+      expectedProceeds: null,
+      proceedsDisposals: [],
+      counterpartyRefunds: [],
+      proceedsToAssetAccount: false,
+    };
   }
   const {
     defaultLocalCurrency,
@@ -272,6 +332,9 @@ export async function generateDepreciationDisposalsLedger(
       entries: [],
       errors: ['Accumulated depreciation tax category is not defined'],
       expectedProceeds: null,
+      proceedsDisposals: [],
+      counterpartyRefunds: [],
+      proceedsToAssetAccount: false,
     };
   }
 
@@ -280,9 +343,36 @@ export async function generateDepreciationDisposalsLedger(
   let expectedProceeds = 0;
   let carriesMoney = false;
   let rowsMissing = false;
+  const proceedsDisposals: IGetDepreciationDisposalsByIdsResult[] = [];
+  const counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[] = [];
+  let proceedsToAssetAccount = false;
+  const documentCredits = new Map<string, ReturnType<typeof netCreditToAccount>>();
+  const localDocumentCredits = new Map<string, number>();
+  /**
+   * What the charge's documents net-credit to an account: in `currency`, else in local currency by
+   * the local-currency documents only (a foreign credit note covers refunds in its own currency)
+   */
+  const documentCreditTo = (accountId: string, currency: Currency | null): number => {
+    if (!currency) {
+      let local = localDocumentCredits.get(accountId);
+      if (local == null) {
+        local = netCreditToAccount(
+          (documentEntries ?? []).filter(entry => entry.currency === defaultLocalCurrency),
+          accountId,
+        ).local;
+        localDocumentCredits.set(accountId, local);
+      }
+      return local;
+    }
+    let credit = documentCredits.get(accountId);
+    if (!credit) {
+      credit = netCreditToAccount(documentEntries ?? [], accountId);
+      documentCredits.set(accountId, credit);
+    }
+    return credit.foreign.get(currency) ?? 0;
+  };
 
   for (const disposal of disposals) {
-    carriesMoney ||= disposal.type === 'SALE' || disposal.type === 'COST_REFUND';
     try {
       const [{ record }, result] = await Promise.all([
         loadAssetContext(injector, disposal.depreciation_id),
@@ -316,6 +406,25 @@ export async function generateDepreciationDisposalsLedger(
         );
         continue;
       }
+
+      // a cost refund without a credit-note document to the charge's tax category, in its
+      // currency, is booked by its record, against the charge's counterparty
+      const byRecord =
+        !!chargeEntries &&
+        disposal.type === 'COST_REFUND' &&
+        !(
+          chargeProceedsAccountId &&
+          documentCreditTo(chargeProceedsAccountId, foreign?.currency ?? null) >= 0.005
+        );
+      if (byRecord && !counterpartyAccountId) {
+        rowsMissing = true;
+        errors.push(
+          `Asset cost refund ${disposal.id}: the refund charge has no counterparty, nor a credit note to its tax category, to take the refund from`,
+        );
+        continue;
+      }
+      const proceedsAccountId = byRecord ? counterpartyAccountId : chargeProceedsAccountId;
+
       const built = buildDisposalLedgerEntries({
         disposal: {
           id: disposal.id,
@@ -341,6 +450,13 @@ export async function generateDepreciationDisposalsLedger(
       });
       entries.push(...built.entries);
       errors.push(...built.errors);
+      if (byRecord) {
+        counterpartyRefunds.push(disposal);
+        continue;
+      }
+      proceedsDisposals.push(disposal);
+      proceedsToAssetAccount ||= assetAccountId === chargeProceedsAccountId;
+      carriesMoney ||= disposal.type === 'SALE' || disposal.type === 'COST_REFUND';
       if (disposal.type === 'SALE') {
         expectedProceeds += result.proceeds;
       } else if (disposal.type === 'COST_REFUND') {
@@ -356,6 +472,9 @@ export async function generateDepreciationDisposalsLedger(
     entries,
     errors,
     expectedProceeds: carriesMoney && !rowsMissing ? expectedProceeds : null,
+    proceedsDisposals,
+    counterpartyRefunds,
+    proceedsToAssetAccount,
   };
 }
 
@@ -384,10 +503,17 @@ function netLocalCredit(entries: readonly LedgerProto[], accountId: string): num
  * entries (documents, transactions, misc expenses; not the disposal rows) must net-credit its
  * proceeds account with the events' proceeds and cost reductions, in local currency. Otherwise the
  * proceeds account is left with a balance. Returns a ledger error, or `null` when they match.
+ *
+ * `expectedProceeds` covers only the events booked to the proceeds account, not the cost refunds
+ * booked by their record against the charge's counterparty. When the proceeds account is the asset
+ * account, pass the charge's documents only as `chargeEntries`: the asset account's other movements
+ * are meant to leave a balance there (see `DisposalsLedger.proceedsToAssetAccount`).
  */
 export function checkDisposalProceeds(params: {
   expectedProceeds: number;
   proceedsAccountId: string;
+  /** The proceeds account's name for the error; its id when not given */
+  proceedsAccountName?: string;
   chargeEntries: readonly LedgerProto[];
 }): string | null {
   const credited = netLocalCredit(params.chargeEntries, params.proceedsAccountId);
@@ -395,5 +521,5 @@ export function checkDisposalProceeds(params: {
   if (Math.abs(diff) <= 0.005) {
     return null;
   }
-  return `Sales and cost refunds of depreciated assets come to ${formatStringifyAmount(params.expectedProceeds)}, but the charge credits ${formatStringifyAmount(credited)} to its tax category (${formatStringifyAmount(diff)} diff)`;
+  return `Sales and cost refunds of depreciated assets come to ${formatStringifyAmount(params.expectedProceeds)}, but the charge credits ${formatStringifyAmount(credited)} to its tax category "${params.proceedsAccountName ?? params.proceedsAccountId}" (${formatStringifyAmount(diff)} diff): ${REFUND_ACCOUNT_HINT}`;
 }

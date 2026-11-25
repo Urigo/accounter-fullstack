@@ -17,7 +17,6 @@ import {
 import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
 import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
-import type { IGetDepreciationDisposalsByIdsResult } from '../../../depreciation/types.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -36,6 +35,7 @@ import {
 } from '../../helpers/depreciation-disposal-ledger.helper.js';
 import {
   generateCostRefundExchangeLedger,
+  getLedgerAccountName,
   hasForeignCurrencyRefunds,
 } from '../../helpers/depreciation-refund-exchange-ledger.helper.js';
 import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
@@ -300,77 +300,89 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     });
     entriesPromises.push(expensesLedgerPromise);
 
-    // generate ledger for disposals of depreciated assets this charge carries the money for
-    const disposalEntries = new Set<LedgerProto>();
-    const disposalProceedsChecks: Array<{
-      disposals: IGetDepreciationDisposalsByIdsResult[];
-      proceedsAccountId: string;
-      expectedProceeds: number;
-    }> = [];
-    const disposalsLedgerPromise = injector
-      .get(DepreciationDisposalsProvider)
-      .getDisposalsByChargeIdLoader.load(chargeId)
-      .then(async disposals => {
-        if (disposals.length === 0) {
-          return;
-        }
-        const proceedsAccountId =
-          charge.tax_category_id ?? (await getChargeTaxCategoryId(chargeId, injector));
-        const {
-          entries,
-          errors: disposalErrors,
-          expectedProceeds,
-        } = await generateDepreciationDisposalsLedger(
-          disposals,
-          charge,
-          injector,
-          proceedsAccountId,
-        );
-        for (const error of disposalErrors) {
-          errors.add(error);
-        }
-        for (const entry of entries) {
-          disposalEntries.add(entry);
-          feeFinancialAccountLedgerEntries.push(entry);
-          updateLedgerBalance(entry);
-        }
-        if (proceedsAccountId && expectedProceeds != null) {
-          disposalProceedsChecks.push({ disposals, proceedsAccountId, expectedProceeds });
-        }
-      });
-    entriesPromises.push(disposalsLedgerPromise);
-
     await Promise.all(entriesPromises);
 
-    // the charge must carry the money for the sales and cost refunds linked to it
-    for (const check of disposalProceedsChecks) {
+    // whether the charge carries cost refunds entered in an asset's foreign currency and booked by
+    // their record against the counterparty: they convert at the asset's cost-basis rate, so the
+    // counterparty's local gap to the payment's rate is an exchange-rate difference
+    let foreignCounterpartyRefunds = false;
+
+    // generate ledger for disposals of depreciated assets this charge carries the money for, once
+    // the charge's own entries are in: they tell how the charge booked each refund
+    const disposals = await injector
+      .get(DepreciationDisposalsProvider)
+      .getDisposalsByChargeIdLoader.load(chargeId);
+    if (disposals.length > 0) {
+      // the charge's own entries: documents, transactions, fees and misc expenses
       const chargeEntries = [
         ...accountingLedgerEntries,
         ...financialAccountLedgerEntries,
         ...feeFinancialAccountLedgerEntries,
-      ].filter(entry => !disposalEntries.has(entry));
-      if (hasForeignCurrencyRefunds(check.disposals)) {
-        // refunds entered in an asset's foreign currency are checked in that currency instead, and
-        // the local-currency gap left in the refund account is their exchange-rate difference
-        const { entries, errors: refundExchangeErrors } = await generateCostRefundExchangeLedger({
-          ...check,
-          charge,
-          chargeEntries,
-          injector,
-        });
-        for (const error of refundExchangeErrors) {
-          errors.add(error);
-        }
-        for (const entry of entries) {
-          disposalEntries.add(entry);
-          feeFinancialAccountLedgerEntries.push(entry);
-          updateLedgerBalance(entry);
-        }
-        continue;
-      }
-      const error = checkDisposalProceeds({ ...check, chargeEntries });
-      if (error) {
+      ];
+      const proceedsAccountId =
+        charge.tax_category_id ?? (await getChargeTaxCategoryId(chargeId, injector));
+      const {
+        entries,
+        errors: disposalErrors,
+        expectedProceeds,
+        proceedsDisposals,
+        counterpartyRefunds,
+        proceedsToAssetAccount,
+      } = await generateDepreciationDisposalsLedger(
+        disposals,
+        charge,
+        injector,
+        proceedsAccountId,
+        chargeEntries,
+        mainBusinessId,
+        accountingLedgerEntries,
+      );
+      foreignCounterpartyRefunds = hasForeignCurrencyRefunds(counterpartyRefunds);
+      for (const error of disposalErrors) {
         errors.add(error);
+      }
+      const addDisposalEntry = (entry: LedgerProto) => {
+        feeFinancialAccountLedgerEntries.push(entry);
+        updateLedgerBalance(entry);
+      };
+      for (const entry of entries) {
+        addDisposalEntry(entry);
+      }
+
+      // the charge must carry the money for the sales and cost refunds booked to its tax category:
+      // its documents only, when the tax category is the asset account, whose other movements
+      // (such as the refund of an asset that isn't depreciated) are meant to leave a balance there
+      const proceedsEntries = proceedsToAssetAccount ? accountingLedgerEntries : chargeEntries;
+      if (proceedsAccountId && expectedProceeds != null) {
+        if (hasForeignCurrencyRefunds(proceedsDisposals)) {
+          // refunds entered in an asset's foreign currency are checked in that currency instead,
+          // and the local-currency gap left in the refund account is their exchange-rate difference
+          const { entries: exchangeEntries, errors: refundExchangeErrors } =
+            await generateCostRefundExchangeLedger({
+              disposals: proceedsDisposals,
+              proceedsAccountId,
+              expectedProceeds,
+              charge,
+              chargeEntries: proceedsEntries,
+              injector,
+            });
+          for (const error of refundExchangeErrors) {
+            errors.add(error);
+          }
+          for (const entry of exchangeEntries) {
+            addDisposalEntry(entry);
+          }
+        } else {
+          const error = checkDisposalProceeds({
+            expectedProceeds,
+            proceedsAccountId,
+            proceedsAccountName: await getLedgerAccountName(injector, proceedsAccountId),
+            chargeEntries: proceedsEntries,
+          });
+          if (error) {
+            errors.add(error);
+          }
+        }
       }
     }
 
@@ -498,7 +510,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       const foreignCurrencyCount = currencies.size - (currencies.has(defaultLocalCurrency) ? 1 : 0);
 
       const mightRequireExchangeRateRecord =
-        (hasMultipleDates && !!foreignCurrencyCount) || foreignCurrencyCount >= 2;
+        (hasMultipleDates && !!foreignCurrencyCount) ||
+        foreignCurrencyCount >= 2 ||
+        (foreignCounterpartyRefunds && financialAccountLedgerEntries.length > 0);
       const unbalancedBusinesses = unbalancedEntities.filter(
         ({ entityId }) =>
           financialEntities.some(fe => fe.id === entityId && fe.type === 'business') &&
@@ -570,6 +584,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
           }
         } else if (charge.documents_optional_flag) {
+          exchangeRateTaxCategory = exchangeRateTaxCategoryId;
+        }
+
+        // the counterparty of cost refunds booked by their record, at the assets' cost-basis rate:
+        // its gap to the payment's rate goes to exchange rates, as a credit note's would
+        if (foreignCounterpartyRefunds && entityId === mainBusinessId) {
           exchangeRateTaxCategory = exchangeRateTaxCategoryId;
         }
 

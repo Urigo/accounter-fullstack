@@ -73,6 +73,9 @@ vi.mock('../../../helpers/depreciation-disposal-ledger.helper.js', async importO
     entries: [],
     errors: [],
     expectedProceeds: null,
+    proceedsDisposals: [],
+    counterpartyRefunds: [],
+    proceedsToAssetAccount: false,
   })),
 }));
 
@@ -553,6 +556,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
       ],
       errors: [],
       expectedProceeds: null,
+      proceedsDisposals: [],
+      counterpartyRefunds: [],
+      proceedsToAssetAccount: false,
     });
     const injector = makeInjector({
       transactions: [payment({ currency: Currency.Ils, amount: '-3600' })],
@@ -563,11 +569,19 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
     const { records, errors } = await generate(injector);
 
     expect(errors).toEqual([]);
+    // after the charge's own entries, which it gets without disposal rows
     expect(generateDepreciationDisposalsLedger).toHaveBeenCalledWith(
       [disposal],
       charge,
       injector,
       EXPENSES_TAX_CATEGORY_ID,
+      expect.arrayContaining([expect.objectContaining({ id: 'invoice' })]),
+      SUPPLIER_ID,
+      [expect.objectContaining({ id: 'invoice' })],
+    );
+    const [, , , , chargeEntries] = vi.mocked(generateDepreciationDisposalsLedger).mock.calls[0];
+    expect(chargeEntries?.some(entry => entry.description?.startsWith('Asset disposal'))).toBe(
+      false,
     );
     expect(records.map(summarize)).toEqual(
       expect.arrayContaining([
@@ -583,12 +597,14 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
   describe('a cost refund charge', () => {
     // the supplier refunds ₪20,000 of an asset's price: a credit note to the charge's tax category
     // P and the money received; the refund's rows move the ₪20,000 from P to the asset
+    const refund = { id: 'refund', depreciation_id: 'asset', charge_id: CHARGE_ID } as never;
+
     function refundInjector() {
       vi.mocked(ledgerEntryFromDocument).mockResolvedValue(creditNoteEntry(20_000));
       return makeInjector({
         transactions: [payment({ currency: Currency.Ils, amount: '20000' })],
         rates: [],
-        disposals: [{ id: 'refund', depreciation_id: 'asset', charge_id: CHARGE_ID }],
+        disposals: [refund],
       });
     }
 
@@ -597,6 +613,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         entries: costRefundEntries(20_000, 1500),
         errors: [],
         expectedProceeds: 20_000,
+        proceedsDisposals: [refund],
+        counterpartyRefunds: [],
+        proceedsToAssetAccount: false,
       });
 
       const { records, balance, errors } = await generate(refundInjector());
@@ -625,13 +644,196 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         entries: costRefundEntries(25_000, 1500),
         errors: [],
         expectedProceeds: 25_000,
+        proceedsDisposals: [refund],
+        counterpartyRefunds: [],
+        proceedsToAssetAccount: false,
       });
 
       const { errors } = await generate(refundInjector());
 
       expect(errors).toEqual([
-        'Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category (-5,000.00 diff)',
+        `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category "${EXPENSES_TAX_CATEGORY_ID}" (-5,000.00 diff): book the refund with a credit-note document to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty`,
       ]);
+    });
+  });
+
+  describe('a cost refund booked by its record, against the supplier', () => {
+    /*
+     * The supplier refunds USD 36,000 of two USD assets with no credit note: the charge carries the
+     * USD receipt, the bank fee and an unrelated misc expense crediting the asset account (refunded
+     * receivables), all at the day's ₪3.65. The refund records book the cost reductions against
+     * the supplier, at the assets' ₪3.70.
+     */
+    const FEES_TAX_CATEGORY_ID = 'tax-category-bank-fees';
+    const refundEvents = [
+      { id: 'software-refund', original_amount: '16000', original_currency: 'USD' },
+      { id: 'customers-refund', original_amount: '20000', original_currency: 'USD' },
+    ] as never[];
+
+    /** A USD row of a refund record, as `generateDepreciationDisposalsLedger` books it */
+    function usdRow(debit: string, credit: string, usd: number, what: string): LedgerProto {
+      return {
+        id: `${what}-${usd}`,
+        chargeId: CHARGE_ID,
+        ownerId: OWNER_ID,
+        invoiceDate: DAY,
+        valueDate: DAY,
+        currency: Currency.Usd,
+        currencyRate: 3.7,
+        isCreditorCounterparty: true,
+        debitAccountID1: debit,
+        creditAccountID1: credit,
+        debitAmount1: usd,
+        creditAmount1: usd,
+        localCurrencyDebitAmount1: usd * 3.7,
+        localCurrencyCreditAmount1: usd * 3.7,
+        description: `Asset cost refund: ${what}`,
+      };
+    }
+
+    function miscExpense(id: string, debtor: string, creditor: string, usd: number) {
+      return {
+        id,
+        charge_id: CHARGE_ID,
+        owner_id: OWNER_ID,
+        amount: String(usd),
+        currency: Currency.Usd,
+        creditor_id: creditor,
+        debtor_id: debtor,
+        description: id,
+        invoice_date: DAY,
+        value_date: at(DAY, 0, 0),
+      };
+    }
+
+    function counterpartyRefund(receivedUsd: number) {
+      vi.mocked(getChargeDocumentsMeta).mockResolvedValue({
+        invoiceCount: 0,
+        receiptCount: 0,
+      } as never);
+      vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
+        entries: [
+          usdRow(SUPPLIER_ID, ASSET_ACCOUNT_ID, 16_000, 'cost reduction'),
+          usdRow(ACCUMULATED_DEPRECIATION_ID, CORRECTION_TAX_CATEGORY_ID, 500, 'correction'),
+          usdRow(SUPPLIER_ID, ASSET_ACCOUNT_ID, 20_000, 'cost reduction'),
+        ],
+        errors: [],
+        expectedProceeds: null,
+        proceedsDisposals: [],
+        counterpartyRefunds: refundEvents,
+        proceedsToAssetAccount: false,
+      });
+      return makeInjector({
+        transactions: [payment({ currency: Currency.Usd, amount: String(receivedUsd) })],
+        rates: [
+          [Currency.Usd, DAY, 3.65],
+          [Currency.Usd, at(DAY, 0, 0), 3.65],
+        ],
+        disposals: refundEvents,
+        miscExpenses: [
+          miscExpense('fee', FEES_TAX_CATEGORY_ID, SUPPLIER_ID, 20),
+          miscExpense('receivables', SUPPLIER_ID, ASSET_ACCOUNT_ID, 5000),
+        ],
+      });
+    }
+
+    it('balances the supplier in USD, and books its local gap to exchange rates', async () => {
+      // USD 40,980 received and USD 20 of fees, for USD 36,000 refunded and USD 5,000 repaid
+      const { records, balance, errors } = await generate(counterpartyRefund(40_980));
+
+      expect(errors).toEqual([]);
+      expect(balance?.isBalanced).toBe(true);
+      // the supplier: credited ₪149,650 at ₪3.65, debited ₪18,250 at ₪3.65 and ₪133,200 at ₪3.70
+      expect(exchangeRecords(records).map(summarize)).toEqual([
+        expect.objectContaining({
+          debit: 'tax-category-exchange-rates',
+          credit: SUPPLIER_ID,
+          currency: Currency.Ils,
+          localAmount: 1800,
+        }),
+      ]);
+    });
+
+    it("reports the supplier's balance when the refunds don't match the money received", async () => {
+      // USD 1,000 more received than refunded and repaid
+      const { records, errors } = await generate(counterpartyRefund(41_980));
+
+      expect(exchangeRecords(records)).toEqual([]);
+      expect(errors).toEqual([
+        'Exchange rate error - USD amount not balanced By 1000.00$',
+        expect.stringMatching(/^Business "business-supplier" is unbalanced/),
+      ]);
+    });
+  });
+
+  describe('a credit note to the asset account', () => {
+    /*
+     * The charge's tax category is the asset account itself. A USD credit invoice credits it with
+     * exactly the refunded USD 16,000, and an unrelated misc expense (refunded receivables) with
+     * USD 5,000 more; the supplier pays USD 21,000. All at the day's ₪3.65; the refund converts at
+     * the asset's ₪3.70.
+     */
+    const refund = {
+      id: 'software-refund',
+      original_amount: '16000',
+      original_currency: 'USD',
+    } as never;
+
+    it('checks the refund against the credit note only, and books its exchange difference', async () => {
+      vi.mocked(ledgerEntryFromDocument).mockResolvedValue({
+        ...creditNoteEntry(0),
+        currency: Currency.Usd,
+        debitAmount1: 16_000,
+        creditAmount1: 16_000,
+        localCurrencyDebitAmount1: 58_400,
+        localCurrencyCreditAmount1: 58_400,
+      });
+      vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
+        // no cost-reduction row: the credit note reduced the asset account already
+        entries: costRefundEntries(0, 1500).slice(1),
+        errors: [],
+        expectedProceeds: 59_200,
+        proceedsDisposals: [refund],
+        counterpartyRefunds: [],
+        proceedsToAssetAccount: true,
+      });
+      const injector = makeInjector({
+        transactions: [payment({ currency: Currency.Usd, amount: '21000' })],
+        rates: [
+          [Currency.Usd, DAY, 3.65],
+          [Currency.Usd, at(DAY, 0, 0), 3.65],
+        ],
+        disposals: [refund],
+        miscExpenses: [
+          {
+            id: 'receivables',
+            charge_id: CHARGE_ID,
+            owner_id: OWNER_ID,
+            amount: '5000',
+            currency: Currency.Usd,
+            creditor_id: EXPENSES_TAX_CATEGORY_ID,
+            debtor_id: SUPPLIER_ID,
+            description: 'receivables',
+            invoice_date: DAY,
+            value_date: at(DAY, 0, 0),
+          },
+        ],
+      });
+
+      const { records, balance, errors } = await generate(injector);
+
+      expect(errors).toEqual([]);
+      expect(balance?.isBalanced).toBe(true);
+      expect(records.map(summarize)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            debit: 'tax-category-exchange-rates',
+            credit: EXPENSES_TAX_CATEGORY_ID,
+            localAmount: 800,
+            description: 'Asset cost refund: exchange rate difference',
+          }),
+        ]),
+      );
     });
   });
 });

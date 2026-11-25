@@ -5,6 +5,7 @@ import { formatStringifyAmount, roundToAgorot } from '../../../shared/helpers/in
 import type { LedgerProto, TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { IGetDepreciationDisposalsByIdsResult } from '../../depreciation/types.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 
 /*
  * A cost refund of an asset recorded in a foreign currency is entered in that currency and corrects
@@ -14,6 +15,22 @@ import type { IGetDepreciationDisposalsByIdsResult } from '../../depreciation/ty
  * receivable. It replaces the local-currency proceeds check (`checkDisposalProceeds`) for such a
  * charge: the refunds are checked in their currency instead, and the local gap is booked.
  */
+
+/** What a ledger error about a refund booked to the wrong account suggests */
+export const REFUND_ACCOUNT_HINT =
+  "book the refund with a credit-note document to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty";
+
+/** An account's name for a ledger error: its financial entity's name, else its id */
+export async function getLedgerAccountName(injector: Injector, accountId: string): Promise<string> {
+  try {
+    const entity = await injector
+      .get(FinancialEntitiesProvider)
+      .getFinancialEntityByIdLoader.load(accountId);
+    return entity?.name ?? accountId;
+  } catch {
+    return accountId;
+  }
+}
 
 /** A cost refund carried by the charge, entered in its asset's foreign currency */
 export type ForeignCostRefund = {
@@ -78,13 +95,16 @@ export function netCreditToAccount(
  *   at 0. It's rounded to agorot, dated the (last) refund date.
  *
  * `chargeEntries` are the charge's own document, transaction and misc-expense entries, without the
- * disposal rows.
+ * disposal rows; only its documents when P is the asset account, whose other movements are meant to
+ * leave a balance there (see `DisposalsLedger.proceedsToAssetAccount`).
  */
 export function buildCostRefundExchangeEntries(params: {
   refunds: readonly ForeignCostRefund[];
   expectedProceeds: number;
   chargeEntries: readonly LedgerProto[];
   proceedsAccountId: string;
+  /** P's name for the errors; its id when not given */
+  proceedsAccountName?: string;
   exchangeRateAccountId?: string | null;
   chargeId: string;
   ownerId: string;
@@ -108,7 +128,7 @@ export function buildCostRefundExchangeEntries(params: {
     const credited = credit.foreign.get(currency) ?? 0;
     if (Math.abs(refunded - credited) > 0.005) {
       errors.push(
-        `Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (${formatStringifyAmount(refunded)} ${currency} refunded, ${formatStringifyAmount(credited)} ${currency} credited to the charge's tax category)`,
+        `Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (${formatStringifyAmount(refunded)} ${currency} refunded, ${formatStringifyAmount(credited)} ${currency} credited to the charge's tax category "${params.proceedsAccountName ?? proceedsAccountId}"): ${REFUND_ACCOUNT_HINT}`,
       );
     }
   }
@@ -164,7 +184,9 @@ export function buildCostRefundExchangeEntries(params: {
  *
  * Such a charge may carry no other events (sales, or refunds entered in the local currency): their
  * proceeds would be checked in the local currency, where the exchange difference would hide a
- * mismatch. A mix is a ledger error.
+ * mismatch. A mix is a ledger error. Only the events booked to P count: pass the
+ * `proceedsDisposals` of `generateDepreciationDisposalsLedger`, without the refunds whose record
+ * books them against the charge's counterparty (`counterpartyRefunds`).
  */
 export async function generateCostRefundExchangeLedger(params: {
   disposals: readonly IGetDepreciationDisposalsByIdsResult[];
@@ -207,18 +229,25 @@ export async function generateCostRefundExchangeLedger(params: {
     return { entries: [], errors };
   }
 
-  const {
-    defaultLocalCurrency,
-    general: {
-      taxCategories: { exchangeRateTaxCategoryId },
+  const [
+    {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { exchangeRateTaxCategoryId },
+      },
     },
-  } = await params.injector.get(AdminContextProvider).getVerifiedAdminContext();
+    proceedsAccountName,
+  ] = await Promise.all([
+    params.injector.get(AdminContextProvider).getVerifiedAdminContext(),
+    getLedgerAccountName(params.injector, params.proceedsAccountId),
+  ]);
 
   return buildCostRefundExchangeEntries({
     refunds,
     expectedProceeds: params.expectedProceeds,
     chargeEntries: params.chargeEntries,
     proceedsAccountId: params.proceedsAccountId,
+    proceedsAccountName,
     exchangeRateAccountId: exchangeRateTaxCategoryId,
     chargeId: params.charge.id,
     ownerId: params.charge.owner_id,
