@@ -4,9 +4,12 @@ import {
   getLayout,
   parse1214,
   validate1214,
-  type Report1214Input,
 } from '@accounter/opcn1214-generator';
+import type { AnnualTaxData } from '../../../reports/helpers/annual-tax-data.helper.js';
 import type { Report1214ProfileProto, ShareholderProto } from '../../types.js';
+import { CODE_SOURCES, type Report1214CodeSources } from '../report-1214-amounts.helper.js';
+import { collectReport1214Issues, issueToGql } from '../report-1214-issues.helper.js';
+import { REPORT_1214_PHONE_PREFIXES } from '../report-1214-profile.helper.js';
 import {
   assembleReport1214Input,
   composeAddress,
@@ -34,6 +37,9 @@ describe('parseIsraeliPhone', () => {
     ['00972-9-1234567', { prefix: '09', number: '1234567' }],
     ['+972 (0)3 1234567', { prefix: '03', number: '1234567' }],
     ['  08-1234567  ', { prefix: '08', number: '1234567' }],
+    ['0721234567', { prefix: '072', number: '1234567' }],
+    ['\u200f03-1234567\u200f', { prefix: '03', number: '1234567' }], // RLM-wrapped, as pasted from Hebrew text
+    ['\u202a+972-54-1234567\u202c', { prefix: '054', number: '1234567' }],
   ])('parses %j', (raw, expected) => {
     expect(parseIsraeliPhone(raw)).toEqual(expected);
   });
@@ -52,8 +58,20 @@ describe('parseIsraeliPhone', () => {
     ['+44 20 7946 0958'],
     ['03-1234567 ext. 12'], // extension
     ['not a phone'],
+    ['1-800-123-456'], // toll-free
+    ['1700-500-500'],
   ])('rejects %j', raw => {
     expect(parseIsraeliPhone(raw)).toBeNull();
+  });
+});
+
+describe('parseIsraeliPhone and validate1214', () => {
+  it.each(REPORT_1214_PHONE_PREFIXES)('accepts a phone with prefix %s', prefix => {
+    const phone = parseIsraeliPhone(`${prefix}-2345678`);
+    expect(phone).toEqual({ prefix, number: '2345678' });
+    const { input } = assemble({ profile: profile({ company: { phone: phone! } }) });
+    const result = validate1214(input);
+    expect(result.errors).toEqual([]);
   });
 });
 
@@ -169,6 +187,33 @@ describe('assembleReport1214Input', () => {
     expect(input!.company.mailingAddress).toBe('Herzl 1');
   });
 
+  it('falls back to the English address when the Hebrew one is blank', () => {
+    const { input } = assemble({ business: { ...business, address_hebrew: '   ' } });
+    expect(input!.company.mailingAddress).toBe('Herzl 1, תל אביב 6100000');
+  });
+
+  it('picks the withholding file as the 6111 report does, unless the profile overrides it', () => {
+    const withholding = (adminBusiness: Record<string, string | null>, override?: string) =>
+      assemble({
+        adminBusiness,
+        profile: profile({ company: override ? { withholdingFileNumber: override } : {} }),
+      }).input!.company.withholdingFileNumber;
+
+    expect(withholding({ company_tax_id: '951400001' })).toBe('951400001');
+    // the company's own number is never its withholding file
+    expect(withholding({ company_tax_id: '514000009' })).toBeUndefined();
+    expect(
+      withholding({ company_tax_id: '514000009', tax_nikuim_pinkas_number: '951400001' }),
+    ).toBe('951400001');
+    // not a valid Israeli ID
+    expect(withholding({ company_tax_id: '951400002' })).toBeUndefined();
+    expect(withholding({ company_tax_id: null, tax_nikuim_pinkas_number: '951400001' })).toBe(
+      '951400001',
+    );
+    // the profile override wins, as entered
+    expect(withholding({ company_tax_id: '951400001' }, '951400019')).toBe('951400019');
+  });
+
   it('lets profile company overrides win', () => {
     const { input, mappingIssues } = assemble({
       adminBusiness: { company_tax_id: '951400001' },
@@ -223,10 +268,19 @@ describe('assembleReport1214Input', () => {
     expect(input!.company).not.toHaveProperty('fileNumber');
     expect(input!.company).not.toHaveProperty('phone');
     expect(input!.company).not.toHaveProperty('mailingAddress');
-    // the best-effort input still validates, and the generator reports the shape too
+    // the best-effort input still validates; the generator's shape issues at the same paths
     const result = validate1214(input);
     expect(result.valid).toBe(false);
-    expect(ruleIds(result.errors)).toContain('input.shape');
+    expect(result.errors.map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.shape', 'company.fileNumber'],
+      ['input.shape', 'company.mailingAddress'],
+      ['input.shape', 'company.businessAddress'],
+      ['input.shape', 'company.phone'],
+    ]);
+    // ... are dropped from the report's issues, which name each missing item once
+    const { errors, warnings } = collectReport1214Issues({ input, mappingIssues });
+    expect(errors).toEqual(mappingIssues);
+    expect(warnings).toEqual([]);
   });
 
   it('reports a business phone it cannot parse, and uses a profile phone instead', () => {
@@ -245,7 +299,8 @@ describe('assembleReport1214Input', () => {
   });
 
   it('drops empty profile blocks and lists', () => {
-    const { input } = assemble({ profile: profile({ bankAccount: { bank: '12' } }) });
+    const { input, mappingIssues } = assemble();
+    expect(mappingIssues).toEqual([]);
     for (const key of [
       'preparer',
       'attachments',
@@ -260,6 +315,18 @@ describe('assembleReport1214Input', () => {
     }
   });
 
+  it('leaves out an incomplete bank account with a warning', () => {
+    const { input, mappingIssues } = assemble({ profile: profile({ bankAccount: { bank: '12' } }) });
+    expect(input).not.toHaveProperty('bankAccount');
+    expect(mappingIssues).toEqual([
+      expect.objectContaining({
+        ruleId: REPORT_1214_MAPPING_RULES.bankAccountIncomplete,
+        severity: 'warning',
+        path: 'bankAccount',
+      }),
+    ]);
+  });
+
   it('passes set profile blocks through', () => {
     const blocks = {
       preparer: { officeName: 'משרד רו"ח', phone: { prefix: '03' as const, number: '2222222' } },
@@ -271,8 +338,11 @@ describe('assembleReport1214Input', () => {
       relatedCompanies: [{ companyName: 'חברת בת', relationType: 'subsidiary' as const }],
       rdInvestments: [{ companyName: 'מו"פ בע"מ', investmentAmount: 5000 }],
     };
-    const { input } = assemble({ profile: profile(blocks) });
+    const { input, mappingIssues } = assemble({ profile: profile(blocks) });
+    expect(mappingIssues).toEqual([]);
     expect(input).toMatchObject(blocks);
+    // every block has the generator's input shape
+    expect(ruleIds(validate1214(input).errors)).not.toContain('input.shape');
   });
 
   it('reports each unanswered required declaration and fills it with false', () => {
@@ -393,6 +463,63 @@ describe('assembleReport1214Input', () => {
     expect(input!.amounts['165']).toBe(7);
   });
 
+  it('computes the codes that need the books from the loaded books, under the overrides', () => {
+    const tax = { taxAmounts: { taxableIncomeAmount: 4321.6 } } as unknown as AnnualTaxData;
+    const codeSources: Report1214CodeSources = {
+      ...CODE_SOURCES,
+      '010': {
+        label: 'בדיקה',
+        specRef: 'p.0',
+        requiresTaxData: true,
+        compute: ({ tax }) => tax.taxAmounts.taxableIncomeAmount,
+      },
+      '011': {
+        label: 'לא סופי',
+        specRef: 'p.0',
+        requiresTaxData: true,
+        compute: () => Number.NaN,
+      },
+    };
+    const loadIssue = {
+      ruleId: 'accounter.test.loaded',
+      severity: 'warning' as const,
+      path: 'amounts',
+      message: 'loaded',
+    };
+
+    const computed = assemble({ taxData: { tax, issues: [loadIssue] }, codeSources });
+    expect(computed.input!.amounts['010']).toBe(4322);
+    expect(computed.amounts.find(row => row.code === '010')).toEqual({
+      code: '010',
+      amount: 4322,
+      source: 'COMPUTED',
+      computedAmount: 4322,
+      label: 'בדיקה',
+    });
+    expect(computed.mappingIssues).toEqual([
+      loadIssue,
+      expect.objectContaining({
+        ruleId: REPORT_1214_MAPPING_RULES.computedInvalid,
+        code: '011',
+      }),
+    ]);
+
+    const overridden = assemble({
+      taxData: { tax, issues: [] },
+      codeSources,
+      profile: profile({ amountOverrides: { ...profile().amountOverrides, '010': 5 } }),
+    });
+    expect(overridden.input!.amounts['010']).toBe(5);
+    expect(overridden.amounts.find(row => row.code === '010')).toMatchObject({
+      amount: 5,
+      source: 'OVERRIDE',
+      computedAmount: 4322,
+    });
+
+    // without the books, the code is not computed at all
+    expect(assemble({ codeSources }).input!.amounts).not.toHaveProperty('010');
+  });
+
   it('maps shareholders to the generator shape', () => {
     const { input } = assemble({
       shareholders: [
@@ -462,16 +589,69 @@ describe('assembleReport1214Input', () => {
 
     const generated = generate1214(input!, { today: () => '2025-03-31' });
     const { report } = parse1214(generated.bytes);
-    const expected: Partial<Report1214Input> = {
-      taxYear: input!.taxYear,
-      company: input!.company,
-      preparer: input!.preparer,
-      declarations: input!.declarations,
-      amounts: input!.amounts,
-      shareholders: input!.shareholders,
-    };
-    expect(report).toMatchObject(expected);
-    expect(report.shareholders).toEqual(input!.shareholders);
+    const omitted = new Set(
+      generated.summary.omittedZeroCodes
+        .filter(entry => entry.record === '1000')
+        .map(entry => entry.code),
+    );
+    const expectedAmounts = Object.fromEntries(
+      Object.entries(input!.amounts).filter(([code]) => !omitted.has(code)),
+    );
+    expect(report.taxYear).toBe(input!.taxYear);
     expect(report.company).toEqual(input!.company);
+    expect(report.preparer).toEqual(input!.preparer);
+    expect(report.declarations).toEqual(input!.declarations);
+    expect(report.amounts).toEqual(expectedAmounts);
+    expect(report.shareholders).toEqual(input!.shareholders);
+  });
+});
+
+describe('issueToGql', () => {
+  it('maps a generator issue', () => {
+    expect(
+      issueToGql({
+        ruleId: 'shareholders.dividendRights.total',
+        severity: 'error',
+        message: 'Dividend rights total 90, not 100',
+        path: 'shareholders',
+        recordType: '1020',
+        recordIndex: 0,
+        code: '081',
+        specRef: { page: 22, note: 'total 100' },
+      }),
+    ).toEqual({
+      ruleId: 'shareholders.dividendRights.total',
+      severity: 'ERROR',
+      message: 'Dividend rights total 90, not 100',
+      path: 'shareholders',
+      code: '081',
+      recordType: '1020',
+      recordIndex: 0,
+      specRef: 'p.22: total 100',
+    });
+  });
+
+  it('maps a report-level mapping warning', () => {
+    expect(
+      issueToGql({
+        ruleId: 'accounter.amounts.derivedOverrideDropped',
+        severity: 'warning',
+        message: 'dropped',
+        path: '',
+      }),
+    ).toEqual({
+      ruleId: 'accounter.amounts.derivedOverrideDropped',
+      severity: 'WARNING',
+      message: 'dropped',
+      path: null,
+      code: null,
+      recordType: null,
+      recordIndex: null,
+      specRef: null,
+    });
+    expect(
+      issueToGql({ ruleId: 'x', severity: 'error', message: 'm', path: 'p', specRef: { page: 5 } })
+        .specRef,
+    ).toBe('p.5');
   });
 });

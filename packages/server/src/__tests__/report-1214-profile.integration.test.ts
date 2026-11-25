@@ -17,8 +17,10 @@ import { qualifyTable } from './helpers/test-db-config.js';
  * real application (`createGraphQLApp`) with dev-bypass identities, plus the
  * `report_1214_profiles` RLS policy evaluated under a non-superuser role.
  *
- * The suite only touches years 2091-2099 of its owners, so it cannot collide with real data or
- * other suites.
+ * The suite brings its own owner businesses and users (unique `makeUUID` seeds), created in
+ * `beforeAll` and removed in `afterAll`. It never attaches to the shared admin business, which
+ * other suites create and delete (deleting it would cascade to this suite's memberships), and it
+ * can use real tax years since no other suite writes these owners' profiles.
  */
 
 // See timeless-dates.integration.test.ts: keep graphql in one (CommonJS) realm with graphql-modules
@@ -42,9 +44,10 @@ const unbuiltPackageStub = vi.hoisted(
 vi.mock('@accounter/green-invoice-graphql', unbuiltPackageStub);
 vi.mock('@accounter/shaam-uniform-format-generator', unbuiltPackageStub);
 
-const ADMIN_ID = makeUUID('business', 'Admin Business');
+/** The suite's own owner business and its user */
+const OWNER_ID = makeUUID('business', 'report-1214-profile-owner');
 const USER_ID = makeUUID('user', 'report-1214-profile-user');
-/** A second tenant, with its own user, that must not see the admin's profile */
+/** A second tenant, with its own user, that must not see the owner's profile */
 const OTHER_OWNER_ID = makeUUID('business', 'report-1214-profile-other-owner');
 const OTHER_USER_ID = makeUUID('user', 'report-1214-profile-other-user');
 
@@ -228,14 +231,14 @@ async function execute<T>(query: string, variables: Record<string, unknown> = {}
   return json.data!;
 }
 
-const getProfile = (year = YEAR, ownerId: string | null = ADMIN_ID) =>
+const getProfile = (year = YEAR, ownerId: string | null = OWNER_ID) =>
   execute<{ report1214Profile: Profile }>(PROFILE_QUERY, { ownerId, year }).then(
     data => data.report1214Profile,
   );
 
 const updateProfile = (input: Record<string, unknown>, year = YEAR) =>
   execute<{ updateReport1214Profile: Profile }>(UPDATE_PROFILE_MUTATION, {
-    ownerId: ADMIN_ID,
+    ownerId: OWNER_ID,
     year,
     input,
   }).then(data => data.updateReport1214Profile);
@@ -256,7 +259,7 @@ async function withSuperuserClient<T>(fn: (client: PoolClient) => Promise<T>): P
   const client = await db.getPool().connect();
   try {
     await client.query('BEGIN');
-    await client.query("SELECT set_config('app.current_business_id', $1, true)", [ADMIN_ID]);
+    await client.query("SELECT set_config('app.current_business_id', $1, true)", [OWNER_ID]);
     const result = await fn(client);
     await client.query('COMMIT');
     return result;
@@ -271,14 +274,40 @@ async function withSuperuserClient<T>(fn: (client: PoolClient) => Promise<T>): P
 async function removeProfiles() {
   await withSuperuserClient(client =>
     client.query(
-      `DELETE FROM ${qualifyTable('report_1214_profiles')}
-       WHERE owner_id = ANY($1) AND year BETWEEN 2091 AND 2099`,
-      [[ADMIN_ID, OTHER_OWNER_ID]],
+      `DELETE FROM ${qualifyTable('report_1214_profiles')} WHERE owner_id = ANY($1)`,
+      [[OWNER_ID, OTHER_OWNER_ID]],
     ),
   );
 }
 
-/** The raw JSONB blocks of the admin's profile row of `year` */
+/** Creates an owner business (entity, business and admin rows) with `userId` as its owner */
+async function ensureOwner(client: PoolClient, ownerId: string, name: string, userId: string) {
+  await client.query(
+    `INSERT INTO ${qualifyTable('financial_entities')} (id, name, type, owner_id)
+     VALUES ($1, $2, 'business', NULL) ON CONFLICT (id) DO NOTHING`,
+    [ownerId, name],
+  );
+  await client.query(
+    `INSERT INTO ${qualifyTable('businesses')} (id, country, owner_id)
+     VALUES ($1, 'ISR', $1) ON CONFLICT (id) DO NOTHING`,
+    [ownerId],
+  );
+  await client.query(`UPDATE ${qualifyTable('financial_entities')} SET owner_id = $1 WHERE id = $1`, [
+    ownerId,
+  ]);
+  await client.query(
+    `INSERT INTO ${qualifyTable('businesses_admin')} (id, owner_id) VALUES ($1, $1)
+     ON CONFLICT DO NOTHING`,
+    [ownerId],
+  );
+  await client.query(
+    `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id)
+     VALUES ($1, $2, 'business_owner') ON CONFLICT DO NOTHING`,
+    [userId, ownerId],
+  );
+}
+
+/** The raw JSONB blocks of the owner's profile row of `year` */
 async function rawRow(year: number) {
   const rows = await withSuperuserClient(client =>
     client
@@ -287,7 +316,7 @@ async function rawRow(year: number) {
                 capital_gains_summary, qualifying_company, related_companies, rd_investments,
                 amount_overrides
          FROM ${qualifyTable('report_1214_profiles')} WHERE owner_id = $1 AND year = $2`,
-        [ADMIN_ID, year],
+        [OWNER_ID, year],
       )
       .then(result => result.rows),
   );
@@ -340,42 +369,8 @@ beforeAll(async () => {
   });
 
   await withSuperuserClient(async client => {
-    // `business_users` references `businesses_admin`: make sure the shared admin row exists
-    await client.query(
-      `INSERT INTO ${qualifyTable('businesses_admin')} (id, owner_id) VALUES ($1, $1)
-       ON CONFLICT DO NOTHING`,
-      [ADMIN_ID],
-    );
-    await client.query(
-      `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id)
-       VALUES ($1, $2, 'business_owner') ON CONFLICT DO NOTHING`,
-      [USER_ID, ADMIN_ID],
-    );
-
-    await client.query(
-      `INSERT INTO ${qualifyTable('financial_entities')} (id, name, type, owner_id)
-       VALUES ($1, 'Profile other owner', 'business', NULL) ON CONFLICT (id) DO NOTHING`,
-      [OTHER_OWNER_ID],
-    );
-    await client.query(
-      `INSERT INTO ${qualifyTable('businesses')} (id, country, owner_id)
-       VALUES ($1, 'ISR', $1) ON CONFLICT (id) DO NOTHING`,
-      [OTHER_OWNER_ID],
-    );
-    await client.query(
-      `UPDATE ${qualifyTable('financial_entities')} SET owner_id = $1 WHERE id = $1`,
-      [OTHER_OWNER_ID],
-    );
-    await client.query(
-      `INSERT INTO ${qualifyTable('businesses_admin')} (id, owner_id) VALUES ($1, $1)
-       ON CONFLICT DO NOTHING`,
-      [OTHER_OWNER_ID],
-    );
-    await client.query(
-      `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id)
-       VALUES ($1, $2, 'business_owner') ON CONFLICT DO NOTHING`,
-      [OTHER_USER_ID, OTHER_OWNER_ID],
-    );
+    await ensureOwner(client, OWNER_ID, 'Profile owner', USER_ID);
+    await ensureOwner(client, OTHER_OWNER_ID, 'Profile other owner', OTHER_USER_ID);
   });
 
   const pool = db.getPool();
@@ -399,21 +394,20 @@ afterAll(async () => {
   }
   await removeProfiles();
   await withSuperuserClient(async client => {
+    const owners = [OWNER_ID, OTHER_OWNER_ID];
     await client.query(`DELETE FROM ${qualifyTable('business_users')} WHERE user_id = ANY($1)`, [
       [USER_ID, OTHER_USER_ID],
     ]);
-    await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = $1`, [
-      OTHER_OWNER_ID,
+    await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = ANY($1)`, [
+      owners,
     ]);
     await client.query(
-      `UPDATE ${qualifyTable('financial_entities')} SET owner_id = NULL WHERE id = $1`,
-      [OTHER_OWNER_ID],
+      `UPDATE ${qualifyTable('financial_entities')} SET owner_id = NULL WHERE id = ANY($1)`,
+      [owners],
     );
-    await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = $1`, [
-      OTHER_OWNER_ID,
-    ]);
-    await client.query(`DELETE FROM ${qualifyTable('financial_entities')} WHERE id = $1`, [
-      OTHER_OWNER_ID,
+    await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = ANY($1)`, [owners]);
+    await client.query(`DELETE FROM ${qualifyTable('financial_entities')} WHERE id = ANY($1)`, [
+      owners,
     ]);
   });
   await dropRlsRole(db.getPool());
@@ -423,8 +417,8 @@ describe('report 1214 profile', () => {
   it('returns an empty default profile when nothing is stored', async () => {
     const profile = await getProfile();
     expect(profile).toMatchObject({
-      id: `${ADMIN_ID}:${YEAR}`,
-      ownerId: ADMIN_ID,
+      id: `${OWNER_ID}:${YEAR}`,
+      ownerId: OWNER_ID,
       year: YEAR,
       preparer: null,
       attachments: null,
@@ -444,7 +438,7 @@ describe('report 1214 profile', () => {
   it("defaults to the caller's active business when no owner is given", async () => {
     await updateProfile({ company: { email: 'office@example.com' } });
     const profile = await getProfile(YEAR, null);
-    expect(profile.ownerId).toBe(ADMIN_ID);
+    expect(profile.ownerId).toBe(OWNER_ID);
     expect(profile.company.email).toBe('office@example.com');
   });
 
@@ -531,7 +525,7 @@ describe('report 1214 profile', () => {
         .query(
           `SELECT declarations, related_companies, amount_overrides, company
            FROM ${qualifyTable('report_1214_profiles')} WHERE owner_id = $1 AND year = $2`,
-          [ADMIN_ID, YEAR],
+          [OWNER_ID, YEAR],
         )
         .then(result => result.rows),
     );
@@ -594,7 +588,7 @@ describe('report 1214 profile', () => {
         .query(
           `SELECT preparer, bank_account, related_companies, amount_overrides
            FROM ${qualifyTable('report_1214_profiles')} WHERE owner_id = $1 AND year = $2`,
-          [ADMIN_ID, YEAR],
+          [OWNER_ID, YEAR],
         )
         .then(result => result.rows),
     );
@@ -634,7 +628,7 @@ describe('report 1214 profile', () => {
     ];
     for (const [input, message] of cases) {
       const error = await expectError(UPDATE_PROFILE_MUTATION, {
-        ownerId: ADMIN_ID,
+        ownerId: OWNER_ID,
         year: YEAR,
         input: { ...input, company: input.company ?? { email: 'changed@example.com' } },
       });
@@ -662,10 +656,29 @@ describe('report 1214 profile', () => {
     expect(await getProfile()).toEqual(saved);
   });
 
-  it('checks amount codes against the layout of a supported year (2025)', async () => {
-    // Rejections only: nothing is written, so the suite never touches a real tax year's row
+  it('saves overrides for a supported year (2025) and checks codes against its layout', async () => {
+    const saved = await updateProfile(
+      {
+        amountOverrides: [
+          { code: '072', amount: 150_000 },
+          { code: '018', amount: 4 },
+          { code: '263', amount: 1 },
+          { code: '081', amount: 0 },
+        ],
+      },
+      2025,
+    );
+    expect(saved.year).toBe(2025);
+    expect(saved.amountOverrides).toEqual([
+      { code: '018', amount: 4 },
+      { code: '072', amount: 150_000 },
+      { code: '081', amount: 0 },
+      { code: '263', amount: 1 },
+    ]);
+    expect(await getProfile(2025)).toEqual(saved);
+
     const unknown = await expectError(UPDATE_PROFILE_MUTATION, {
-      ownerId: ADMIN_ID,
+      ownerId: OWNER_ID,
       year: 2025,
       input: { amountOverrides: [{ code: '999', amount: 1 }] },
     });
@@ -673,7 +686,7 @@ describe('report 1214 profile', () => {
     expect(unknown.message).toMatch(/is not a record 1000 input code of the 2025 layout/);
 
     const derived = await expectError(UPDATE_PROFILE_MUTATION, {
-      ownerId: ADMIN_ID,
+      ownerId: OWNER_ID,
       year: 2025,
       input: { amountOverrides: [{ code: '297', amount: 8 }] },
     });
@@ -720,10 +733,10 @@ describe('report 1214 profile', () => {
 
   it('rejects a year outside 2000-2100', async () => {
     for (const year of [1999, 2101, 40_000]) {
-      const error = await expectError(PROFILE_QUERY, { ownerId: ADMIN_ID, year });
+      const error = await expectError(PROFILE_QUERY, { ownerId: OWNER_ID, year });
       expect(error.code).toBe('BAD_USER_INPUT');
       const write = await expectError(UPDATE_PROFILE_MUTATION, {
-        ownerId: ADMIN_ID,
+        ownerId: OWNER_ID,
         year,
         input: {},
       });
@@ -735,12 +748,12 @@ describe('report 1214 profile', () => {
     it("forbids another tenant's user from reading or writing the owner's profile", async () => {
       await updateProfile({ company: { email: 'office@example.com' } });
 
-      const read = await expectError(PROFILE_QUERY, { ownerId: ADMIN_ID, year: YEAR }, otherYoga);
+      const read = await expectError(PROFILE_QUERY, { ownerId: OWNER_ID, year: YEAR }, otherYoga);
       expect(read.code).toBe('FORBIDDEN');
 
       const write = await expectError(
         UPDATE_PROFILE_MUTATION,
-        { ownerId: ADMIN_ID, year: YEAR, input: { company: null } },
+        { ownerId: OWNER_ID, year: YEAR, input: { company: null } },
         otherYoga,
       );
       expect(write.code).toBe('FORBIDDEN');
@@ -748,7 +761,7 @@ describe('report 1214 profile', () => {
       // access is checked before the input, so invalid input is FORBIDDEN as well
       const invalidWrite = await expectError(
         UPDATE_PROFILE_MUTATION,
-        { ownerId: ADMIN_ID, year: YEAR, input: { amountOverrides: [{ code: '008', amount: 1 }] } },
+        { ownerId: OWNER_ID, year: YEAR, input: { amountOverrides: [{ code: '008', amount: 1 }] } },
         otherYoga,
       );
       expect(invalidWrite.code).toBe('FORBIDDEN');
@@ -821,7 +834,7 @@ describe('report 1214 profile', () => {
         }
       };
 
-      expect(await visibleOwners(ADMIN_ID)).toEqual([ADMIN_ID]);
+      expect(await visibleOwners(OWNER_ID)).toEqual([OWNER_ID]);
       expect(await visibleOwners(OTHER_OWNER_ID)).toEqual([]);
     });
   });

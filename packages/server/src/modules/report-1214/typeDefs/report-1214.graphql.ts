@@ -44,10 +44,11 @@ export default gql`
     code: String!
     " The amount the report uses for the code "
     amount: Float!
+    " Whether the amount is computed by Accounter or set in the profile's overrides (an override always wins) "
     source: Report1214AmountSource!
-    " The amount Accounter computed for the code, also when an override replaces it; null when it computes none "
+    " The amount Accounter computed for the code, also when an override replaces it. Null for override-only codes, and when the computed amount is 0 for a code that does not allow 0 (such a code is left out) "
     computedAmount: Float
-    " The code's Hebrew name, for the codes Accounter computes "
+    " The code's Hebrew name, for the codes Accounter computes; null for override-only codes "
     label: String
   }
 
@@ -79,6 +80,8 @@ export default gql`
     code: String
     " The record type (1000, 1020, ...) the issue is about, when known "
     recordType: String
+    " 0-based index of the record among the records of its type, when known "
+    recordIndex: Int
     " Page (and note) of the SHAAM layout specification the rule comes from; null for accounter.* issues "
     specRef: String
   }
@@ -92,7 +95,16 @@ export default gql`
     encodedContent: String!
     " Warnings of the generated report "
     warnings: [Report1214Issue!]!
-    " Codes with a 0 amount left out of the file, as <record>:<code> "
-    omittedZeroCodes: [String!]!
+    " Codes with a 0 amount left out of the file (a 0 is written only for codes that allow it) "
+    omittedZeroCodes: [Report1214OmittedZeroCode!]!
+  }
+
+  " A code-amount entry with a 0 amount that the file leaves out "
+  type Report1214OmittedZeroCode {
+    " The record type (1000, 2000, 30xx, ...) "
+    record: String!
+    " 0-based index of the record among the records of its type "
+    recordIndex: Int!
+    code: String!
   }
 `;

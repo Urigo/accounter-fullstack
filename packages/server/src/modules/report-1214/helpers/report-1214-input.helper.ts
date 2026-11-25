@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import {
   supportedTaxYears,
@@ -19,6 +20,7 @@ import {
   loadAnnualTaxData,
   type AnnualTaxData,
 } from '../../reports/helpers/annual-tax-data.helper.js';
+import { selectWithholdingTaxFileNumber } from '../../reports/helpers/shaam6111-computation.helper.js';
 import { Report1214ProfileProvider } from '../providers/report-1214-profile.provider.js';
 import { ShareholdersProvider } from '../providers/shareholders.provider.js';
 import type {
@@ -34,17 +36,18 @@ import {
   codeSourcesNeedTaxData,
   computeMainFormAmounts,
   REPORT_1214_AMOUNT_RULES,
+  type Report1214CodeSources,
 } from './report-1214-amounts.helper.js';
 import {
   amountOverrideCodes,
   bankAccountToGql,
+  compact,
+  emptyToNull,
   mapReport1214ProfileRow,
-  REPORT_1214_PHONE_PREFIXES,
+  PHONE_PREFIX_SET,
+  type AssertNever,
 } from './report-1214-profile.helper.js';
 import { mapShareholderRow } from './shareholders.helper.js';
-
-/** `true` when type `T` is `never`; used for compile-time drift checks against the generator. */
-type AssertNever<T extends never> = T;
 
 /**
  * Rule IDs of the issues raised while building the generator input (before `validate1214` runs).
@@ -66,6 +69,8 @@ export const REPORT_1214_MAPPING_RULES = {
   /** warning: a stored amount override of a code the report derives was left out. */
   derivedOverrideDropped: 'accounter.amounts.derivedOverrideDropped',
   ...REPORT_1214_AMOUNT_RULES,
+  /** warning: the stored bank account lacks a member, so no bank account is reported. */
+  bankAccountIncomplete: 'accounter.bankAccount.incomplete',
 } as const;
 
 /**
@@ -99,17 +104,16 @@ const REQUIRED_DECLARATION_LABELS: Record<(typeof REQUIRED_DECLARATION_KEYS)[num
   tookReportablePosition: 'whether the company took a reportable position (1030)',
 };
 
-const PHONE_PREFIX_SET: ReadonlySet<string> = new Set(REPORT_1214_PHONE_PREFIXES);
-
 /**
  * Parses an Israeli phone number as people type it into the `{ prefix, number }` form 1214 wants.
  * Accepts `+972` / `972` / `00972` country codes (with or without the trunk 0 after them), spaces,
- * dashes, dots and parentheses. The prefix must be one form 1214 allows (2 digits for landlines,
+ * dashes, dots, parentheses and invisible format characters (bidi marks pasted with Hebrew text).
+ * The prefix must be one form 1214 allows (2 digits for landlines,
  * 3 for mobile and 07x numbers), followed by exactly 7 digits. Anything else (extensions, foreign
  * numbers, other prefixes) is `null`.
  */
 export function parseIsraeliPhone(raw: string | null | undefined): Phone | null {
-  const trimmed = raw?.trim();
+  const trimmed = raw?.replace(/\p{Cf}/gu, '').trim();
   if (!trimmed || !/^\+?[\d\s\-.()]+$/.test(trimmed)) {
     return null;
   }
@@ -155,21 +159,14 @@ function text(value: string | null | undefined): string | undefined {
   return value?.trim() || undefined;
 }
 
-/** `undefined` for an empty object, the object otherwise. */
+/** `undefined` for an empty (unset) block, the block otherwise. */
 function nonEmpty<T extends object>(value: T): T | undefined {
-  return Object.keys(value).length === 0 ? undefined : value;
+  return emptyToNull(value) ?? undefined;
 }
 
 /** `undefined` for an empty list, the list otherwise. */
 function nonEmptyList<T>(value: T[]): T[] | undefined {
   return value.length === 0 ? undefined : value;
-}
-
-/** Drops the `undefined` members, so the input carries only what is set. */
-function compact<T extends object>(value: T): T {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, member]) => member !== undefined),
-  ) as T;
 }
 
 function mappingIssue(
@@ -213,9 +210,8 @@ export type Report1214BusinessIdentity = Pick<
 >;
 
 /** The admin-business columns the report takes the withholding file from. */
-export type Report1214AdminBusinessIdentity = Pick<
-  IGetAdminBusinessesByIdsResult,
-  'company_tax_id'
+export type Report1214AdminBusinessIdentity = Partial<
+  Pick<IGetAdminBusinessesByIdsResult, 'company_tax_id' | 'tax_nikuim_pinkas_number'>
 >;
 
 export interface AssembleReport1214InputParams {
@@ -229,6 +225,8 @@ export interface AssembleReport1214InputParams {
    * raised while loading them. Absent: only the amounts that need no books are computed.
    */
   taxData?: Report1214TaxDataResult;
+  /** The code sources of the computed amounts; `CODE_SOURCES` unless a test passes its own. */
+  codeSources?: Report1214CodeSources;
 }
 
 /**
@@ -254,7 +252,11 @@ function assembleCompany(
   }
 
   const booksAddress = business
-    ? composeAddress(business.address_hebrew || business.address, business.city, business.zip_code)
+    ? composeAddress(
+        text(business.address_hebrew) ?? text(business.address),
+        business.city,
+        business.zip_code,
+      )
     : undefined;
   const mailingAddress = overrides.mailingAddress ?? booksAddress;
   const businessAddress = overrides.businessAddress ?? booksAddress;
@@ -301,7 +303,9 @@ function assembleCompany(
     fileNumber: fileNumber!,
     registeredName:
       overrides.registeredName ?? text(business?.hebrew_name) ?? text(business?.name) ?? '',
-    withholdingFileNumber: overrides.withholdingFileNumber ?? text(adminBusiness?.company_tax_id),
+    withholdingFileNumber:
+      overrides.withholdingFileNumber ??
+      selectWithholdingTaxFileNumber(adminBusiness, business?.vat_number),
     vatFileNumber: text(business?.vat_number),
     occupationDescription: overrides.occupationDescription,
     mailingAddress: mailingAddress!,
@@ -349,6 +353,7 @@ function assembleAmounts(
   year: number,
   computedAmounts: Readonly<Record<string, number>>,
   storedOverrides: Report1214ProfileProto['amountOverrides'],
+  codeSources: Report1214CodeSources,
   issues: Report1214IssueProto[],
 ): { amounts: Report1214Input['amounts']; rows: Report1214AmountProto[] } {
   const { derivedCodes } = amountOverrideCodes(year);
@@ -380,7 +385,7 @@ function assembleAmounts(
       amount: amounts[code],
       source: Object.hasOwn(overrides, code) ? 'OVERRIDE' : 'COMPUTED',
       computedAmount: Object.hasOwn(computedAmounts, code) ? computedAmounts[code] : null,
-      label: CODE_SOURCES[code as keyof typeof CODE_SOURCES]?.label ?? null,
+      label: codeSources[code as keyof Report1214CodeSources]?.label ?? null,
     }));
   return { amounts: amounts as Report1214Input['amounts'], rows };
 }
@@ -391,7 +396,11 @@ function assembleAmounts(
  * (`computeMainFormAmounts`) under the profile's overrides (`assembleAmounts`).
  *
  * Never invents data: what is missing is reported as a mapping issue (rule IDs in
- * `REPORT_1214_MAPPING_RULES`) and left out, so `validate1214` reports the rest. The only filler
+ * `REPORT_1214_MAPPING_RULES`) and left out, so `validate1214` reports the rest. A missing required
+ * identity member (file number, address, phone) leaves the input short of the generator's shape:
+ * `validate1214` then stops at its `input.shape` stage, so the form's other rules only run in full
+ * once the identity is complete (the resolver drops the `input.shape` issues that repeat a mapping
+ * error). The only filler
  * is `false` for unanswered required declarations, each already an error that blocks the file.
  * A tax year without a generator layout yields `input: null`.
  */
@@ -402,6 +411,7 @@ export function assembleReport1214Input({
   profile,
   shareholders,
   taxData,
+  codeSources = CODE_SOURCES,
 }: AssembleReport1214InputParams): Report1214BuildResult {
   if (!supportedTaxYears().includes(year)) {
     return {
@@ -421,16 +431,30 @@ export function assembleReport1214Input({
   const mappingIssues: Report1214IssueProto[] = [...(taxData?.issues ?? [])];
   const company = assembleCompany(business, adminBusiness, profile.company, mappingIssues);
   const declarations = assembleDeclarations(profile.declarations, mappingIssues);
-  const computed = computeMainFormAmounts({ year, tax: taxData?.tax ?? null, profile });
+  const computed = computeMainFormAmounts(
+    { year, tax: taxData?.tax ?? null, profile },
+    codeSources,
+  );
   mappingIssues.push(...computed.issues);
   const { amounts, rows } = assembleAmounts(
     year,
     computed.amounts,
     profile.amountOverrides,
+    codeSources,
     mappingIssues,
   );
 
   const bankAccount = bankAccountToGql(profile.bankAccount) ?? undefined;
+  if (!bankAccount && Object.keys(profile.bankAccount).length > 0) {
+    mappingIssues.push(
+      mappingIssue(
+        REPORT_1214_MAPPING_RULES.bankAccountIncomplete,
+        'warning',
+        'bankAccount',
+        'The stored bank account lacks its bank, branch or account number, so no changed bank account is reported: complete it or clear it in the 1214 profile',
+      ),
+    );
+  }
   const input: Report1214Input = compact({
     taxYear: year as SupportedTaxYear,
     company,
@@ -462,6 +486,8 @@ export interface ResolveReport1214TaxDataParams {
   isActiveOwner: () => Promise<boolean>;
   /** Loads the books (`loadAnnualTaxData`). */
   load: () => Promise<AnnualTaxData>;
+  /** The code sources of the computed amounts; `CODE_SOURCES` unless a test passes its own. */
+  codeSources?: Report1214CodeSources;
 }
 
 /**
@@ -479,8 +505,10 @@ export async function resolveReport1214TaxData({
   ownerId,
   isActiveOwner,
   load,
+  codeSources = CODE_SOURCES,
 }: ResolveReport1214TaxDataParams): Promise<Report1214TaxDataResult> {
-  if (!supportedTaxYears().includes(year) || !codeSourcesNeedTaxData(year)) {
+  // also false for a year without a layout
+  if (!codeSourcesNeedTaxData(year, codeSources)) {
     return { tax: null, issues: [] };
   }
   if (!(await isActiveOwner())) {
@@ -499,7 +527,12 @@ export async function resolveReport1214TaxData({
   try {
     return { tax: await load(), issues: [] };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
+    console.error('Failed to compute 1214 amounts from the books:', error);
+    // only a GraphQLError (e.g. "No tax rate for year") carries a message meant for users
+    const reason =
+      error instanceof GraphQLError
+        ? error.message
+        : 'The tax computation from the books failed (see server log)';
     return {
       tax: null,
       issues: [

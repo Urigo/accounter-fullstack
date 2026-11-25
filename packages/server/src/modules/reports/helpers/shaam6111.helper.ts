@@ -8,7 +8,6 @@ import {
   CurrencyType,
   IFRSReportingOption,
   IndividualOrCompanyEnum,
-  isValidIsraeliID,
   ReportData,
   ReportEntry,
   ReportingMethod,
@@ -35,6 +34,7 @@ import {
   PROFIT_LOSS_SUMMARY_CODES,
   profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
+  selectWithholdingTaxFileNumber,
   type Shaam6111Issue,
 } from './shaam6111-computation.helper.js';
 
@@ -238,12 +238,10 @@ export async function getShaam6111Data(
 
   const isCompany = isCorporateRegistrationNumber(business.vat_number);
   // The withholding (ניכויים) file is a separate 9-digit file, never the company's own number
-  const withholdingTaxFileNumber = [
-    adminBusiness?.company_tax_id,
-    adminBusiness?.tax_nikuim_pinkas_number,
-  ]
-    .map(id => id?.trim())
-    .find(id => !!id && id !== business.vat_number && isValidIsraeliID(id));
+  const withholdingTaxFileNumber = selectWithholdingTaxFileNumber(
+    adminBusiness,
+    business.vat_number,
+  );
   if (isCompany && !withholdingTaxFileNumber) {
     issues.push({
       severity: 'WARNING',

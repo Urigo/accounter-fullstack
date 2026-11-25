@@ -1,5 +1,5 @@
+import { GraphQLError } from 'graphql';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { MainFormInputCode } from '@accounter/opcn1214-generator';
 import type { AnnualTaxData } from '../../../reports/helpers/annual-tax-data.helper.js';
 import type { Report1214ProfileProto } from '../../types.js';
 import {
@@ -8,7 +8,7 @@ import {
   computeMainFormAmounts,
   REPORT_1214_AMOUNT_RULES,
   type Report1214AmountsData,
-  type Report1214CodeSource,
+  type Report1214CodeSources,
 } from '../report-1214-amounts.helper.js';
 import { resolveReport1214TaxData } from '../report-1214-input.helper.js';
 
@@ -41,22 +41,20 @@ function rdInvestments(...amounts: number[]): Report1214ProfileProto['rdInvestme
   }));
 }
 
-/** Temporarily adds code sources, to exercise the engine independently of the verified table. */
-const added: string[] = [];
-function addSource(code: string, source: Partial<Report1214CodeSource>) {
-  CODE_SOURCES[code as MainFormInputCode] = {
-    label: `test ${code}`,
-    specRef: 'p.0',
-    requiresTaxData: true,
-    compute: () => undefined,
-    ...source,
-  };
-  added.push(code);
+/** A code source that reads the books (the verified table has none yet). */
+function taxSource(
+  compute: (data: { tax: AnnualTaxData }) => number | undefined = () => undefined,
+) {
+  return { label: 'test', specRef: 'p.0', requiresTaxData: true, compute } as const;
 }
+
+/** A code source that needs no books. */
+function profileSource(compute: () => number | undefined) {
+  return { label: 'test', specRef: 'p.0', requiresTaxData: false, compute } as const;
+}
+
 afterEach(() => {
-  for (const code of added.splice(0)) {
-    delete CODE_SOURCES[code as MainFormInputCode];
-  }
+  vi.restoreAllMocks();
 });
 
 describe('CODE_SOURCES', () => {
@@ -68,11 +66,19 @@ describe('CODE_SOURCES', () => {
     }
   });
 
+  it('is frozen', () => {
+    expect(Object.isFrozen(CODE_SOURCES)).toBe(true);
+  });
+
   it('needs no books for the verified codes', () => {
     expect(codeSourcesNeedTaxData(YEAR)).toBe(false);
-    addSource('072', { requiresTaxData: true });
-    expect(codeSourcesNeedTaxData(YEAR)).toBe(true);
-    expect(codeSourcesNeedTaxData(1999)).toBe(false);
+    const sources: Report1214CodeSources = { '072': taxSource() };
+    expect(codeSourcesNeedTaxData(YEAR, sources)).toBe(true);
+    expect(codeSourcesNeedTaxData(1999, sources)).toBe(false);
+    // a derived code is never computed, so it needs no books either
+    expect(codeSourcesNeedTaxData(YEAR, { '008': taxSource() } as Report1214CodeSources)).toBe(
+      false,
+    );
   });
 });
 
@@ -104,22 +110,29 @@ describe('computeMainFormAmounts', () => {
   });
 
   it('rounds to whole shekels and keeps 0 only where the layout allows it', () => {
-    addSource('072', { compute: ({ tax }) => tax!.taxAmounts.taxableLoss }); // zeroAllowed
-    addSource('010', { compute: () => 0.3 }); // not zeroAllowed: rounds to 0
-    addSource('011', { compute: ({ tax }) => tax!.taxAmounts.annualTaxExpenseAmount });
-    addSource('012', { compute: () => -0.4 }); // -0 is 0
-    expect(computeMainFormAmounts(data()).amounts).toEqual({ '072': 0, '011': 23_000 });
+    const sources: Report1214CodeSources = {
+      '072': taxSource(({ tax }) => tax.taxAmounts.taxableLoss), // zeroAllowed
+      '010': profileSource(() => 0.3), // not zeroAllowed: rounds to 0
+      '011': taxSource(({ tax }) => tax.taxAmounts.annualTaxExpenseAmount),
+      '012': profileSource(() => -0.4), // -0 is 0
+    };
+    expect(computeMainFormAmounts(data(), sources).amounts).toEqual({ '072': 0, '011': 23_000 });
   });
 
   it('skips the codes that need the books when they were not loaded', () => {
-    addSource('011', { compute: () => 1 });
-    expect(computeMainFormAmounts(data({ tax: null })).amounts).toEqual({});
+    const compute = vi.fn(() => 1);
+    expect(
+      computeMainFormAmounts(data({ tax: null }), { '011': taxSource(compute) }).amounts,
+    ).toEqual({});
+    expect(compute).not.toHaveBeenCalled();
   });
 
   it('never computes a derived code or one the layout lacks', () => {
-    addSource('008', { compute: () => 1 }); // derived from appliesAccountingStandards
-    addSource('999', { compute: () => 1 });
-    expect(computeMainFormAmounts(data()).amounts).toEqual({});
+    const sources = {
+      '008': taxSource(() => 1), // derived from appliesAccountingStandards
+      '999': taxSource(() => 1),
+    } as Report1214CodeSources;
+    expect(computeMainFormAmounts(data(), sources).amounts).toEqual({});
   });
 
   it('computes nothing for a year without a layout', () => {
@@ -129,8 +142,9 @@ describe('computeMainFormAmounts', () => {
   });
 
   it('reports a non-finite computed amount instead of writing it', () => {
-    addSource('011', { compute: () => Number.NaN });
-    const { amounts, issues } = computeMainFormAmounts(data());
+    const { amounts, issues } = computeMainFormAmounts(data(), {
+      '011': taxSource(() => Number.NaN),
+    });
     expect(amounts).toEqual({});
     expect(issues).toEqual([
       expect.objectContaining({
@@ -149,11 +163,12 @@ describe('resolveReport1214TaxData', () => {
     ownerId: 'owner-1',
     isActiveOwner: vi.fn(async () => true),
     load: vi.fn(async () => TAX),
+    codeSources: { '011': taxSource() } as Report1214CodeSources,
     ...overrides,
   });
 
   it('loads nothing while no code needs the books', async () => {
-    const p = params();
+    const p = params({ codeSources: undefined }); // CODE_SOURCES
     expect(await resolveReport1214TaxData(p)).toEqual({ tax: null, issues: [] });
     expect(p.isActiveOwner).not.toHaveBeenCalled();
     expect(p.load).not.toHaveBeenCalled();
@@ -161,14 +176,12 @@ describe('resolveReport1214TaxData', () => {
 
   describe('when a code needs the books', () => {
     it('loads the books of the active owner', async () => {
-      addSource('011', {});
       const p = params();
       expect(await resolveReport1214TaxData(p)).toEqual({ tax: TAX, issues: [] });
       expect(p.load).toHaveBeenCalledOnce();
     });
 
     it('skips another owner, with a warning', async () => {
-      addSource('011', {});
       const p = params({ isActiveOwner: vi.fn(async () => false) });
       const result = await resolveReport1214TaxData(p);
       expect(p.load).not.toHaveBeenCalled();
@@ -183,7 +196,6 @@ describe('resolveReport1214TaxData', () => {
     });
 
     it('skips a year without a layout before checking anything else', async () => {
-      addSource('011', {});
       const p = params({ year: 1999 });
       expect(await resolveReport1214TaxData(p)).toEqual({ tax: null, issues: [] });
       expect(p.isActiveOwner).not.toHaveBeenCalled();
@@ -191,10 +203,10 @@ describe('resolveReport1214TaxData', () => {
     });
 
     it('reports a failing tax computation and goes on without the books', async () => {
-      addSource('011', {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       const p = params({
         load: vi.fn(async () => {
-          throw new Error('No tax rate for year');
+          throw new GraphQLError('No tax rate for year');
         }),
       });
       const result = await resolveReport1214TaxData(p);
@@ -206,6 +218,29 @@ describe('resolveReport1214TaxData', () => {
           message: expect.stringContaining('No tax rate for year'),
         }),
       ]);
+      expect(console.error).toHaveBeenCalledOnce();
+    });
+
+    it('does not echo the message of an unexpected error', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const error = new Error('connect ECONNREFUSED 10.0.0.5:5432 (secret detail)');
+      const result = await resolveReport1214TaxData(
+        params({
+          load: vi.fn(async () => {
+            throw error;
+          }),
+        }),
+      );
+      expect(result.issues).toHaveLength(1);
+      expect(result.issues[0]).toMatchObject({
+        ruleId: REPORT_1214_AMOUNT_RULES.computationFailed,
+        message: expect.stringContaining('see server log'),
+      });
+      expect(result.issues[0].message).not.toContain('secret detail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Failed to compute 1214 amounts from the books:',
+        error,
+      );
     });
   });
 });
