@@ -2,6 +2,7 @@ import type { Injector } from 'graphql-modules';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EMPTY_UUID } from '../../../../shared/constants.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
+import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { SecurityExecutionChargesProvider } from '../../../foreign-securities/providers/security-execution-charges.provider.js';
@@ -26,6 +27,7 @@ type ChargeContent = {
   salaries?: number;
   businessTripEmployeePayments?: number;
   depreciation?: number;
+  depreciationDisposals?: number;
   securityExecutions?: number;
 };
 
@@ -46,6 +48,7 @@ function buildInjector(
     salaries: loader('salaries'),
     businessTripEmployeePayments: loader('businessTripEmployeePayments'),
     depreciation: loader('depreciation'),
+    depreciationDisposals: loader('depreciationDisposals'),
     securityExecutions: loader('securityExecutions'),
   };
   const invalidateCharge = vi.fn();
@@ -72,6 +75,9 @@ function buildInjector(
       }
       if (token === DepreciationProvider) {
         return { getDepreciationRecordsByChargeIdLoader: linkedRecordLoaders.depreciation };
+      }
+      if (token === DepreciationDisposalsProvider) {
+        return { getDisposalsByChargeIdLoader: linkedRecordLoaders.depreciationDisposals };
       }
       if (token === SecurityExecutionChargesProvider) {
         return { linkedExecutionIdsByChargeIdLoader: linkedRecordLoaders.securityExecutions };
@@ -157,6 +163,7 @@ describe('deleteChargesIfEmpty', () => {
     ['a salary record', { salaries: 1 }],
     ['a business trip employee payment', { businessTripEmployeePayments: 1 }],
     ['a depreciation record', { depreciation: 1 }],
+    ['an asset disposal', { depreciationDisposals: 1 }],
   ])('keeps a charge that still holds %s', async (_, content) => {
     const { injector } = buildInjector({ [CHARGE_A]: content });
 

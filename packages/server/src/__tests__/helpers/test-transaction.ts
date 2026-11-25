@@ -44,6 +44,74 @@ export async function withTestTransaction<T>(
 }
 
 /**
+ * A `Pool` that runs everything on `client`, inside the transaction the client already has open,
+ * so that code built on a pool — the providers `createLedgerTestContext` wires up, which check out
+ * connections and commit their own transactions — runs in a test transaction and is rolled back
+ * with it.
+ *
+ * - `connect()` hands out the same client, whose `release()` does nothing. On it, `BEGIN`,
+ *   `COMMIT` and `ROLLBACK` become a savepoint, its release and a rollback to it, so a provider's
+ *   "transaction" is nested in the test's. Savepoints a provider opens itself pass through.
+ * - `query()` runs on the client directly (system-level reads, such as exchange rates), with no
+ *   savepoint: a statement that fails there aborts the whole test transaction, and every later
+ *   statement fails with 25P02 (`current transaction is aborted`).
+ *
+ * The connections it hands out are meant to be used one after another, as a single
+ * `TenantAwareDBClient` does: two "transactions" open at once on the one client would interleave.
+ *
+ * @example
+ * ```typescript
+ * await withTestTransaction(pool, async client => {
+ *   await insertFixture(client, fixture, ownerId);
+ *   const context = createLedgerTestContext({ pool: transactionScopedPool(client), businessId: ownerId });
+ *   // ...generate ledger, read reports: all of it is rolled back at the end
+ * });
+ * ```
+ */
+export function transactionScopedPool(client: PoolClient): Pool {
+  let sessions = 0;
+
+  const connect = async (): Promise<PoolClient> => {
+    const savepoint = `scoped_pool_session_${++sessions}`;
+    const query = (...args: unknown[]) => {
+      const [config] = args;
+      const statement = typeof config === 'string' ? config.trim().toUpperCase() : null;
+      switch (statement) {
+        case 'BEGIN':
+          return client.query(`SAVEPOINT ${savepoint}`);
+        case 'COMMIT':
+          return client.query(`RELEASE SAVEPOINT ${savepoint}`);
+        case 'ROLLBACK':
+          return client
+            .query(`ROLLBACK TO SAVEPOINT ${savepoint}`)
+            .then(() => client.query(`RELEASE SAVEPOINT ${savepoint}`));
+        default:
+          return (client.query as (...queryArgs: unknown[]) => unknown)(...args);
+      }
+    };
+    return new Proxy(client, {
+      get: (target, property) => {
+        if (property === 'query') {
+          return query;
+        }
+        if (property === 'release') {
+          return () => {};
+        }
+        const value: unknown = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+  };
+
+  return {
+    connect,
+    query: (...args: unknown[]) => (client.query as (...queryArgs: unknown[]) => unknown)(...args),
+    end: async () => {},
+    on: () => undefined,
+  } as unknown as Pool;
+}
+
+/**
  * Execute multiple test functions in parallel, each in its own isolated transaction
  * Useful for testing concurrent access patterns
  * 
