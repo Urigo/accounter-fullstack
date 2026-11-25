@@ -457,7 +457,7 @@ Tests first
    (3 + length) is <= the section length (D-10: a section can never overflow).
 2. tests/model/code-unions.test.ts — type-level tests (expectTypeOf) that '010' is assignable to
    MainFormInputCode, '008' is not, '420' is assignable to CountryBreakdownCode, '401' is not, and
-   CapitalGainsCode<77> includes '501'; runtime arrays (MAIN_FORM_CODES etc.) have the same members
+   CapitalGainsCode<77> includes '501' and CapitalGainsInputCode<77> does not; runtime arrays (MAIN_FORM_CODES etc.) have the same members
    as the unions.
 3. codegen-sync test covers both generated files.
 
@@ -468,8 +468,8 @@ Implementation
   `ReadonlyMap<string, string>` keyed by 3-digit code ('-88' stays '-88').
 - src/model/codes.generated.ts (year-independent unions generated from the newest layout):
   MainFormCode, DerivedMainCode, MainFormInputCode, ForeignAppendixCode, CountryBreakdownCode,
-  CapitalGainsSymbol (27|50|51|54|60|63|64|65|66|77), CapitalGainsCode<S>, CountryCode, plus
-  `as const` arrays of each. JSDoc on each code literal: the Hebrew notesHe when present.
+  CapitalGainsSymbol (27|50|51|54|60|63|64|65|66|77), CapitalGainsCode<S>,
+  CapitalGainsInputCode<S> (minus the derived codes), CountryCode, plus `as const` arrays of each. JSDoc on each code literal: the Hebrew notesHe when present.
 - YearLayout.limits: { reportsPerFile: 50, capitalGainsAppendices: 14, mainCodePairs: 61,
   countriesPerRecord: 10 }.
 - RecordDef.section.maxEntries: 1000 → 61; 2200 → 10; every other record → its number of codes.
@@ -1129,7 +1129,7 @@ Implementation
 - src/index.ts — export validate1214, generate1214, RULES, Report1214Input and its sub-types,
   IsoDate, PhonePrefix, the code unions of src/model/codes.generated.ts (MainFormCode,
   MainFormInputCode, ForeignAppendixCode, CountryBreakdownCode, CapitalGainsSymbol,
-  CapitalGainsCode, CountryCode), ValidateOptions, GenerateOptions, ValidationResult,
+  CapitalGainsCode, CapitalGainsInputCode, CountryCode), ValidateOptions, GenerateOptions, ValidationResult,
   GenerateResult, RuleMeta, RuleId.
 - packages/opcn1214-generator/.gitattributes — `*.opcn binary`.
 - tests/fixtures/golden/minimal.input.ts + minimal.opcn (generated with UPDATE_GOLDEN=1) and

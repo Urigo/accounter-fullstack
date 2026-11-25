@@ -52,7 +52,9 @@ export const FIELD_KINDS = [
 export type FieldKind = (typeof FIELD_KINDS)[number];
 
 /** Kinds of code-amount section values (SPEC §3.5). */
-export type CodeKind = 'amount' | 'amountX100' | 'rateX100' | 'enum' | 'num';
+export const CODE_KINDS = ['amount', 'amountX100', 'rateX100', 'enum', 'num'] as const;
+
+export type CodeKind = (typeof CODE_KINDS)[number];
 
 export type Requirement = 'yes' | 'no' | 'conditional';
 
@@ -103,6 +105,8 @@ export interface RecordDef {
     readonly kind: 'codeAmount' | 'countryAmount';
     readonly start: number;
     readonly length: number;
+    /** Maximum entries: 1000 → 61 (p.13); 2200 → 10 (p.30); other records → their number of codes. */
+    readonly maxEntries: number;
   };
   readonly minOccurs: number;
   readonly maxOccurs: number;
@@ -114,6 +118,17 @@ export interface RecordDef {
 export interface YearLayout {
   readonly taxYear: number;
   readonly records: Readonly<Record<RecordType, RecordDef>>;
-  /** Country code → Hebrew name (record 2200). */
+  /** Country code (3 digits, or `-88`; see `countryKey`) → Hebrew name (record 2200). */
   readonly countries: ReadonlyMap<string, string>;
+  /** Fixed limits of the 1214 file (SPEC §3.1, §3.5–§3.7). */
+  readonly limits: {
+    /** Reports per OPCN file. */
+    readonly reportsPerFile: 50;
+    /** Capital-gains appendices (30xx records) per report, all symbols together. */
+    readonly capitalGainsAppendices: 14;
+    /** Code-amount entries in record 1000. */
+    readonly mainCodePairs: 61;
+    /** Country entries in one 2200 record. */
+    readonly countriesPerRecord: 10;
+  };
 }
