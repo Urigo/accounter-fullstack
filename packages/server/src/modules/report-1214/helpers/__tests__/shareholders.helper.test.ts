@@ -105,20 +105,20 @@ describe('normalizeShareholderInputs', () => {
     const error = badUserInput(() =>
       normalizeShareholderInputs([row(), row({ idNumber: '1234567890' })]),
     );
-    expect(error.message).toMatch(/^Shareholder row 1: ID number/);
+    expect(error.message).toMatch(/^Shareholder row 2: ID number/);
   });
 
   it('requires a non-blank name', () => {
     expect(
       badUserInput(() => normalizeShareholderInputs([row({ fullName: '   ' })])).message,
-    ).toMatch(/^Shareholder row 0: full name/);
+    ).toMatch(/^Shareholder row 1: full name/);
   });
 
   it('rejects percentages outside 0-100', () => {
     expect(
       badUserInput(() => normalizeShareholderInputs([row({ votingRightsPercent: 100.01 })]))
         .message,
-    ).toMatch(/^Shareholder row 0: votingRightsPercent/);
+    ).toMatch(/^Shareholder row 1: votingRightsPercent/);
     badUserInput(() => normalizeShareholderInputs([row({ dividendRightsPercent: -1 })]));
   });
 
@@ -127,7 +127,7 @@ describe('normalizeShareholderInputs', () => {
       normalizeShareholderInputs([row({ idNumber: '42' }), row({ idNumber: '000000042' })]),
     );
     expect(error.message).toBe(
-      'Shareholder row 1: ID number 000000042 is already used by shareholder row 0',
+      'Shareholder row 2: ID number 000000042 is already used by shareholder row 1',
     );
   });
 
@@ -163,7 +163,7 @@ describe('normalizeShareholderInputs caps and precision', () => {
     ).not.toThrow();
     expect(
       badUserInput(() => normalizeShareholderInputs([row({ fullName: 'a'.repeat(201) })])).message,
-    ).toMatch(/^Shareholder row 0: full name must be at most 200 characters/);
+    ).toMatch(/^Shareholder row 1: full name must be at most 200 characters/);
   });
 
   it('accepts up to 4 percent decimals and rejects more, never rounding', () => {
@@ -172,7 +172,7 @@ describe('normalizeShareholderInputs caps and precision', () => {
     expect(
       badUserInput(() => normalizeShareholderInputs([row({ votingRightsPercent: 12.34567 })]))
         .message,
-    ).toMatch(/^Shareholder row 0: votingRightsPercent must have at most 4 decimal places/);
+    ).toMatch(/^Shareholder row 1: votingRightsPercent must have at most 4 decimal places/);
   });
 
   it('lowercases a linked business ID', () => {
