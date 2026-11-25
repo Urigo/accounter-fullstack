@@ -1159,8 +1159,9 @@ included, is `parse.order`, and the 9999 counts are compared with the records be
 `canonicalize(input)` returns the input as the parser would reconstruct it:
 
 - text normalized (§4.3); optional properties that encode to the empty/zero value removed (`false`
-  flags, absent yes/no, empty strings, an empty `relatedCompanies` list); `amounts` entries with
-  value `0` for non `zeroAllowed` codes removed; derived values not present in the input;
+  flags, absent yes/no, empty strings, empty `relatedCompanies` and `rdInvestments` lists);
+  `amounts` entries with value `0` for non `zeroAllowed` codes removed; derived values not present
+  in the input;
 - `meta.saveDate` and `meta.softwareName` set to the values actually written
   (`canonicalize(input, options)` takes the same options as generation, for `today`);
 - digit-string inputs of numeric fields (`id9`, `shareholderId`, `digits`) zero-padded to the field
@@ -1327,7 +1328,7 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                | p.11     |
 | `main.reportablePositions.unexpected`       | W   | derived | non-zero positions given while `tookReportablePosition` is false                                     | p.11     |
 | `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                     | p.17     |
-| `main.rd.total`                             | W   | derived | sum of 1030 investment amounts ≠ code 165                                                            | p.17     |
+| `main.rd.total`                             | W   | derived | 1030 records present and the sum of their amounts ≠ code 165 (absent is 0), in whole shekels         | p.17     |
 | `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                | p.7      |
 | `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                      | p.10–11  |
 | `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                       | p.10–11  |

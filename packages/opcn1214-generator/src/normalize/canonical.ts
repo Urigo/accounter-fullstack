@@ -11,6 +11,7 @@ import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import {
   MAIN_INPUT_KEYS,
+  RD_INVESTMENT_INPUT_KEYS,
   RELATED_COMPANY_INPUT_KEYS,
   setKey,
   SHAREHOLDER_INPUT_KEYS,
@@ -138,8 +139,8 @@ function canonicalAmounts(
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
  * the values written (software name default, also for a blank name; save date from
  * `options.today`), text normalized, digit strings padded to the field width (the bank account
- * number to 9 digits), ×100 kinds in hundredths, empty optional values, an empty
- * `relatedCompanies` list and non-zeroAllowed zero codes removed, amounts rounded per
+ * number to 9 digits), ×100 kinds in hundredths, empty optional values, empty `relatedCompanies`
+ * and `rdInvestments` lists and non-zeroAllowed zero codes removed, amounts rounded per
  * `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
@@ -150,6 +151,7 @@ export function canonicalize(
   const mainDef = layout.records['1000'];
   const relatedDef = layout.records['1010'];
   const shareholderDef = layout.records['1020'];
+  const rdDef = layout.records['1030'];
   const { rounding } = options;
   const today = options.today ?? (() => todayInJerusalem());
   const source: InputTree = {
@@ -180,6 +182,16 @@ export function canonicalize(
       const tree: InputTree = {};
       for (const key of RELATED_COMPANY_INPUT_KEYS) {
         setKey(tree, key, canonicalValue(fieldOf(relatedDef, key), company[key], rounding));
+      }
+      return tree;
+    });
+  }
+  // Likewise for 1030 records.
+  if (input.rdInvestments && input.rdInvestments.length > 0) {
+    output.rdInvestments = input.rdInvestments.map(investment => {
+      const tree: InputTree = {};
+      for (const key of RD_INVESTMENT_INPUT_KEYS) {
+        setKey(tree, key, canonicalValue(fieldOf(rdDef, key), investment[key], rounding));
       }
       return tree;
     });

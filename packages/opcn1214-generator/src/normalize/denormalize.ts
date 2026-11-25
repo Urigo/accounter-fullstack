@@ -1,7 +1,7 @@
 /**
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
- * (meta, company, preparer, declarations, bank account, amounts) and records 1010 and 1020.
+ * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020 and 1030.
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
@@ -94,6 +94,13 @@ export const RELATED_COMPANY_INPUT_KEYS = [
   'assessingOfficeCode',
 ] as const;
 
+/** Header keys of record 1030 that are properties of an R&D investment (`affiliation` is derived). */
+export const RD_INVESTMENT_INPUT_KEYS = [
+  'companyName',
+  'companyFileNumber',
+  'investmentAmount',
+] as const;
+
 /** Header keys of record 1020 that are properties of a shareholder (`serialNumber` is derived). */
 export const SHAREHOLDER_INPUT_KEYS = [
   'idNumber',
@@ -146,6 +153,14 @@ function relatedCompany(record: NormalizedRecord): InputTree {
   for (const key of RELATED_COMPANY_INPUT_KEYS) {
     const value = record.values[key];
     setKey(tree, key, key === 'relationType' ? enumLiteral(RELATION_TYPE_CODES, value) : value);
+  }
+  return tree;
+}
+
+function rdInvestment(record: NormalizedRecord): InputTree {
+  const tree: InputTree = {};
+  for (const key of RD_INVESTMENT_INPUT_KEYS) {
+    setKey(tree, key, record.values[key]);
   }
   return tree;
 }
@@ -220,6 +235,10 @@ export function denormalize(report: NormalizedReport): Report1214Input {
   const related = report.records.filter(record => record.recordType === '1010');
   if (related.length > 0) {
     output.relatedCompanies = related.map(relatedCompany);
+  }
+  const rd = report.records.filter(record => record.recordType === '1030');
+  if (rd.length > 0) {
+    output.rdInvestments = rd.map(rdInvestment);
   }
   for (const key of MAIN_INPUT_KEYS) {
     const value = main.values[key];

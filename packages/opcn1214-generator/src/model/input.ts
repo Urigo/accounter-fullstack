@@ -128,6 +128,8 @@ export interface Report1214Input {
   relatedCompanies?: RelatedCompany[];
   /** Records 1020: 1–99 (0 allowed only for a kibbutz). */
   shareholders: Shareholder[];
+  /** Records 1030: at most 5 (struct.rdInvestments.max); their total is code 165. */
+  rdInvestments?: RdInvestment[];
 }
 
 /** Company identity (SPEC §7.2), record 1000@137–512. */
@@ -291,4 +293,14 @@ export interface Shareholder {
   salaryMonths10To12?: number;
   /** 1020@239, whole shekels. */
   otherPayments?: number;
+}
+
+/** An investment in an R&D company, record 1030 (SPEC §7.2); affiliation 1030@137 is derived. */
+export interface RdInvestment {
+  /** 1030@138, ≤ 50. */
+  companyName: string;
+  /** 1030@188 "מספר תיק חברה". */
+  companyFileNumber?: string;
+  /** 1030@197, whole shekels. */
+  investmentAmount: number;
 }

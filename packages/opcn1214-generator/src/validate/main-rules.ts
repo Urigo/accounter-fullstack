@@ -3,6 +3,7 @@
  * checks over the normalized main record, so they run on validated input and on parsed files alike.
  */
 import { isAbsentValue } from '../codec/record.js';
+import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { FieldDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -288,6 +289,68 @@ function reportablePositionsUnexpected(report: NormalizedReport): Issue[] {
     );
 }
 
+/** Code 165: the total of the investments in R&D companies, detailed in records 1030 (p.17). */
+const RD_TOTAL_CODE = '165';
+
+/**
+ * The amount a field or code holds in whole shekels, as the file holds it; 0 when absent or not a
+ * number.
+ */
+function wholeShekels(value: Primitive | undefined): number {
+  return typeof value === 'number' ? Math.round(value) : 0;
+}
+
+/** main.rd.records: code 165 > 0 without any 1030 record (p.17). */
+function rdRecords(report: NormalizedReport): Issue[] {
+  if (report.records.some(record => record.recordType === '1030')) {
+    return [];
+  }
+  return mainRecords(report)
+    .filter(record => wholeShekels(record.codes.get(RD_TOTAL_CODE)) > 0)
+    .map(record =>
+      codeIssue(
+        'main.rd.records',
+        report,
+        record,
+        RD_TOTAL_CODE,
+        `Code ${RD_TOTAL_CODE} (investments in R&D companies) is filled, so the investments must be detailed in rdInvestments (records 1030).`,
+      ),
+    );
+}
+
+/**
+ * main.rd.total: the investment amounts of the 1030 records do not add up to code 165 (p.17),
+ * compared in whole shekels (each amount rounded as it is written). An absent code 165 is 0 (it is
+ * not zeroAllowed), so investments without it are reported. Checked only when there is at least one
+ * 1030 record: code 165 without records is main.rd.records.
+ */
+function rdTotal(report: NormalizedReport): Issue[] {
+  const investments = report.records.filter(record => record.recordType === '1030');
+  if (investments.length === 0) {
+    return [];
+  }
+  const total = investments.reduce(
+    (sum, record) => sum + wholeShekels(record.values['investmentAmount']),
+    0,
+  );
+  return mainRecords(report)
+    .filter(record => wholeShekels(record.codes.get(RD_TOTAL_CODE)) !== total)
+    .map(record => {
+      const code = wholeShekels(record.codes.get(RD_TOTAL_CODE));
+      return {
+        ...codeIssue(
+          'main.rd.total',
+          report,
+          record,
+          RD_TOTAL_CODE,
+          `Code ${RD_TOTAL_CODE} is ${code}, but the R&D investments (records 1030) total ${total}.`,
+        ),
+        value: code,
+        expected: String(total),
+      };
+    });
+}
+
 /**
  * main.cgUntransmitted.reason: untransmitted appendices (962 > 0) without any of the reasons
  * 964–967 (p.10–11). Reported at the reasons object, located at the first reason field.
@@ -430,6 +493,8 @@ export const MAIN_RULES: readonly ReportRule[] = [
   reportablePositionsRequired,
   kibbutzCode226Other,
   reportablePositionsUnexpected,
+  rdRecords,
+  rdTotal,
   cgUntransmittedReason,
   cgUntransmittedReasonWithoutCount,
   bankAccountWithNoBank,

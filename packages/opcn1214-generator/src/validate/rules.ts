@@ -85,6 +85,14 @@ export const RULES = deepFreeze([
     specRef: { page: 21 },
   },
   {
+    id: 'struct.rdInvestments.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '1030',
+    description: 'More than 5 R&D investments.',
+    specRef: { page: 2 },
+  },
+  {
     id: 'struct.mainCodePairs.max',
     severity: 'error',
     source: 'spec',
@@ -306,6 +314,23 @@ export const RULES = deepFreeze([
     description:
       'Non-zero reportable positions (1034–1046) given while tookReportablePosition (1030) is no.',
     specRef: { page: 11 },
+  },
+  {
+    id: 'main.rd.records',
+    severity: 'error',
+    source: 'spec',
+    scope: '1000',
+    description: 'Code 165 > 0 but no R&D investment (1030) records.',
+    specRef: { page: 17 },
+  },
+  {
+    id: 'main.rd.total',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'The R&D investment amounts (1030) do not add up to code 165 (absent is 0), compared in whole shekels.',
+    specRef: { page: 17 },
   },
   {
     id: 'main.cgUntransmitted.reason',

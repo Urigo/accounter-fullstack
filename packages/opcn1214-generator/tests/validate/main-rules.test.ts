@@ -6,7 +6,13 @@ import type { Report1214Input } from '../../src/model/input.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
 import type { RuleId } from '../../src/validate/rules.js';
-import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
+import {
+  fullDeclarationsInput,
+  fullMainInput,
+  minimalInput,
+  rdInvestments,
+  rdInvestmentsTotal,
+} from '../fixtures/builders.js';
 import { tamper } from '../fixtures/files.js';
 
 const OPTIONS = { today: () => '2024-06-30' };
@@ -526,5 +532,99 @@ describe('record 1000 consistency warnings (SPEC §10.3)', () => {
         'main.reportablePositions.unexpected',
       ),
     ).toEqual([expect.objectContaining({ path: 'declarations.reportablePositions' })]);
+  });
+});
+
+describe('R&D investments and code 165 (SPEC §10.3)', () => {
+  const withRd = (count: number, code165?: number) =>
+    minimalInput({
+      rdInvestments: rdInvestments(count),
+      amounts: code165 === undefined ? {} : { '165': code165 },
+    });
+
+  it('main.rd.records: code 165 > 0 without 1030 records, at amounts["165"]; no main.rd.total', () => {
+    const input = minimalInput({ amounts: { '165': 5000 } });
+    expect(issuesOf(input, 'main.rd.records')).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        path: 'amounts["165"]',
+        recordType: '1000',
+        code: '165',
+        specRef: { page: 17 },
+      }),
+    ]);
+    expect(issuesOf(input, 'main.rd.total')).toEqual([]);
+  });
+
+  it('main.rd.records: investments with code 165 call for nothing more', () => {
+    expect(issuesOf(withRd(1, rdInvestmentsTotal(1)), 'main.rd.records')).toEqual([]);
+  });
+
+  it('main.rd.total: the investments do not add up to code 165, at amounts["165"]', () => {
+    const total = rdInvestmentsTotal(3);
+    expect(issuesOf(withRd(3, total + 1), 'main.rd.total')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'amounts["165"]',
+        recordType: '1000',
+        code: '165',
+        value: total + 1,
+        expected: String(total),
+      }),
+    ]);
+    expect(issuesOf(withRd(3, total), 'main.rd.total')).toEqual([]);
+  });
+
+  it('main.rd.total: investments without code 165 do not add up to it (absent is 0)', () => {
+    const total = rdInvestmentsTotal(2);
+    expect(issuesOf(withRd(2), 'main.rd.total')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'amounts["165"]',
+        code: '165',
+        value: 0,
+        expected: String(total),
+      }),
+    ]);
+    expect(issuesOf(withRd(2), 'main.rd.records')).toEqual([]);
+    // Investments that are all 0 add up to an absent code 165.
+    const zeros = minimalInput({ rdInvestments: [{ companyName: 'א', investmentAmount: 0 }] });
+    expect(issuesOf(zeros, 'main.rd.total')).toEqual([]);
+  });
+
+  it('main.rd.total: compared in whole shekels, each amount rounded as it is written', () => {
+    const input = minimalInput({
+      rdInvestments: [
+        { companyName: 'א', investmentAmount: 1000.5 },
+        { companyName: 'ב', investmentAmount: 999.5 },
+      ],
+      // Rounded one by one as written: 1001 + 1000 = 2001; rounding the sum would give 2000.
+      amounts: { '165': 2001 },
+    });
+    const issues = runPipeline(input, { ...OPTIONS, rounding: 'halfUp' }).issues;
+    expect(issues.filter(issue => issue.ruleId === 'main.rd.total')).toEqual([]);
+    const off = minimalInput({
+      rdInvestments: [{ companyName: 'א', investmentAmount: 1000.4 }],
+      amounts: { '165': 1000.6 },
+    });
+    const offIssues = runPipeline(off, { ...OPTIONS, rounding: 'halfUp' }).issues;
+    expect(offIssues.filter(issue => issue.ruleId === 'main.rd.total')).toHaveLength(1);
+  });
+
+  it('both rules are reported on parsed files too', () => {
+    const input = withRd(2, rdInvestmentsTotal(2));
+    // Line 3 is the first 1030 record; 1030@197: its amount.
+    expect(
+      fileIssuesOf(input, { line: 3, position: 197, value: '000000000001' }, 'main.rd.total'),
+    ).toEqual([expect.objectContaining({ path: 'amounts["165"]' })]);
+    // Line 1 is record 1000: drop both 1030 records and fix the 9999 count.
+    const text = generate1214(input, OPTIONS)
+      .text.split('\r\n')
+      .filter(line => line.slice(4, 8) !== '1030')
+      .join('\r\n');
+    const fixed = tamper(text, { line: 3, position: 149, value: '00' });
+    expect(parse1214(fixed).issues.filter(issue => issue.ruleId === 'main.rd.records')).toEqual([
+      expect.objectContaining({ path: 'amounts["165"]' }),
+    ]);
   });
 });

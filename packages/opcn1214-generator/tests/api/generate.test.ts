@@ -8,7 +8,12 @@ import {
   type PhonePrefix,
 } from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
-import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
+import {
+  minimalInput,
+  rdInvestments,
+  rdInvestmentsTotal,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 
 const OPTIONS = { today: () => '2025-03-31' };
 const CRLF = '\r\n';
@@ -136,6 +141,48 @@ describe('generate1214', () => {
     const lines = generate1214(minimalInput({ relatedCompanies: [] }), OPTIONS).text.split(CRLF);
     expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', '9999', '']);
     expect(slice(lines[2], 139, 2)).toBe('00');
+  });
+
+  it('writes R&D investments as 1030 records after 1020, counted at 9999@149', () => {
+    const input = minimalInput({
+      relatedCompanies: relatedCompanies(1),
+      rdInvestments: [
+        { companyName: 'חברת מו"פ', companyFileNumber: '12', investmentAmount: 250_000 },
+        ...rdInvestments(5).slice(1),
+      ],
+      amounts: { '165': 250_000 + rdInvestmentsTotal(5) - 100_000 },
+    });
+    const { summary, text } = generate1214(input, OPTIONS);
+    const lines = text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1010',
+      '1020',
+      '1030',
+      '1030',
+      '1030',
+      '1030',
+      '1030',
+      '9999',
+      '',
+    ]);
+    expect(summary.records).toEqual({ '1000': 1, '1010': 1, '1020': 1, '1030': 5, '9999': 1 });
+    const rd = lines.slice(3, 8);
+    expect(rd.map(line => line.length)).toEqual([336, 336, 336, 336, 336]);
+    // 1030@137 affiliation, @138 name, @188 file number, @197 amount, @209 filler.
+    expect(rd.map(line => slice(line, 137, 1))).toEqual(['1', '1', '1', '1', '1']);
+    expect(slice(rd[0], 138, 50)).toBe('חברת מו"פ'.padStart(50, ' '));
+    expect(slice(rd[0], 188, 9)).toBe('000000012');
+    expect(slice(rd[0], 197, 12)).toBe('000000250000');
+    expect(slice(rd[0], 209, 128)).toBe('0'.repeat(128));
+    expect(slice(rd[4], 188, 21)).toBe('520000005000000500000');
+    expect(slice(lines[8], 149, 2)).toBe('05');
+  });
+
+  it('writes 00 at 9999@149 without R&D investments', () => {
+    const lines = generate1214(minimalInput({ rdInvestments: [] }), OPTIONS).text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', '9999', '']);
+    expect(slice(lines[2], 149, 2)).toBe('00');
   });
 
   it('lists omitted zero codes', () => {
