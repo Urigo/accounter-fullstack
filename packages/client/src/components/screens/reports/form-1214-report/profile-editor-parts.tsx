@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import type { Control, FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
 import { Alert, AlertDescription, AlertTitle } from '../../../ui/alert.js';
+import { Badge } from '../../../ui/badge.js';
 import { Button } from '../../../ui/button.js';
 import {
   FormControl,
@@ -27,6 +28,7 @@ export const UNSET_OPTION = '__unset__';
  * Keeps an editor's draft until it is saved: the page refreshes the report after any save (also
  * another editor's), and an unsaved draft must survive that. Only after this editor's own save is
  * the draft replaced, first by what was sent and then by what the server stored (`defaults`).
+ * Another year remounts the editor (the sections key it by year), which starts a fresh draft.
  */
 export function useResetAfterSave<T extends FieldValues>(
   form: UseFormReturn<T>,
@@ -220,7 +222,8 @@ export function EditorActions({
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center justify-end gap-2">
+        {isDirty && <Badge variant="outline">Unsaved changes</Badge>}
         <Button type="button" variant="outline" disabled={!isDirty || saving} onClick={onCancel}>
           Cancel
         </Button>
