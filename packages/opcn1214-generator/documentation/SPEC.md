@@ -719,7 +719,7 @@ export interface Phone {
 export interface Report1214Input {
   taxYear: SupportedTaxYear // 1000@146; selects the layout
   meta?: {
-    softwareName?: string // 1000@150, ≤ 15, default 'ACCOUNTER'
+    softwareName?: string // 1000@150, ≤ 15, default 'ACCOUNTER' (also when empty after §4.3)
     saveDate?: IsoDate // 1000@165, default options.today()
   }
   company: CompanyDetails
@@ -851,13 +851,13 @@ export interface Shareholder {
   idNumber: string // 9 digits, or 999999964 / 999999998
   fullName: string // must start with a Hebrew letter
   isControllingShareholder: boolean
-  dividendRightsPercent?: number // all shareholders must total 100
-  votingRightsPercent?: number
-  otherRightsPercent?: number
+  dividendRightsPercent?: number // percent, ≤ 2 decimals (12.5 = 12.5%); all shareholders must total 100
+  votingRightsPercent?: number // percent, ≤ 2 decimals
+  otherRightsPercent?: number // percent, ≤ 2 decimals
   isMaterialShareholder?: boolean
-  salaryMonths1To9?: number
-  salaryMonths10To12?: number
-  otherPayments?: number
+  salaryMonths1To9?: number // whole shekels
+  salaryMonths10To12?: number // whole shekels
+  otherPayments?: number // whole shekels
 }
 
 export interface RdInvestment {
@@ -1032,7 +1032,7 @@ a test asserts that every non-filler key in `fields.csv` is produced (§13.3).
 | Output                                                          | Derivation                                                                                                               | Enforces (spec)                            |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
 | Prefix (1–136) of every record                                  | `1214` + record type + 128 × `0`                                                                                         | p.4                                        |
-| 1000@150 software name                                          | `meta.softwareName ?? 'ACCOUNTER'`                                                                                       | required field                             |
+| 1000@150 software name                                          | `meta.softwareName` after text normalization (§4.3), or `'ACCOUNTER'` when that is absent or empty                       | required field                             |
 | 1000@165 save date                                              | `meta.saveDate ?? options.today()` (Asia/Jerusalem)                                                                      | required field                             |
 | 1000@832 has foreign appendix                                   | `foreignAppendix ? yes : no`                                                                                             | consistency with 2000 record               |
 | 1000@833 has capital-gains appendix                             | yes if `capitalGains.length > 0` or `untransmittedCount > 0` or `declarations.hasCapitalGainsAppendix === true`, else no | consistency with 30xx records              |
