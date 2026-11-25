@@ -9,6 +9,7 @@ describe('form1214SectionOfPath', () => {
     expect(form1214SectionOfPath('declarations.hasTaxPlanningAction')).toBe('declarations');
     expect(form1214SectionOfPath('relatedCompanies')).toBe('related-companies');
     expect(form1214SectionOfPath('rdInvestments[5]')).toBe('rd-investments');
+    expect(form1214SectionOfPath('amounts["165"]')).toBe('amounts');
     expect(form1214SectionOfPath('amounts.165')).toBe('amounts');
   });
 

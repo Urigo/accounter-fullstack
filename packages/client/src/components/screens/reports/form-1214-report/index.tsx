@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useBlocker, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, type CombinedError } from 'urql';
 import {
   Form1214ReportScreenDocument,
@@ -80,10 +80,20 @@ export function Form1214Report(): ReactElement {
   const yearParam = searchParams.get('year');
   const selectedYear = resolveForm1214Year(yearParam, supportedYears);
 
+  // A year the URL asked for but form 1214 does not support (the annual audit links here with the
+  // audited year), and the year shown instead. Kept apart from the URL, which the fallback rewrites.
+  const [unsupportedYear, setUnsupportedYear] = useState<
+    { requested: number; shown: number } | undefined
+  >();
+
   // A missing or unsupported `?year=` falls back to the latest supported year: show it in the URL.
   // The hash (a section anchor) is kept; `setSearchParams` would drop it.
   useEffect(() => {
     if (selectedYear !== undefined && yearParam !== String(selectedYear)) {
+      // A missing year (the side-menu link) falls back silently; an explicit one is reported
+      if (yearParam && /^\d{4}$/.test(yearParam)) {
+        setUnsupportedYear({ requested: Number.parseInt(yearParam, 10), shown: selectedYear });
+      }
       const next = new URLSearchParams(location.search);
       next.set('year', String(selectedYear));
       navigate({ search: `?${next.toString()}`, hash: location.hash }, { replace: true });
@@ -91,6 +101,33 @@ export function Form1214Report(): ReactElement {
   }, [selectedYear, yearParam, location.search, location.hash, navigate]);
 
   const { setDirty, hasDirtySections } = useForm1214DirtySections();
+
+  // Leaving the page loses unsaved edits too. In-app navigation away (a link, back, forward) asks
+  // first; a `?year=` change on this page is the year select's own question below
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      currentLocation.pathname !== nextLocation.pathname && hasDirtySections(),
+  );
+  useEffect(() => {
+    if (blocker.state !== 'blocked') {
+      return;
+    }
+    if (window.confirm('You have unsaved changes in the 1214 report. Discard them and leave?')) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
+  // A reload or closing the tab gets the browser's own prompt
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (hasDirtySections()) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [hasDirtySections]);
 
   // A year picked by hand starts at the top of the page: the section anchor is dropped. Switching
   // unmounts the sections, so unsaved edits would be lost: ask first
@@ -104,6 +141,7 @@ export function Form1214Report(): ReactElement {
       ) {
         return;
       }
+      setUnsupportedYear(undefined);
       const next = new URLSearchParams(location.search);
       next.set('year', year);
       navigate({ search: `?${next.toString()}` }, { replace: true });
@@ -188,6 +226,12 @@ export function Form1214Report(): ReactElement {
         <Alert variant="destructive">
           <AlertTitle>Failed to load the 1214 report</AlertTitle>
           <AlertDescription>{errorMessage(loadError)}</AlertDescription>
+        </Alert>
+      )}
+      {unsupportedYear && unsupportedYear.shown === selectedYear && (
+        <Alert>
+          <AlertTitle>Form 1214 is not available for {unsupportedYear.requested}</AlertTitle>
+          <AlertDescription>Showing {unsupportedYear.shown} instead.</AlertDescription>
         </Alert>
       )}
       {!loadError && !yearsFetching && supportedYears.length === 0 && (

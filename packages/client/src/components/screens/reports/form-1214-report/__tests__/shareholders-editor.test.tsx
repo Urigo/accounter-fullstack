@@ -8,10 +8,17 @@ type SetShareholdersVariables = {
   shareholders: Array<{ idNumber: string; fullName: string }>;
 };
 
-const { setShareholdersMock, copyMock, hookState } = vi.hoisted(() => ({
+type PickerOption = { value: string; label: string };
+
+const { setShareholdersMock, copyMock, hookState, businessesState } = vi.hoisted(() => ({
   setShareholdersMock: vi.fn<(variables: SetShareholdersVariables) => Promise<unknown>>(),
   copyMock: vi.fn<(variables: { fromYear: number; toYear: number }) => Promise<unknown>>(),
   hookState: { saving: false },
+  businessesState: {
+    businesses: [] as Array<{ id: string; name: string; ownerId: string | null }>,
+    // What the last rendered business picker offered
+    offered: [] as PickerOption[],
+  },
 }));
 
 vi.mock('../../../../../hooks/use-set-shareholders.js', () => ({
@@ -21,10 +28,13 @@ vi.mock('../../../../../hooks/use-copy-shareholders-from-year.js', () => ({
   useCopyShareholdersFromYear: () => ({ copyShareholdersFromYear: copyMock, fetching: false }),
 }));
 vi.mock('../../../../../hooks/use-get-businesses.js', () => ({
-  useGetBusinesses: () => ({ selectableBusinesses: [], fetching: false }),
+  useGetBusinesses: () => ({ businesses: businessesState.businesses, fetching: false }),
 }));
 vi.mock('../../../../common/index.js', () => ({
-  ComboBox: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
+  ComboBox: ({ placeholder, data }: { placeholder?: string; data: PickerOption[] }) => {
+    businessesState.offered = data;
+    return <span>{placeholder}</span>;
+  },
 }));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -34,6 +44,7 @@ import { Form1214ReportProvider } from '../report-context.js';
 import { ShareholdersEditor } from '../shareholders-editor.js';
 
 const YEAR = 2025;
+const OWNER_ID = 'owner-1';
 
 function shareholder(id: string, idNumber: string, fullName: string): ShareholderData {
   return {
@@ -65,7 +76,7 @@ let setDirty: ReturnType<typeof vi.fn<(section: string, dirty: boolean) => void>
 function Harness({ shareholders }: { shareholders: ShareholderData[] }): ReactElement {
   return (
     <Form1214ReportProvider year={YEAR} refresh={refresh} setDirty={setDirty}>
-      <ShareholdersEditor shareholders={shareholders} />
+      <ShareholdersEditor ownerId={OWNER_ID} shareholders={shareholders} />
     </Form1214ReportProvider>
   );
 }
@@ -127,6 +138,8 @@ beforeEach(() => {
   setShareholdersMock.mockReset();
   copyMock.mockReset();
   hookState.saving = false;
+  businessesState.businesses = [];
+  businessesState.offered = [];
 });
 
 afterEach(() => {
@@ -274,6 +287,28 @@ describe('ShareholdersEditor', () => {
     render(SAVED);
     click(button('Cancel'));
     expect(queryButton(`Copy from ${YEAR - 1}`)).toBeUndefined();
+  });
+
+  it("offers only the owner's own businesses to link", () => {
+    businessesState.businesses = [
+      { id: 'own', name: 'Own Ltd', ownerId: OWNER_ID },
+      { id: 'other', name: 'Other owner Ltd', ownerId: 'owner-2' },
+      { id: 'none', name: 'No owner', ownerId: null },
+    ];
+    render(SAVED);
+    expect(businessesState.offered).toEqual([{ value: 'own', label: 'Own Ltd' }]);
+  });
+
+  it('is not dirty after checking and unchecking an unset material flag', () => {
+    render(SAVED);
+    const [material] = [...container.querySelectorAll<HTMLElement>('[role="checkbox"]')].filter(
+      element => element.getAttribute('aria-label')?.startsWith('Material shareholder, row 1'),
+    );
+    click(material);
+    expect(hasText('Unsaved changes')).toBe(true);
+    click(material);
+    expect(hasText('Unsaved changes')).toBe(false);
+    expect(button('Save').disabled).toBe(true);
   });
 
   it('includes the name or ID in row labels once entered', () => {

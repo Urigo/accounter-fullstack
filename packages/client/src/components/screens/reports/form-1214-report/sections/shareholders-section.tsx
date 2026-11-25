@@ -8,6 +8,9 @@ import { Section } from './section-layout.js';
 /* GraphQL */ `
   fragment Form1214ShareholdersSection on Report1214 {
     id
+    owner {
+      id
+    }
     shareholders {
       id
       idNumber
@@ -31,10 +34,10 @@ type Props = {
 
 /** The shareholders of the year (records 1020), editable. */
 export function Form1214ShareholdersSection({ data }: Props): ReactElement {
-  const { shareholders } = getFragmentData(Form1214ShareholdersSectionFragmentDoc, data);
+  const { owner, shareholders } = getFragmentData(Form1214ShareholdersSectionFragmentDoc, data);
   return (
     <Section id="shareholders" title="Shareholders">
-      <ShareholdersEditor shareholders={shareholders} />
+      <ShareholdersEditor ownerId={owner.id} shareholders={shareholders} />
     </Section>
   );
 }
