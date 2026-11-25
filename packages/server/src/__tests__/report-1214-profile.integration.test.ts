@@ -605,7 +605,7 @@ describe('report 1214 profile', () => {
     const cases: Array<[Record<string, unknown>, RegExp]> = [
       [{ company: { phone: { prefix: '051', number: '1234567' } } }, /company\.phone\.prefix/],
       [{ company: { phone: { prefix: '03', number: '123' } } }, /company\.phone\.number/],
-      [{ amountOverrides: [{ code: '008', amount: 1 }] }, /code 008 is derived/],
+      [{ amountOverrides: [{ code: '008', amount: 1 }] }, /^Amount override 1: code 008 is derived/],
       [{ amountOverrides: [{ code: '999', amount: 1 }] }, /not a record 1000 input code/],
       [
         {
@@ -614,7 +614,11 @@ describe('report 1214 profile', () => {
             { code: '072', amount: 2 },
           ],
         },
-        /appears more than once/,
+        /^Amount override 2: code 072 appears more than once/,
+      ],
+      [
+        { relatedCompanies: [{ companyName: '  ', relationType: 'OTHER' }] },
+        /^Related company 1: company name is required/,
       ],
       [
         {
