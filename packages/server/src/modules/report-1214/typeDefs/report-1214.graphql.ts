@@ -80,6 +80,8 @@ export default gql`
     code: String
     " The record type (1000, 1020, ...) the issue is about, when known "
     recordType: String
+    " 0-based index of the record among the records of its type, when known "
+    recordIndex: Int
     " Page (and note) of the SHAAM layout specification the rule comes from; null for accounter.* issues "
     specRef: String
   }
@@ -93,7 +95,16 @@ export default gql`
     encodedContent: String!
     " Warnings of the generated report "
     warnings: [Report1214Issue!]!
-    " Codes with a 0 amount left out of the file, as <record>:<code> "
-    omittedZeroCodes: [String!]!
+    " Codes with a 0 amount left out of the file (a 0 is written only for codes that allow it) "
+    omittedZeroCodes: [Report1214OmittedZeroCode!]!
+  }
+
+  " A code-amount entry with a 0 amount that the file leaves out "
+  type Report1214OmittedZeroCode {
+    " The record type (1000, 2000, 30xx, ...) "
+    record: String!
+    " 0-based index of the record among the records of its type "
+    recordIndex: Int!
+    code: String!
   }
 `;

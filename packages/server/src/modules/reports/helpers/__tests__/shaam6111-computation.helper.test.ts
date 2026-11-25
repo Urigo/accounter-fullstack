@@ -11,6 +11,7 @@ import {
   profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
   roundingTolerance,
+  selectWithholdingTaxFileNumber,
   type Shaam6111Entry,
   type Shaam6111TaxAdjustmentInputs,
 } from '../shaam6111-computation.helper.js';
@@ -431,5 +432,61 @@ describe('isCorporateRegistrationNumber', () => {
     expect(isCorporateRegistrationNumber('012345678')).toBe(false);
     expect(isCorporateRegistrationNumber('51612345')).toBe(false);
     expect(isCorporateRegistrationNumber(null)).toBe(false);
+  });
+});
+
+describe('selectWithholdingTaxFileNumber', () => {
+  const COMPANY_NUMBER = '516123452';
+  const WITHHOLDING = '937000008';
+
+  it('takes company_tax_id first, trimmed', () => {
+    expect(
+      selectWithholdingTaxFileNumber(
+        { company_tax_id: ` ${WITHHOLDING} `, tax_nikuim_pinkas_number: '951400001' },
+        COMPANY_NUMBER,
+      ),
+    ).toBe(WITHHOLDING);
+  });
+
+  it('falls back to tax_nikuim_pinkas_number', () => {
+    expect(
+      selectWithholdingTaxFileNumber(
+        { company_tax_id: null, tax_nikuim_pinkas_number: WITHHOLDING },
+        COMPANY_NUMBER,
+      ),
+    ).toBe(WITHHOLDING);
+    expect(
+      selectWithholdingTaxFileNumber(
+        { company_tax_id: '  ', tax_nikuim_pinkas_number: WITHHOLDING },
+        COMPANY_NUMBER,
+      ),
+    ).toBe(WITHHOLDING);
+  });
+
+  it("skips the company's own number", () => {
+    expect(
+      selectWithholdingTaxFileNumber(
+        { company_tax_id: COMPANY_NUMBER, tax_nikuim_pinkas_number: WITHHOLDING },
+        COMPANY_NUMBER,
+      ),
+    ).toBe(WITHHOLDING);
+    expect(
+      selectWithholdingTaxFileNumber({ company_tax_id: COMPANY_NUMBER }, COMPANY_NUMBER),
+    ).toBeUndefined();
+  });
+
+  it('skips numbers that are not valid Israeli IDs', () => {
+    expect(
+      selectWithholdingTaxFileNumber(
+        { company_tax_id: '937000009', tax_nikuim_pinkas_number: WITHHOLDING },
+        COMPANY_NUMBER,
+      ),
+    ).toBe(WITHHOLDING);
+    expect(selectWithholdingTaxFileNumber({ company_tax_id: 'abc' }, COMPANY_NUMBER)).toBeUndefined();
+  });
+
+  it('is undefined without an admin business', () => {
+    expect(selectWithholdingTaxFileNumber(null, COMPANY_NUMBER)).toBeUndefined();
+    expect(selectWithholdingTaxFileNumber(undefined, COMPANY_NUMBER)).toBeUndefined();
   });
 });

@@ -76,7 +76,9 @@ describe('CODE_SOURCES', () => {
     expect(codeSourcesNeedTaxData(YEAR, sources)).toBe(true);
     expect(codeSourcesNeedTaxData(1999, sources)).toBe(false);
     // a derived code is never computed, so it needs no books either
-    expect(codeSourcesNeedTaxData(YEAR, { '008': taxSource() })).toBe(false);
+    expect(codeSourcesNeedTaxData(YEAR, { '008': taxSource() } as Report1214CodeSources)).toBe(
+      false,
+    );
   });
 });
 

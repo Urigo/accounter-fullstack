@@ -231,6 +231,7 @@ export default [
               'Report1214Declarations',
               'Report1214FamilyCompany',
               'Report1214Issue',
+              'Report1214OmittedZeroCode',
               'Report1214OtherTaxableIncome',
               'Report1214Phone',
               'Report1214Preparer',

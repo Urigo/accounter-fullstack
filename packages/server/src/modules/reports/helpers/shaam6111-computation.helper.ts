@@ -12,6 +12,7 @@
  */
 import {
   BALANCE_SHEET_CODE_NAMES,
+  isValidIsraeliID,
   PROFIT_LOSS_CODE_NAMES,
   SECTION_1_1,
   SECTION_1_4,
@@ -558,4 +559,25 @@ export function fileEntries<T extends { code: number; amount: number }>(
 export function isCorporateRegistrationNumber(registrationNumber?: string | null): boolean {
   const normalized = registrationNumber?.trim() ?? '';
   return /^5\d{8}$/.test(normalized) && !normalized.startsWith('55');
+}
+
+/**
+ * The business's withholding tax (ניכויים) file number, as the 6111 and 1214 reports read it from
+ * the admin business: the first of `company_tax_id` and `tax_nikuim_pinkas_number` that is set
+ * (trimmed), is a valid Israeli ID and is not the company's own number (`vatNumber`), since the
+ * withholding file is a separate 9-digit file. `undefined` when none qualifies.
+ */
+export function selectWithholdingTaxFileNumber(
+  adminBusiness:
+    | {
+        company_tax_id?: string | null;
+        tax_nikuim_pinkas_number?: string | null;
+      }
+    | null
+    | undefined,
+  vatNumber: string | null | undefined,
+): string | undefined {
+  return [adminBusiness?.company_tax_id, adminBusiness?.tax_nikuim_pinkas_number]
+    .map(id => id?.trim())
+    .find(id => !!id && id !== vatNumber && isValidIsraeliID(id));
 }
