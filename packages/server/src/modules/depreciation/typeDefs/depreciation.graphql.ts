@@ -30,6 +30,7 @@ export default gql`
   type DepreciationCategory {
     id: UUID!
     name: String!
+    " annual rate in percent; 0 for a category that is not depreciated "
     percentage: Float!
   }
 
@@ -99,6 +100,7 @@ export default gql`
   " input variables for insertDepreciationCategory "
   input InsertDepreciationCategoryInput {
     name: String!
+    " annual rate in percent, 0 to 100; 0 for a category that is not depreciated "
     percentage: Float!
   }
 
@@ -109,6 +111,7 @@ export default gql`
   input UpdateDepreciationCategoryInput {
     id: UUID!
     name: String
+    " annual rate in percent, 0 to 100; 0 for a category that is not depreciated "
     percentage: Float
   }
 

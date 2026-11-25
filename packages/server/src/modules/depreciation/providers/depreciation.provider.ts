@@ -11,11 +11,15 @@ import type {
   IDeleteDepreciationRecordByChargeIdQuery,
   IDeleteDepreciationRecordParams,
   IDeleteDepreciationRecordQuery,
+  IGetDepreciationRecordsActivatedByParams,
+  IGetDepreciationRecordsActivatedByQuery,
   IGetDepreciationRecordsByChargeIdsQuery,
   IGetDepreciationRecordsByDatesQuery,
   IGetDepreciationRecordsByIdsQuery,
   IInsertDepreciationRecordParams,
   IInsertDepreciationRecordQuery,
+  IReplaceDepreciationRecordsChargeIdParams,
+  IReplaceDepreciationRecordsChargeIdQuery,
   IUpdateDepreciationRecordParams,
   IUpdateDepreciationRecordQuery,
 } from '../types.js';
@@ -36,6 +40,19 @@ const getDepreciationRecordsByDates = sql<IGetDepreciationRecordsByDatesQuery>`
   LEFT JOIN accounter_schema.depreciation_categories dc
             ON d.category = dc.id
   WHERE d.activation_date <= $toDate;`;
+
+const getDepreciationRecordsActivatedBy = sql<IGetDepreciationRecordsActivatedByQuery>`
+  SELECT d.*
+  FROM accounter_schema.depreciation d
+  WHERE d.activation_date <= $date
+    AND d.owner_id = $ownerId
+  ORDER BY d.activation_date, d.id;`;
+
+const replaceDepreciationRecordsChargeId = sql<IReplaceDepreciationRecordsChargeIdQuery>`
+  UPDATE accounter_schema.depreciation
+  SET charge_id = $assertChargeID
+  WHERE charge_id = $replaceChargeID
+  RETURNING id;`;
 
 const updateDepreciationRecord = sql<IUpdateDepreciationRecordQuery>`
   UPDATE accounter_schema.depreciation
@@ -150,6 +167,21 @@ export class DepreciationProvider {
     return records;
   }
 
+  /**
+   * Every asset of the business being written to, activated on or before `date`, including fully
+   * depreciated and disposed ones, and those in a category that is not depreciated (0%)
+   */
+  public async getDepreciationRecordsActivatedBy(
+    params: Omit<IGetDepreciationRecordsActivatedByParams, 'ownerId'>,
+  ) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    const records = await getDepreciationRecordsActivatedBy.run({ ...params, ownerId }, this.db);
+    for (const record of records) {
+      this.getDepreciationRecordByIdLoader.prime(record.id, record);
+    }
+    return records;
+  }
+
   public updateDepreciationRecord(params: IUpdateDepreciationRecordParams) {
     this.clearCache();
     return updateDepreciationRecord.run(params, this.db);
@@ -159,6 +191,11 @@ export class DepreciationProvider {
     this.clearCache();
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertDepreciationRecord.run(reassureOwnerIdExists(params, ownerId), this.db);
+  }
+
+  public replaceDepreciationRecordsChargeId(params: IReplaceDepreciationRecordsChargeIdParams) {
+    this.clearCache();
+    return replaceDepreciationRecordsChargeId.run(params, this.db);
   }
 
   public deleteDepreciationRecord(params: IDeleteDepreciationRecordParams) {
