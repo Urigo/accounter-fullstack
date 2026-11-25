@@ -1190,13 +1190,13 @@ code → rule ID.
 
 ### 9.2 Stages
 
-| Stage        | Input                   | Rules                                                   | Stops pipeline? |
-| ------------ | ----------------------- | ------------------------------------------------------- | --------------- |
-| 1. Year      | `input.taxYear`         | `struct.taxYear.unsupported`                            | yes             |
-| 2. Shape     | raw input, zod (strict) | `input.shape`, `input.unknownCode`, `input.derivedCode` | yes             |
-| 3. Field     | `NormalizedReport`      | `field.*` (layout-driven)                               | no              |
-| 4. Business  | `NormalizedReport`      | `main.*`, `shareholders.*`, `foreign.*`, `cg.*`         | no              |
-| 5. Structure | `NormalizedReport`      | `struct.*`                                              | no              |
+| Stage        | Input                   | Rules                                                                | Stops pipeline?       |
+| ------------ | ----------------------- | -------------------------------------------------------------------- | --------------------- |
+| 1. Year      | `input.taxYear`         | `struct.taxYear.unsupported`, `struct.taxYear.provisionalLayout` (W) | on `unsupported` only |
+| 2. Shape     | raw input, zod (strict) | `input.shape`, `input.unknownCode`, `input.derivedCode`              | yes                   |
+| 3. Field     | `NormalizedReport`      | `field.*` (layout-driven)                                            | no                    |
+| 4. Business  | `NormalizedReport`      | `main.*`, `shareholders.*`, `foreign.*`, `cg.*`                      | no                    |
+| 5. Structure | `NormalizedReport`      | `struct.*`                                                           | no                    |
 
 All issues from stages 3–5 are collected (no fail-fast). The zod schema deliberately accepts any
 string for phone prefixes and country codes (the TS types are literal unions): those are checked by
@@ -1230,26 +1230,27 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 
 ### 10.1 Input and structure
 
-| Rule ID                       | Sev | Source  | Condition (violation)                                                                                                           | Ref           |
-| ----------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `struct.taxYear.unsupported`  | E   | derived | `taxYear` not in `supportedTaxYears()`                                                                                          | —             |
-| `input.shape`                 | E   | derived | wrong JS type, missing required property, unknown property, `null`, array too long (e.g. > 4 withholders, > 2 wallet addresses) | —             |
-| `input.unknownCode`           | E   | spec    | an `amounts` / `countryBreakdown` key that is not a code of that record for the year                                            | p.13, 27, 34+ |
-| `input.derivedCode`           | E   | derived | caller passed a derived code (008, 028, 273, 277, 278, 280, 297, 501–505)                                                       | §7.4          |
-| `struct.relatedCompanies.max` | E   | spec    | more than 3 related companies                                                                                                   | p.2           |
-| `struct.shareholders.min`     | E   | spec    | no shareholders and `declarations.isKibbutz` is not true                                                                        | p.1, 21       |
-| `struct.shareholders.max`     | E   | spec    | more than 99 shareholders                                                                                                       | p.2, 21       |
-| `struct.rdInvestments.max`    | E   | spec    | more than 5 R&D investments                                                                                                     | p.2           |
-| `struct.capitalGains.max`     | E   | spec    | more than 14 capital-gains appendices                                                                                           | p.1, 32       |
-| `struct.mainCodePairs.max`    | E   | spec    | more than 61 code-amount pairs in record 1000 (after derivations)                                                               | p.13          |
-| `struct.batch.size`           | E   | spec    | batch with 0 or more than 50 reports                                                                                            | p.1           |
+| Rule ID                            | Sev | Source  | Condition (violation)                                                                                                                  | Ref           |
+| ---------------------------------- | --- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `struct.taxYear.unsupported`       | E   | derived | `taxYear` not in `supportedTaxYears()`                                                                                                 | —             |
+| `struct.taxYear.provisionalLayout` | W   | derived | `taxYear` reuses an earlier year's layout until its own SHAAM spec is added (2025 → 2024, §14); one warning per report, path `taxYear` | §14           |
+| `input.shape`                      | E   | derived | wrong JS type, missing required property, unknown property, `null`, array too long (e.g. > 4 withholders, > 2 wallet addresses)        | —             |
+| `input.unknownCode`                | E   | spec    | an `amounts` / `countryBreakdown` key that is not a code of that record for the year                                                   | p.13, 27, 34+ |
+| `input.derivedCode`                | E   | derived | caller passed a derived code (008, 028, 273, 277, 278, 280, 297, 501–505)                                                              | §7.4          |
+| `struct.relatedCompanies.max`      | E   | spec    | more than 3 related companies                                                                                                          | p.2           |
+| `struct.shareholders.min`          | E   | spec    | no shareholders and `declarations.isKibbutz` is not true                                                                               | p.1, 21       |
+| `struct.shareholders.max`          | E   | spec    | more than 99 shareholders                                                                                                              | p.2, 21       |
+| `struct.rdInvestments.max`         | E   | spec    | more than 5 R&D investments                                                                                                            | p.2           |
+| `struct.capitalGains.max`          | E   | spec    | more than 14 capital-gains appendices                                                                                                  | p.1, 32       |
+| `struct.mainCodePairs.max`         | E   | spec    | more than 61 code-amount pairs in record 1000 (after derivations)                                                                      | p.13          |
+| `struct.batch.size`                | E   | spec    | batch with 0 or more than 50 reports                                                                                                   | p.1           |
 
 ### 10.2 Generic field rules (apply to every field/code by layout)
 
 | Rule ID                   | Sev | Source  | Condition (violation)                                                                                                                                | Ref            |
 | ------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | `field.required`          | E   | spec    | field/code with `required=yes` absent (for codes not `zeroAllowed`, `0` counts as absent)                                                            | per field      |
-| `field.numeric`           | E   | spec    | numeric field (`id9`, `shareholderId`, `num`, phone number, bank/branch/account) contains non-digits                                                 | type column    |
+| `field.numeric`           | E   | spec    | digit-string field (`id9`, `shareholderId`, `digits`: phone/fax numbers, withholder branch/account) contains non-digits                              | type column    |
 | `field.length`            | E   | spec    | normalized text longer than width, or number with more digits than width                                                                             | length column  |
 | `field.integer`           | E   | spec    | `amount`/`amountX`/`num` not an integer (`rounding: 'reject'`)                                                                                       | p.13 "no dots" |
 | `field.decimals`          | E   | spec    | `amountX100`/`percentX100`/`percentLiteral` with more than 2 decimals                                                                                | p.10, 23, 35   |
@@ -1258,7 +1259,7 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `field.date`              | E   | spec    | not a valid ISO date (input) / `DD/MM/YYYY` (parse)                                                                                                  | date fields    |
 | `field.percentRange`      | E   | spec    | percentage outside 1–100                                                                                                                             | p.10, 23       |
 | `field.hebrewFirstLetter` | E   | spec    | `hebrewText` value whose first character is not א–ת                                                                                                  | p.9, 23, 34 …  |
-| `field.charset`           | E   | derived | control character or character not representable in windows-1255 (after §4.3)                                                                        | §4.3           |
+| `field.charset`           | E   | derived | control character or character not representable in windows-1255 (after §4.3); the message names the first one and its 1-based position              | §4.3           |
 | `field.phonePrefix`       | W   | spec    | prefix not in the allowed list: the prefix is dropped (SHAAM deletes it, p.6); for the required 1000@493 the follow-up `field.required` is the error | p.6–7          |
 | `field.phoneNumber`       | E   | derived | phone/fax number is not exactly 7 digits (shorter numbers would be silently zero-padded)                                                             | p.6            |
 
@@ -1530,9 +1531,9 @@ uses the repository root as working directory.
 - **2025** re-exports the 2024 layout with `taxYear: 2025` until SHAAM's 2025 specification is
   added. The layout changes every year (the 2024 PDF's "שינויים ב-2024" column lists new codes, new
   fields, a changed 9999 length and year-specific values), so a 2025 report built on it is
-  provisional and nothing in the result says so today. Until the procedure below has been run on the
-  2025 PDF, every 2025 report must carry a warning `struct.taxYear.provisionalLayout` (W, derived,
-  path `taxYear`; planned for the year stage of C3, not yet in §10.1 or `RULES`). Known
+  provisional. Until the procedure below has been run on the 2025 PDF, every 2025 report carries one
+  warning `struct.taxYear.provisionalLayout` (W, derived, path `taxYear`, raised by the year stage,
+  §9.2, §10.1); `provisionalBaseYear()` in the registry lists the provisional years. Known
   year-sensitive text: the 3065/3066 withholding-status values describe the halves of the tax year
   (the 2024 text says "January–June 2024"); the turnover threshold printed at 834 (₪256,410) is
   informational only (not validated).
@@ -1543,7 +1544,8 @@ uses the repository root as working directory.
      `python3 documentation/tools/extract_layout.py diff /tmp/raw.json documentation/layout/<year>`
      and reconcile every difference in the CSVs (add `key`/`kind`/`values` for new fields/codes; the
      "שינויים ב-<year>" column marks what changed).
-  4. `yarn workspace @accounter/opcn1214-generator generate:layout`; register the year.
+  4. `yarn workspace @accounter/opcn1214-generator generate:layout`; register the year (and remove
+     it from the provisional years in `registry.ts`).
   5. Add golden files for the year; verify on shopcn; add a changeset (minor).
 
 ---

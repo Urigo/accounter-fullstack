@@ -4,9 +4,11 @@ import {
   Opcn1214UnsupportedYearError,
 } from '../src/errors.js';
 import type { Issue } from '../src/validate/issue.js';
+import type { RuleId } from '../src/validate/rules.js';
 
+/** These tests only format issues: rule IDs of later steps (and made-up ones) are fine here. */
 function issue(ruleId: string, path: string): Issue {
-  return { ruleId, severity: 'error', message: `${ruleId} failed`, path };
+  return { ruleId: ruleId as RuleId, severity: 'error', message: `${ruleId} failed`, path };
 }
 
 describe('errors', () => {
@@ -75,6 +77,16 @@ describe('errors', () => {
       ]);
       expect(error.message).toBe(
         'Unsupported tax year 2023: struct.taxYear.unsupported at taxYear',
+      );
+    });
+
+    it('formats a non-number tax year in the heading like the issue does', () => {
+      const error = new Opcn1214UnsupportedYearError('2024' as unknown as number, [2024, 2025]);
+      expect(error.message).toBe(
+        'Unsupported tax year "2024": struct.taxYear.unsupported at taxYear',
+      );
+      expect(error.issues[0]?.message).toBe(
+        'Tax year "2024" is not supported (supported: 2024, 2025).',
       );
     });
   });
