@@ -40,6 +40,8 @@ export type ValidationResult = ValidationSuccess | ValidationFailure;
  * 3. All account references are valid (transactions → accounts)
  * 4. All tax category references are valid (charges → tax categories)
  * 5. Required fields are present
+ * 6. Misc expenses, exchange rates and depreciation categories, records and disposals are well
+ *    formed (see `validateDepreciationSections`)
  *
  * @param fixture - The fixture to validate
  * @returns Validation result with ok=true or ok=false with error list
@@ -224,12 +226,151 @@ export function validateFixture(fixture: Fixture): ValidationResult {
     }
   }
 
+  errors.push(...validateDepreciationSections(fixture, chargeIds, taxCategoryIds));
+
   // Return result
   if (errors.length > 0) {
     return { ok: false, errors };
   }
 
   return { ok: true };
+}
+
+/**
+ * Validates the misc-expense, exchange-rate and depreciation sections.
+ *
+ * These sections may build on a fixture inserted earlier in the same transaction (disposals entered
+ * after their assets, say), so a reference is checked against the fixture only when the fixture
+ * defines the section it points to; otherwise it is left to the foreign keys at insertion time.
+ */
+function validateDepreciationSections(
+  fixture: Fixture,
+  chargeIds: Set<string>,
+  taxCategoryIds: Set<string>,
+): string[] {
+  const errors: string[] = [];
+  const definesCharges = (fixture.charges?.charges?.length ?? 0) > 0;
+  const checkUnique = (ids: Set<string>, id: string | undefined, what: string) => {
+    if (!id) {
+      errors.push(`${what} missing required field: id`);
+      return;
+    }
+    if (ids.has(id)) {
+      errors.push(`Duplicate ${what.toLowerCase()} id: ${id}`);
+    }
+    ids.add(id);
+  };
+  const checkCharge = (chargeId: string | null | undefined, what: string) => {
+    if (chargeId && definesCharges && !chargeIds.has(chargeId)) {
+      errors.push(`${what} references non-existent charge: ${chargeId}`);
+    }
+  };
+
+  const expenseIds = new Set<string>();
+  for (const expense of fixture.miscExpenses?.expenses ?? []) {
+    const what = `Misc expense ${expense.id ?? '<no-id>'}`;
+    checkUnique(expenseIds, expense.id, 'Misc expense');
+    if (!expense.chargeId) {
+      errors.push(`${what} missing required field: chargeId`);
+    }
+    checkCharge(expense.chargeId, what);
+    for (const field of [
+      'ownerId',
+      'amount',
+      'currency',
+      'creditorId',
+      'debtorId',
+      'invoiceDate',
+      'valueDate',
+    ] as const) {
+      if (!expense[field]) {
+        errors.push(`${what} missing required field: ${field}`);
+      }
+    }
+  }
+
+  const rateDates = new Set<string>();
+  for (const rate of fixture.exchangeRates?.rates ?? []) {
+    if (!rate.date) {
+      errors.push('Exchange rate missing required field: date');
+      continue;
+    }
+    if (rateDates.has(rate.date)) {
+      errors.push(`Duplicate exchange rate date: ${rate.date}`);
+    }
+    rateDates.add(rate.date);
+    const { date: _date, ...currencies } = rate;
+    const given = Object.values(currencies).filter(value => value != null);
+    if (given.length === 0) {
+      errors.push(`Exchange rate ${rate.date} has no currency`);
+    }
+    if (given.some(value => !(value > 0))) {
+      errors.push(`Exchange rate ${rate.date} has a rate that is not positive`);
+    }
+  }
+
+  const categoryIds = new Set<string>();
+  for (const category of fixture.depreciationCategories?.categories ?? []) {
+    checkUnique(categoryIds, category.id, 'Depreciation category');
+    if (!category.name) {
+      errors.push(`Depreciation category ${category.id} missing required field: name`);
+    }
+    if (!(category.percentage >= 0 && category.percentage <= 100)) {
+      errors.push(`Depreciation category ${category.id} percentage must be between 0 and 100`);
+    }
+  }
+
+  const recordIds = new Set<string>();
+  for (const record of fixture.depreciationRecords?.records ?? []) {
+    const what = `Depreciation record ${record.id ?? '<no-id>'}`;
+    checkUnique(recordIds, record.id, 'Depreciation record');
+    for (const field of ['chargeId', 'ownerId', 'categoryId', 'activationDate'] as const) {
+      if (!record[field]) {
+        errors.push(`${what} missing required field: ${field}`);
+      }
+    }
+    checkCharge(record.chargeId, what);
+    if (record.categoryId && categoryIds.size > 0 && !categoryIds.has(record.categoryId)) {
+      errors.push(`${what} references non-existent depreciation category: ${record.categoryId}`);
+    }
+    if (
+      record.assetTaxCategoryId &&
+      taxCategoryIds.size > 0 &&
+      !taxCategoryIds.has(record.assetTaxCategoryId)
+    ) {
+      errors.push(`${what} references non-existent tax category: ${record.assetTaxCategoryId}`);
+    }
+  }
+
+  const disposalIds = new Set<string>();
+  for (const disposal of fixture.depreciationDisposals?.disposals ?? []) {
+    const what = `Depreciation disposal ${disposal.id ?? '<no-id>'}`;
+    checkUnique(disposalIds, disposal.id, 'Depreciation disposal');
+    for (const field of ['ownerId', 'depreciationId', 'type', 'disposalDate'] as const) {
+      if (!disposal[field]) {
+        errors.push(`${what} missing required field: ${field}`);
+      }
+    }
+    checkCharge(disposal.chargeId, what);
+    if (disposal.depreciationId && recordIds.size > 0 && !recordIds.has(disposal.depreciationId)) {
+      errors.push(`${what} references non-existent depreciation record: ${disposal.depreciationId}`);
+    }
+    if (disposal.refundMode && disposal.type !== 'COST_REFUND') {
+      errors.push(`${what} has a refund mode but is not a cost refund`);
+    }
+    const hasOriginalAmount = disposal.originalAmount != null;
+    if (hasOriginalAmount !== (disposal.originalCurrency != null)) {
+      errors.push(`${what} must give originalAmount and originalCurrency together`);
+    }
+    if (hasOriginalAmount && disposal.type !== 'COST_REFUND') {
+      errors.push(`${what} has an amount in the asset's currency but is not a cost refund`);
+    }
+    if (hasOriginalAmount === (disposal.disposedCost != null)) {
+      errors.push(`${what} must give either disposedCost or originalAmount`);
+    }
+  }
+
+  return errors;
 }
 
 /**

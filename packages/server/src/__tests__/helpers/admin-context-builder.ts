@@ -105,7 +105,8 @@ export async function buildAdminContextFromDb(
     },
     bankDeposits: { 
       bankDepositBusinessId: null, 
-      bankDepositInterestIncomeTaxCategoryId: null 
+      bankDepositInterestIncomeTaxCategoryId: null,
+      bankDepositWithholdingTaxCategoryId: null,
     },
     foreignSecurities: { 
       foreignSecuritiesBusinessId: null, 
@@ -145,6 +146,9 @@ export async function buildAdminContextFromDb(
       rndDepreciationExpensesTaxCategoryId: null,
       gnmDepreciationExpensesTaxCategoryId: null,
       marketingDepreciationExpensesTaxCategoryId: null,
+      disposalGainTaxCategoryId: null,
+      disposalLossTaxCategoryId: null,
+      correctionTaxCategoryId: null,
     },
   };
 }

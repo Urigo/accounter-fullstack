@@ -49,7 +49,16 @@ import {
 
 export { DepositTransactionFieldsFragmentDoc } from '../../gql/graphql.js';
 
+/**
+ * A row of the deposit table: a bank transaction, or one of the amounts the bank realized on a
+ * deposit event without a transaction of its own (see the deposit timeline).
+ */
+export type DepositRowKind = 'transaction' | 'capitalizedInterest' | 'tax' | 'revaluation';
+
 export type DepositTransactionRowType = DepositTransactionFieldsFragment & {
+  kind: DepositRowKind;
+  /** For realized rows: where the figure comes from (bank report, allocated, inferred) */
+  source?: string | null;
   cumulativeBalance: number;
   localCumulativeBalance: number;
   localAmount: number;

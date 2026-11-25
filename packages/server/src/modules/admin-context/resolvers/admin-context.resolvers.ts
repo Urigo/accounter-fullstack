@@ -268,12 +268,44 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
             dbAdminContext.depreciation.marketingDepreciationExpensesTaxCategoryId,
           )
         : null,
+    depreciationDisposalGainTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.depreciation.disposalGainTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'depreciationDisposalGainTaxCategory',
+            dbAdminContext.depreciation.disposalGainTaxCategoryId,
+          )
+        : null,
+    depreciationDisposalLossTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.depreciation.disposalLossTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'depreciationDisposalLossTaxCategory',
+            dbAdminContext.depreciation.disposalLossTaxCategoryId,
+          )
+        : null,
+    depreciationCorrectionTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.depreciation.correctionTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'depreciationCorrectionTaxCategory',
+            dbAdminContext.depreciation.correctionTaxCategoryId,
+          )
+        : null,
     bankDepositInterestIncomeTaxCategory: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.bankDeposits.bankDepositInterestIncomeTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'bankDepositInterestIncomeTaxCategory',
             dbAdminContext.bankDeposits.bankDepositInterestIncomeTaxCategoryId,
+          )
+        : null,
+    bankDepositWithholdingTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.bankDeposits.bankDepositWithholdingTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'bankDepositWithholdingTaxCategory',
+            dbAdminContext.bankDeposits.bankDepositWithholdingTaxCategoryId,
           )
         : null,
     businessTripTaxCategory: async (dbAdminContext, _, { injector }) =>

@@ -14,7 +14,7 @@ import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, type DepositTransactionRowType } from './columns.js';
 import { DepositReassignDialog } from './deposit-reassign-dialog.js';
-import { identifyInterestTransactionIds } from './utils.js';
+import { buildDepositTableRows } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -29,21 +29,51 @@ import { identifyInterestTransactionIds } from './utils.js';
           ...DepositTransactionFields
         }
       }
+      timeline {
+        id
+        steps {
+          id
+          chargeId
+          date
+          rate
+          revaluation {
+            raw
+          }
+          capitalizedInterest {
+            raw
+          }
+          capitalizedInterestLocal {
+            raw
+          }
+          taxCapitalized {
+            raw
+          }
+          taxPaidOut {
+            raw
+          }
+          source
+          warnings
+        }
+        yearEnds {
+          id
+          date
+          revaluation {
+            raw
+          }
+        }
+        unmatchedTaxEvents {
+          id
+          date
+          actionTypeDescription
+          taxableAmount {
+            formatted
+          }
+        }
+        warnings
+      }
     }
   }
 `;
-
-const currencyMap: Partial<
-  Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek' | 'usd'>
-> = {
-  [Currency.Eur]: 'eur',
-  [Currency.Gbp]: 'gbp',
-  [Currency.Cad]: 'cad',
-  [Currency.Jpy]: 'jpy',
-  [Currency.Aud]: 'aud',
-  [Currency.Sek]: 'sek',
-  [Currency.Usd]: 'usd',
-};
 
 type Props = {
   depositId: string;
@@ -87,62 +117,14 @@ export function DepositsTransactionsTable({
     if (!data?.deposit?.metadata.transactions) {
       return [];
     }
-
-    const transactions = data.deposit.metadata.transactions.map(rawTx =>
-      getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
-    );
-
-    // Identify interest transactions using shared client helper
-    const interestTransactionIds = identifyInterestTransactionIds(transactions, {
-      getId: tx => tx.id,
-      getChargeId: tx => tx.chargeId,
-      getAmount: tx => Number(tx.amount.raw ?? 0),
+    return buildDepositTableRows({
+      transactions: data.deposit.metadata.transactions.map(rawTx =>
+        getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
+      ),
+      timeline: data.deposit.timeline,
+      depositCurrency: data.deposit.currency,
+      localCurrency: (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils,
     });
-
-    // Sort by date ascending for cumulative calculation
-    const sortedTransactions = [...transactions].sort((a, b) => {
-      const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
-      const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
-      return dateA - dateB;
-    });
-
-    let cumulativeBalance = 0;
-    let totalInterest = 0;
-    let localCumulativeBalance = 0;
-
-    const rows: DepositTransactionRowType[] = [];
-
-    for (const tx of sortedTransactions) {
-      let rate: number | null = null;
-      const currencyKey = currencyMap[tx.amount.currency];
-      if (currencyKey) {
-        rate = tx.debitExchangeRates?.[currencyKey] ?? tx.eventExchangeRates?.[currencyKey] ?? null;
-      }
-      const amount = Number(tx.amount.raw);
-      const localAmount = amount * (rate ?? 1);
-      const localCurrency = (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
-      const isInterest = interestTransactionIds.has(tx.id);
-
-      // Only include non-interest transactions in balance
-      if (isInterest) {
-        totalInterest += amount;
-      } else {
-        cumulativeBalance += amount;
-        localCumulativeBalance += localAmount;
-      }
-
-      rows.push({
-        ...tx,
-        cumulativeBalance,
-        localCumulativeBalance,
-        localAmount,
-        localCurrency,
-        totalInterest,
-        isInterest,
-      });
-    }
-
-    return rows;
   }, [data, userContext?.context.defaultLocalCurrency]);
 
   // Keep a stable reference across refetches so the table only re-renders when
@@ -168,13 +150,14 @@ export function DepositsTransactionsTable({
               {
                 id: 'actions',
                 header: 'Actions',
-                cell: ({ row }) => (
-                  <DepositReassignDialog
-                    depositId={depositId}
-                    chargeId={row.original.chargeId}
-                    refetch={refetch}
-                  />
-                ),
+                cell: ({ row }) =>
+                  row.original.kind === 'transaction' ? (
+                    <DepositReassignDialog
+                      depositId={depositId}
+                      chargeId={row.original.chargeId}
+                      refetch={refetch}
+                    />
+                  ) : null,
               },
             ]
           : [];
@@ -198,40 +181,73 @@ export function DepositsTransactionsTable({
     );
   }
 
+  const timeline = data?.deposit?.timeline;
+  // the deposit loaded but its timeline couldn't be built: the table shows the transactions only
+  const timelineMissing = !!data?.deposit && !timeline;
+  const timelineWarnings = [
+    ...(timeline?.warnings ?? []),
+    ...(timeline?.steps.flatMap(step => step.warnings) ?? []),
+  ];
+  const unmatchedTaxEvents = timeline?.unmatchedTaxEvents ?? [];
+
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map(headerGroup => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map(header => (
-              <TableHead key={header.id} colSpan={header.colSpan}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map(row => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map(cell => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+    <>
+      {(timelineMissing || timelineWarnings.length > 0 || unmatchedTaxEvents.length > 0) && (
+        <div className="mb-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
+          {timelineMissing && (
+            <div>
+              The deposit timeline couldn&apos;t be built, so capitalized interest, tax and
+              revaluations are not shown and the balances cover the transactions only.
+            </div>
+          )}
+          {timelineWarnings.map(warning => (
+            <div key={warning}>{warning}</div>
+          ))}
+          {unmatchedTaxEvents.length > 0 && (
+            <div>
+              {unmatchedTaxEvents.length} bank tax event(s) of this account match no deposit event
+              (is a deposit charge unassigned?):{' '}
+              {unmatchedTaxEvents
+                .map(e => `${e.date} ${e.actionTypeDescription} ${e.taxableAmount.formatted}`)
+                .join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map(headerGroup => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <TableHead key={header.id} colSpan={header.colSpan}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={columnsWithActions.length} className="h-24 text-center">
-              No transactions in this deposit.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map(row => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map(cell => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columnsWithActions.length} className="h-24 text-center">
+                No transactions in this deposit.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </>
   );
 }

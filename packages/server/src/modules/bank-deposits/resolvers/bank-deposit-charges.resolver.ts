@@ -3,9 +3,11 @@ import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { BankDepositChargesProvider } from '../providers/bank-deposit-charges.provider.js';
 import { BankDepositsProvider } from '../providers/bank-deposits.provider.js';
+import { DepositTimelineProvider } from '../providers/deposit-timeline.provider.js';
 import type { BankDepositsModule } from '../types.js';
 
 export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
@@ -145,7 +147,7 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
 
         await injector
           .get(BankDepositChargesProvider)
-          .upsertBankDepositCharge({ chargeId, depositId: deposit.id });
+          .upsertBankDepositCharge({ chargeId, depositId: deposit.id, accountId });
         injector.get(BankDepositChargesProvider).getBankDepositByChargeIdLoader.clear(chargeId);
 
         return deposit;
@@ -155,11 +157,83 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
     },
   },
   BankDeposit: {
+    timeline: async (deposit, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      let timeline;
+      try {
+        const loaded = await injector
+          .get(DepositTimelineProvider)
+          .depositTimelineLoader.load(deposit.id);
+        // the loader may still resolve to an Error rather than reject
+        if (loaded instanceof Error) throw loaded;
+        timeline = loaded;
+      } catch (e) {
+        // degrade like `metadata`: the transactions are still worth showing without the timeline
+        console.error(`Error building timeline for deposit ${deposit.name}:`, e);
+        return null;
+      }
+      const { currency } = timeline;
+      return {
+        id: deposit.id,
+        warnings: timeline.warnings,
+        steps: timeline.steps.map(step => ({
+          id: `${deposit.id}:${step.chargeId}`,
+          chargeId: step.chargeId,
+          date: step.date,
+          rate: step.rate,
+          principalFlow: formatFinancialAmount(step.principalFlow, currency),
+          visibleInterest: formatFinancialAmount(step.visibleInterest, currency),
+          revaluation: formatFinancialAmount(step.revaluation, defaultLocalCurrency),
+          capitalizedInterest: formatFinancialAmount(step.capitalizedInterest, currency),
+          capitalizedInterestLocal: formatFinancialAmount(
+            step.capitalizedInterestLocal,
+            defaultLocalCurrency,
+          ),
+          taxCapitalized: formatFinancialAmount(step.taxCapitalized, defaultLocalCurrency),
+          taxPaidOut: formatFinancialAmount(step.taxPaidOut, defaultLocalCurrency),
+          principalAfter: formatFinancialAmount(step.pAfter, currency),
+          localBalanceAfter: formatFinancialAmount(step.lAfter, defaultLocalCurrency),
+          source: step.source,
+          warnings: step.warnings,
+        })),
+        yearEnds: timeline.yearEnds.map(yearEnd => ({
+          id: `${deposit.id}:year-end:${yearEnd.date}`,
+          date: yearEnd.date,
+          revaluation: formatFinancialAmount(yearEnd.revaluation, defaultLocalCurrency),
+        })),
+        unmatchedTaxEvents: timeline.unmatchedTaxEvents.map(row => ({
+          id: row.id,
+          date: row.date,
+          actionTypeDescription: row.actionTypeDescription,
+          taxableAmount: formatFinancialAmount(row.taxEventAmount, defaultLocalCurrency),
+        })),
+      };
+    },
     metadata: async (deposit, _, { injector }) => {
       try {
-        return await injector
-          .get(BankDepositChargesProvider)
-          .getBankDepositMetadataLoader.load(deposit.id);
+        const [metadata, timeline] = await Promise.all([
+          injector.get(BankDepositChargesProvider).getBankDepositMetadataLoader.load(deposit.id),
+          injector
+            .get(DepositTimelineProvider)
+            .depositTimelineLoader.load(deposit.id)
+            .catch((e: unknown) => {
+              // the timeline is an enrichment: fall back to the plain metadata when it fails
+              console.error(`Failed to build timeline for bank deposit ${deposit.id}`, e);
+              return null;
+            }),
+        ]);
+        if (!timeline) {
+          return metadata;
+        }
+        // Balance and interest include the interest the bank capitalized into the deposit
+        // (bank-account point of view: negative = still held in the deposit)
+        return {
+          ...metadata,
+          currentBalance: -timeline.finalPrincipal,
+          totalInterest: timeline.totalInterest,
+        };
       } catch (e) {
         throw errorSimplifier(`Error fetching metadata for deposit ${deposit.name}`, e);
       }
@@ -170,8 +244,9 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
     currentBalance: metadata => formatFinancialAmount(metadata.currentBalance),
     totalInterest: metadata => formatFinancialAmount(metadata.totalInterest),
     totalDeposit: metadata => formatFinancialAmount(metadata.totalDeposit),
+    // the last movement can close the deposit only once nothing is left in it
     potentialCloseDate: metadata =>
-      Math.abs(metadata.currentBalance) >= 0.005 ? metadata.potentialCloseDate : null,
+      Math.abs(metadata.currentBalance) < 0.005 ? metadata.potentialCloseDate : null,
     transactions: metadata => metadata.transactionIds,
   },
 };

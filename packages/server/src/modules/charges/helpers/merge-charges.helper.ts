@@ -1,6 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { BusinessTripEmployeePaymentsProvider } from '../../business-trips/providers/business-trips-employee-payments.provider.js';
+import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
+import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { SecurityExecutionChargesProvider } from '../../foreign-securities/providers/security-execution-charges.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
@@ -77,7 +79,23 @@ export const mergeChargesExecutor = async (
           assertChargeID: baseChargeID,
         });
 
+      // update linked depreciation records (assets) and asset disposals
+      const replaceDepreciationRecordsChargeIdPromise = injector
+        .get(DepreciationProvider)
+        .replaceDepreciationRecordsChargeId({
+          replaceChargeID: id,
+          assertChargeID: baseChargeID,
+        });
+      const replaceDepreciationDisposalsChargeIdPromise = injector
+        .get(DepreciationDisposalsProvider)
+        .replaceDisposalsChargeId({
+          replaceChargeID: id,
+          assertChargeID: baseChargeID,
+        });
+
       return Promise.all([
+        replaceDepreciationRecordsChargeIdPromise,
+        replaceDepreciationDisposalsChargeIdPromise,
         replaceDocumentsChargeIdPromise,
         replaceTransactionsChargeIdPromise,
         replaceLedgerRecordsChargeIdPromise,

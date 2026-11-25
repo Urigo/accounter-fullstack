@@ -23,6 +23,16 @@ export const DepreciationSummaryRow = ({ data, groupName }: Props): ReactElement
         {summary.reportYearDelta ? formatStringifyAmount(summary.reportYearDelta, 0) : undefined}
       </TableCell>
       <TableCell>
+        {summary.reportYearDisposedCost
+          ? `(${formatStringifyAmount(summary.reportYearDisposedCost, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearRefundedCost
+          ? `(${formatStringifyAmount(summary.reportYearRefundedCost, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
         {summary.totalDepreciableCosts
           ? formatStringifyAmount(summary.totalDepreciableCosts, 0)
           : undefined}
@@ -40,6 +50,16 @@ export const DepreciationSummaryRow = ({ data, groupName }: Props): ReactElement
           : undefined}
       </TableCell>
       <TableCell>
+        {summary.reportYearDisposedDepreciation
+          ? `(${formatStringifyAmount(summary.reportYearDisposedDepreciation, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearDepreciationCorrection
+          ? `(${formatStringifyAmount(summary.reportYearDepreciationCorrection, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
         {summary.totalDepreciation
           ? formatStringifyAmount(summary.totalDepreciation, 0)
           : undefined}
@@ -47,6 +67,7 @@ export const DepreciationSummaryRow = ({ data, groupName }: Props): ReactElement
       <TableCell>
         {summary.netValue ? formatStringifyAmount(summary.netValue, 0) : undefined}
       </TableCell>
+      <TableCell className="print:hidden" />
     </TableRow>
   );
 };

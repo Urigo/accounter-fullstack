@@ -5,6 +5,7 @@ import { degradeChargesAccountantApproval } from '../../../accountant-approval/h
 import { deleteCharges } from '../../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
+import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import { SecurityExecutionChargesProvider } from '../../../foreign-securities/providers/security-execution-charges.provider.js';
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
@@ -86,6 +87,7 @@ function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown
           SalariesProvider,
           BusinessTripEmployeePaymentsProvider,
           DepreciationProvider,
+          DepreciationDisposalsProvider,
           SecurityExecutionChargesProvider,
         ].includes(token as never)
       ) {
@@ -94,6 +96,7 @@ function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown
           getSalaryRecordsByChargeIdLoader: byChargeId([]),
           getBusinessTripEmployeePaymentsByChargeIdLoader: byChargeId([]),
           getDepreciationRecordsByChargeIdLoader: byChargeId([]),
+          getDisposalsByChargeIdLoader: byChargeId([]),
           linkedExecutionIdsByChargeIdLoader: byChargeId([]),
         };
       }

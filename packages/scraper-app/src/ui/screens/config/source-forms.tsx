@@ -106,6 +106,7 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
     password: initial.password ?? '',
     isBusinessAccount: initial.options?.isBusinessAccount ?? false,
     fetchSecurities: initial.options?.fetchSecurities ?? false,
+    fetchDepositsTaxEvents: initial.options?.fetchDepositsTaxEvents ?? false,
     acceptedAccountNumbers: fromList(initial.options?.acceptedAccountNumbers),
     acceptedBranchNumbers: fromList(initial.options?.acceptedBranchNumbers),
     ignoredAccountNumbers: fromList(initial.options?.ignoredAccountNumbers),
@@ -123,6 +124,7 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
         const opts = {
           isBusinessAccount: fields.isBusinessAccount ?? false,
           fetchSecurities: fields.fetchSecurities ?? false,
+          fetchDepositsTaxEvents: fields.fetchDepositsTaxEvents ?? false,
           acceptedAccountNumbers: toList(fields.acceptedAccountNumbers),
           acceptedBranchNumbers: toList(fields.acceptedBranchNumbers),
           ignoredAccountNumbers: toList(fields.ignoredAccountNumbers),
@@ -165,6 +167,16 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
             onChange={e => setFields(f => ({ ...f, fetchSecurities: e.target.checked }))}
           />
           Fetch securities portfolio (info + activity)
+        </label>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={fields.fetchDepositsTaxEvents}
+            onChange={e => setFields(f => ({ ...f, fetchDepositsTaxEvents: e.target.checked }))}
+          />
+          Fetch deposits tax events (interest &amp; withholding)
         </label>
       </div>
       <ListField

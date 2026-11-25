@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import type {
   Maybe,
   ResolverFn,
@@ -6,20 +5,14 @@ import type {
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
-import { Currency } from '../../../../../shared/enums.js';
-import {
-  addDaysToTimelessDate,
-  currentTenantYear,
-  formatCurrency,
-} from '../../../../../shared/helpers/index.js';
-import type {
-  CurrencySum,
-  LedgerProto,
-  TimelessDateString,
-} from '../../../../../shared/types/index.js';
+import { currentTenantYear } from '../../../../../shared/helpers/index.js';
+import type { LedgerProto, TimelessDateString } from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
-import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
-import { businessTransactionsSumFromLedgerRecords } from '../../../../financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
+import { BankDepositsProvider } from '../../../../bank-deposits/providers/bank-deposits.provider.js';
+import {
+  DepositTimelineProvider,
+  type DepositTimelineResult,
+} from '../../../../bank-deposits/providers/deposit-timeline.provider.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -31,7 +24,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   try {
     const { injector } = context;
     if (!charge.user_description) {
@@ -76,102 +69,52 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
 
     const revaluationDate = `${year}-12-31` as TimelessDateString;
 
-    const cumulativeDate = addDaysToTimelessDate(revaluationDate, -1);
-    const bankDepositsCumulativeBalance = await businessTransactionsSumFromLedgerRecords(
-      {},
-      {
-        filters: {
-          ownerIds: [charge.owner_id],
-          businessIDs: [bankDepositBusinessId],
-          toDate: cumulativeDate,
-          includeRevaluation: false,
-        },
-      },
-      context,
-      info,
-    );
-
-    if (
-      !('businessTransactionsSum' in bankDepositsCumulativeBalance) ||
-      bankDepositsCumulativeBalance.businessTransactionsSum.length === 0
-    ) {
-      throw new GraphQLError('Failed to get accounts transaction-based balance');
-    }
-
-    const bankDepositsBalance = await bankDepositsCumulativeBalance.businessTransactionsSum[0];
-
-    const currencies: Currency[] = Object.entries(bankDepositsBalance)
-      .filter(
-        ([key, value]) =>
-          Object.values(Currency).includes(key as Currency) &&
-          ((value as CurrencySum).total !== 0 ||
-            (value as CurrencySum).debit !== 0 ||
-            (value as CurrencySum).credit !== 0),
-      )
-      .map(([key]) => key as Currency);
-
-    const exchangeRates = new Map<Currency, number>();
-    await Promise.all(
-      currencies.map(currency =>
-        injector
-          .get(ExchangeProvider)
-          .getExchangeRates(currency, defaultLocalCurrency, revaluationDate)
-          .then(rates => exchangeRates.set(currency, rates)),
-      ),
-    );
-
     const errors: Set<string> = new Set();
     const ledgerEntries: LedgerProto[] = [];
 
-    const currenciesLedgerPromise = Object.entries(bankDepositsBalance).map(
-      async ([currency, sum]) => {
-        if (!currencies.includes(currency as Currency) || currency === defaultLocalCurrency) {
-          return;
-        }
-
-        const rate = exchangeRates.get(formatCurrency(currency as Currency));
-        if (!rate) {
-          errors.add(`No exchange rate found for date ${revaluationDate}, currency "${currency}"`);
-          return;
-        }
-
-        const cumulativeLocalBalance = bankDepositsBalance[defaultLocalCurrency].total;
-        const cumulativeForeignBalance = (sum as CurrencySum).total;
-
-        const revaluationDiff = cumulativeLocalBalance - cumulativeForeignBalance * rate;
-
-        if (Math.abs(revaluationDiff) < 0.005) {
-          return;
-        }
-
-        const isCreditorCounterparty = revaluationDiff < 0;
-
-        const ledgerEntry: LedgerProto = {
-          id: EMPTY_UUID,
-          invoiceDate: revaluationDate,
-          valueDate: revaluationDate,
-          currency: defaultLocalCurrency,
-          isCreditorCounterparty,
-          ...(isCreditorCounterparty
-            ? {
-                creditAccountID1: bankDepositBusinessId,
-                debitAccountID1: exchangeRevaluationTaxCategoryId,
-              }
-            : {
-                creditAccountID1: exchangeRevaluationTaxCategoryId,
-                debitAccountID1: bankDepositBusinessId,
-              }),
-          localCurrencyCreditAmount1: Math.abs(revaluationDiff),
-          localCurrencyDebitAmount1: Math.abs(revaluationDiff),
-          description: `${BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION} "${currency}"`,
-          ownerId: charge.owner_id,
-          chargeId: charge.id,
-          currencyRate: rate,
-        };
-
-        ledgerEntries.push(ledgerEntry);
-      },
+    // Per deposit, from the same timeline the deposit charges are booked with: the carried
+    // principal is revalued from its last event (or last year-end) to the 31/12 rate.
+    // Only this charge owner's deposits: the read scope may span several businesses.
+    const foreignDeposits = (await injector.get(BankDepositsProvider).getAllBankDeposits()).filter(
+      deposit =>
+        deposit.owner_id === charge.owner_id &&
+        deposit.currency &&
+        deposit.currency !== defaultLocalCurrency,
     );
+    const currenciesLedgerPromise = foreignDeposits.map(async deposit => {
+      let timeline: DepositTimelineResult;
+      try {
+        timeline = await injector
+          .get(DepositTimelineProvider)
+          .depositTimelineLoader.load(deposit.id);
+      } catch (e) {
+        // one failing deposit must not block the others' year-end revaluation
+        errors.add(`Deposit "${deposit.name}": ${e instanceof Error ? e.message : String(e)}`);
+        return;
+      }
+      const yearEnd = timeline.yearEnds.find(step => step.date === revaluationDate);
+      if (!yearEnd || Math.abs(yearEnd.revaluation) < 0.005) {
+        return;
+      }
+
+      const isUp = yearEnd.revaluation > 0;
+      const amount = Math.abs(yearEnd.revaluation);
+      ledgerEntries.push({
+        id: EMPTY_UUID,
+        invoiceDate: revaluationDate,
+        valueDate: revaluationDate,
+        currency: defaultLocalCurrency,
+        isCreditorCounterparty: !isUp,
+        debitAccountID1: isUp ? bankDepositBusinessId : exchangeRevaluationTaxCategoryId,
+        creditAccountID1: isUp ? exchangeRevaluationTaxCategoryId : bankDepositBusinessId,
+        localCurrencyCreditAmount1: amount,
+        localCurrencyDebitAmount1: amount,
+        description: `${BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION} "${timeline.currency}" (${deposit.name})`,
+        ownerId: charge.owner_id,
+        chargeId: charge.id,
+        currencyRate: yearEnd.rate,
+      });
+    });
 
     // generate ledger from misc expenses
     const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {

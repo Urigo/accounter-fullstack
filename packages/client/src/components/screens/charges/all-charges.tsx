@@ -1,19 +1,22 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
-import { useQuery } from 'urql';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { ChargesTable } from '@/components/charges/charges-table.js';
-import { AllChargesDocument } from '../../../gql/graphql.js';
 import { isObjectEmpty } from '../../../helpers/form.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlPage } from '../../../hooks/use-url-page.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import {
+  ALL_CHARGES_PAGE_SIZE,
+  type AllChargesVariables,
+} from '../../../router/loaders/all-charges-loader.js';
 import { ChargesFilters, useChargesFilter } from '../../charges/charges-filters/index.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import { LoadingOverlay } from '../../ui/overlay.js';
+import { useAllChargesQuery } from './use-all-charges-query.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -39,22 +42,12 @@ export const AllCharges = (): ReactElement => {
   // Nothing is fetched until a filter is applied — the list is too large to load unfiltered.
   const isFilterApplied = !isObjectEmpty(filter);
 
-  const [{ data, fetching }, fetchCharges] = useQuery({
-    query: AllChargesDocument,
-    variables: {
-      filters: filter,
-      page: activePage,
-      limit: 100,
-    },
-    pause: true,
-  });
+  const variables = useMemo<AllChargesVariables>(
+    () => ({ filters: filter, page: activePage, limit: ALL_CHARGES_PAGE_SIZE }),
+    [filter, activePage],
+  );
 
-  // refetch charges on filter or page change
-  useEffect(() => {
-    if (isFilterApplied) {
-      fetchCharges({ requestPolicy: 'network-only' });
-    }
-  }, [isFilterApplied, filter, activePage, fetchCharges]);
+  const { data, loading, refetch } = useAllChargesQuery(variables, isFilterApplied);
 
   // urql returns a fresh `data` object on every (re)fetch. Keep a stable,
   // deeply-equal reference for the charge nodes so the table and its rows only
@@ -75,11 +68,9 @@ export const AllCharges = (): ReactElement => {
         .filter(([, isSelected]) => isSelected)
         .map(([id]) => ({
           id,
-          onChange: (): void => {
-            fetchCharges({ requestPolicy: 'network-only' });
-          },
+          onChange: refetch,
         })),
-    [rowSelection, fetchCharges],
+    [rowSelection, refetch],
   );
 
   // Only the page count is consumed from the query result here. Depend on it
@@ -131,14 +122,14 @@ export const AllCharges = (): ReactElement => {
 
   return (
     <PageLayout title="All Charges" description="Manage charges">
-      {fetching && !data ? (
+      {loading && !data ? (
         <AccounterBarSpinner className="self-center" />
       ) : chargeNodes ? (
         // Keep the current table mounted while a filter/page change refetches,
         // but overlay a spinner so it's clear the charges are being reloaded
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
-          <LoadingOverlay visible={fetching} blur={1} />
+          <LoadingOverlay visible={loading} blur={1} />
           <ChargesTable
             data={chargeNodes}
             rowSelection={rowSelection}

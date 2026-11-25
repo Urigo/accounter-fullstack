@@ -112,7 +112,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     const { researchAndDevelopmentExpenses, profitBeforeTax } =
       getProfitLossReportAmountsByYear(year);
 
-    const { annualTaxExpenseAmount } = await calculateTaxAmounts(
+    const { currentTaxExpense } = await calculateTaxAmounts(
       injector,
       year,
       decoratedLedgerByYear.get(year) ?? [],
@@ -121,23 +121,26 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       profitBeforeTax.amount,
     );
 
-    const ledgerEntry: LedgerProto = {
-      id: EMPTY_UUID,
-      invoiceDate: endOfTimelessYear(year),
-      valueDate: endOfTimelessYear(year),
-      currency: defaultLocalCurrency,
-      isCreditorCounterparty: true,
-      creditAccountID1: taxBusinessId,
-      debitAccountID1: taxExpensesTaxCategoryId,
-      localCurrencyCreditAmount1: Math.abs(annualTaxExpenseAmount),
-      localCurrencyDebitAmount1: Math.abs(annualTaxExpenseAmount),
-      description: `Tax expenses for ${year}`,
-      ownerId: charge.owner_id,
-      chargeId: charge.id,
-      currencyRate: 1,
-    };
+    const ledgerEntries: LedgerProto[] = [];
 
-    const ledgerEntries = [ledgerEntry];
+    // Current tax is never negative: a loss year books no tax expense (the loss is carried forward)
+    if (currentTaxExpense > 0) {
+      ledgerEntries.push({
+        id: EMPTY_UUID,
+        invoiceDate: endOfTimelessYear(year),
+        valueDate: endOfTimelessYear(year),
+        currency: defaultLocalCurrency,
+        isCreditorCounterparty: true,
+        creditAccountID1: taxBusinessId,
+        debitAccountID1: taxExpensesTaxCategoryId,
+        localCurrencyCreditAmount1: currentTaxExpense,
+        localCurrencyDebitAmount1: currentTaxExpense,
+        description: `Tax expenses for ${year}`,
+        ownerId: charge.owner_id,
+        chargeId: charge.id,
+        currencyRate: 1,
+      });
+    }
 
     // generate ledger from misc expenses
     await generateMiscExpensesLedger(charge, injector).then(entries => {

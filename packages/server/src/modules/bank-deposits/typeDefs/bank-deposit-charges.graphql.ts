@@ -35,5 +35,72 @@ export default gql`
 
   extend type BankDeposit {
     metadata: BankDepositMetadata!
+    " The deposit replayed event by event the way the bank treats it (see the deposit ledger). Null when the timeline can't be built (e.g. a missing exchange rate) "
+    timeline: BankDepositTimeline
+  }
+
+  " Where a timeline step's capitalized interest and tax come from "
+  enum BankDepositTimelineSource {
+    " The bank's deposits tax-collection report "
+    BANK
+    " The bank's report, split among several deposits with an event on the same day "
+    BANK_ALLOCATED
+    " Inferred from the closed deposit's unexplained principal "
+    INFERRED
+  }
+
+  " One deposit event (a charge): what the bank realized on it and the principal it left "
+  type BankDepositTimelineStep {
+    id: ID!
+    chargeId: UUID!
+    date: TimelessDate!
+    " Exchange rate of the event: local currency per deposit-currency unit (1 for local deposits) "
+    rate: Float!
+    " Principal moved into (+) or out of (−) the deposit, deposit currency "
+    principalFlow: FinancialAmount!
+    " Interest paid out with the event (the charge's interest lines), deposit currency "
+    visibleInterest: FinancialAmount!
+    " FX revaluation of the carried principal, local currency "
+    revaluation: FinancialAmount!
+    " Interest the bank capitalized into the deposit, deposit currency "
+    capitalizedInterest: FinancialAmount!
+    " Interest the bank capitalized into the deposit, local currency "
+    capitalizedInterestLocal: FinancialAmount!
+    " Tax the bank withheld inside the deposit (on the capitalized interest), local currency "
+    taxCapitalized: FinancialAmount!
+    " Tax the bank withheld from the paid-out interest, local currency "
+    taxPaidOut: FinancialAmount!
+    " Principal left in the deposit after the event, deposit currency "
+    principalAfter: FinancialAmount!
+    " Book value of the deposit after the event, local currency "
+    localBalanceAfter: FinancialAmount!
+    source: BankDepositTimelineSource
+    warnings: [String!]!
+  }
+
+  " A bank deposits tax-collection row of the deposit's account that matched no deposit event "
+  type BankDepositUnmatchedTaxEvent {
+    id: ID!
+    date: TimelessDate!
+    actionTypeDescription: String!
+    taxableAmount: FinancialAmount!
+  }
+
+  " A booked year-end revaluation checkpoint (31/12, at that day's rate) of a foreign-currency deposit "
+  type BankDepositYearEnd {
+    id: ID!
+    date: TimelessDate!
+    " FX revaluation of the carried principal at the year end, local currency "
+    revaluation: FinancialAmount!
+  }
+
+  " A deposit's event-by-event accounting "
+  type BankDepositTimeline {
+    id: ID!
+    steps: [BankDepositTimelineStep!]!
+    " Year-end revaluations applied between the steps "
+    yearEnds: [BankDepositYearEnd!]!
+    unmatchedTaxEvents: [BankDepositUnmatchedTaxEvent!]!
+    warnings: [String!]!
   }
 `;

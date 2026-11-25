@@ -164,7 +164,8 @@ function AccountStepsTable({ steps }: { steps: AccountStep[] }) {
           <th style={{ padding: '2px 8px 2px 0' }}>Foreign</th>
           <th style={{ padding: '2px 8px 2px 0' }}>Swift</th>
           <th style={{ padding: '2px 8px 2px 0' }}>Securities</th>
-          <th style={{ padding: '2px 0' }}>Sec. txns</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Sec. txns</th>
+          <th style={{ padding: '2px 0' }}>Deposit tax</th>
         </tr>
       </thead>
       <tbody>
@@ -183,6 +184,7 @@ function AccountStepsTable({ steps }: { steps: AccountStep[] }) {
               <TxnTypeCell state={step.swift} />
               <TxnTypeCell state={step.securitiesInfo} />
               <TxnTypeCell state={step.securitiesTransactions} />
+              <TxnTypeCell state={step.depositTaxEvents} />
             </tr>
           );
         })}

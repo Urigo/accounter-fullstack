@@ -16,6 +16,8 @@ import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import { IsracardPayloadSchema } from './payload-schemas/isracard.schema.js';
 import { MaxPayloadSchema } from './payload-schemas/max.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
+import { PoalimDepositsTaxEventsPayloadSchema } from './payload-schemas/poalim-deposits-tax-events.schema.js';
+import type { PoalimDepositsTaxEventsPayload } from './payload-schemas/poalim-deposits-tax-events.schema.js';
 import { PoalimForeignPayloadSchema } from './payload-schemas/poalim-foreign.schema.js';
 import { PoalimIlsPayloadSchema } from './payload-schemas/poalim-ils.schema.js';
 import { PoalimSecuritiesInfoPayloadSchema } from './payload-schemas/poalim-securities-info.schema.js';
@@ -30,6 +32,7 @@ export type PayloadType =
   | 'poalim-swift'
   | 'poalim-securities-info'
   | 'poalim-securities-transactions'
+  | 'poalim-deposits-tax-events'
   | 'isracard'
   | 'amex'
   | 'cal'
@@ -43,6 +46,7 @@ type PayloadMap = {
   'poalim-swift': SwiftTransactions;
   'poalim-securities-info': PoalimSecuritiesInfoPayload;
   'poalim-securities-transactions': PoalimSecuritiesTransactionsPayload;
+  'poalim-deposits-tax-events': PoalimDepositsTaxEventsPayload;
   isracard: IsracardCardsTransactionsList;
   amex: IsracardCardsTransactionsList;
   cal: CalPayload;
@@ -102,6 +106,7 @@ const schemas: Record<PayloadType, z.ZodType<any>> = {
   'poalim-swift': PoalimSwiftPayloadSchema,
   'poalim-securities-info': PoalimSecuritiesInfoPayloadSchema,
   'poalim-securities-transactions': PoalimSecuritiesTransactionsPayloadSchema,
+  'poalim-deposits-tax-events': PoalimDepositsTaxEventsPayloadSchema,
   isracard: IsracardPayloadSchema,
   amex: AmexPayloadSchema,
   cal: CalPayloadSchema,

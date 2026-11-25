@@ -4,6 +4,7 @@ export type * from './__generated__/types.js';
 export type { currency } from './__generated__/bank-deposits.types.js';
 export type * from './__generated__/bank-deposits.types.js';
 export type * from './__generated__/bank-deposit-charges.types.js';
+export type * from './__generated__/bank-deposit-tax-events.types.js';
 
 export type BankDepositMetadataProto = {
   id: string;

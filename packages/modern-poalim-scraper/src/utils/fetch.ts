@@ -195,3 +195,48 @@ export async function fetchPoalimXSRFWithinPage<TResult>(
   headers['Content-Type'] = 'application/json;charset=UTF-8';
   return fetchPostWithinPage(page, url, {}, headers);
 }
+
+/**
+ * GET counterpart of `fetchPoalimXSRFWithinPage`, for Poalim endpoints that are read
+ * with a GET but still expect the XSRF token and the screen's `pageUuid`.
+ *
+ * Authentication comes entirely from the logged-in page: the session cookies travel
+ * with `credentials: 'include'` and the XSRF token is read from the browser context.
+ * Nothing secret is ever passed in or hard-coded.
+ */
+export async function fetchPoalimXSRFGetWithinPage<TResult>(
+  page: Page,
+  url: string,
+  pageUuid: string,
+): Promise<TResult | null> {
+  const xsrfToken = await getXsrfToken(page);
+  const headers: Record<string, string> = {
+    pageUuid,
+    uuid: uuidv4(),
+    Accept: 'application/json, text/plain, */*',
+  };
+  if (xsrfToken != null) {
+    headers['X-XSRF-TOKEN'] = xsrfToken;
+  }
+  return page.evaluate(
+    (url, headers) => {
+      return new Promise<TResult | null>((resolve, reject) => {
+        fetch(url, { method: 'GET', credentials: 'include', headers })
+          .then(result => {
+            if (result.status === 204) {
+              resolve(null);
+            } else if (result.ok) {
+              resolve(result.json());
+            } else {
+              reject(new Error(`GET ${url} failed with status ${result.status}`));
+            }
+          })
+          .catch(e => {
+            reject(e);
+          });
+      });
+    },
+    url,
+    headers,
+  );
+}

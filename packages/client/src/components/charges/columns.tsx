@@ -119,7 +119,9 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ChargeRow>[] = [
   {
     accessorKey: 'moreInfo',
     header: ({ column }) => <DataTableColumnHeader column={column} title="More Info" />,
-    cell: ({ row }) => <MoreInfo {...row.original.moreInfo} />,
+    cell: ({ row }) => (
+      <MoreInfo {...row.original.moreInfo} onChange={row.original.onChangeWithExpansion} />
+    ),
     enableSorting: false,
   },
   {
@@ -132,7 +134,7 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ChargeRow>[] = [
           <ChargeActionsMenu
             chargeId={row.original.id}
             chargeType={row.original.type}
-            onChange={row.original.onChange}
+            onChange={row.original.onChangeWithExpansion}
             onDelete={row.original.onDelete}
             isIncome={(row.original.amount?.value ?? 0) > 0}
           />

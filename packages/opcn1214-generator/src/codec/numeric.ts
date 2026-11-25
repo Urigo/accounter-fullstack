@@ -1,0 +1,213 @@
+/**
+ * Codecs of the numeric family (SPEC §4.1, §4.2, §4.4): integers, digit strings, ×100-scaled
+ * amounts and fillers.
+ */
+import { Opcn1214InternalError } from '../errors.js';
+import type { CodeKind, FieldKind } from '../layout/types.js';
+import { ALPHANUMERIC_PAD_SIDE, padAlphanumeric, padNumeric } from './padding.js';
+import { CodecDecodeError, type Codec, type FieldShape, type Primitive } from './types.js';
+
+const DIGITS = /^\d+$/;
+/** Minimum tolerance of the ×100 decimals check (SPEC §4.4). */
+const SCALE_EPSILON = 1e-6;
+
+/** The absent value of a field: zeros (numeric) or spaces (alphanumeric). */
+export function blank(shape: FieldShape): string {
+  return shape.type === 'numeric' ? '0'.repeat(shape.length) : ' '.repeat(shape.length);
+}
+
+/** Pads a digit string per the field type. */
+export function pad(digits: string, shape: FieldShape): string {
+  return shape.type === 'numeric'
+    ? padNumeric(digits, shape.length)
+    : padAlphanumeric(digits, shape.length);
+}
+
+function show(value: Primitive): string {
+  return typeof value === 'string' ? `"${value}"` : String(value);
+}
+
+export function invalid(
+  value: Primitive,
+  shape: FieldShape,
+  expected: string,
+): Opcn1214InternalError {
+  return new Opcn1214InternalError(
+    `Cannot encode ${show(value)} as ${shape.kind}: expected ${expected}`,
+  );
+}
+
+export function encodeInteger(value: number, shape: FieldShape): string {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw invalid(value, shape, 'a non-negative safe integer');
+  }
+  return pad(String(value), shape);
+}
+
+/** Throws CodecDecodeError 'length' unless the raw text has exactly the field width. */
+export function checkLength(raw: string, shape: FieldShape): void {
+  if (raw.length !== shape.length) {
+    throw new CodecDecodeError(
+      'length',
+      Math.min(raw.length, shape.length),
+      `Expected ${shape.length} characters for ${shape.kind}, got ${raw.length}`,
+    );
+  }
+}
+
+/**
+ * Checks the raw text and returns its digits. Numeric fields must be all digits (all-space text
+ * included); alphanumeric fields may carry padding spaces (U+0020 only, not other whitespace) on
+ * ALPHANUMERIC_PAD_SIDE and decode to undefined when all spaces. With `decimalPoint`, one '.'
+ * between digits is accepted as well (percentLiteral, SPEC §4.2).
+ */
+export function readDigits(
+  raw: string,
+  shape: FieldShape,
+  { decimalPoint = false }: { decimalPoint?: boolean } = {},
+): string | undefined {
+  checkLength(raw, shape);
+  let start = 0;
+  let end = raw.length;
+  if (shape.type === 'alphanumeric') {
+    // Padding is the space character only; trim() would also strip tabs, NBSP and other whitespace.
+    if (ALPHANUMERIC_PAD_SIDE === 'left') {
+      while (start < end && raw[start] === ' ') {
+        start++;
+      }
+    } else {
+      while (end > start && raw[end - 1] === ' ') {
+        end--;
+      }
+    }
+    // Only alphanumeric fields may be blank; spaces in a numeric field are non-numeric.
+    if (start === end) {
+      return undefined;
+    }
+  }
+  let seenPoint = false;
+  for (let index = start; index < end; index++) {
+    const char = raw[index];
+    if (decimalPoint && char === '.' && !seenPoint && index > start && index < end - 1) {
+      seenPoint = true;
+      continue;
+    }
+    if (char === undefined || char < '0' || char > '9') {
+      throw new CodecDecodeError(
+        'numeric',
+        index,
+        `Non-digit character at offset ${index} of ${shape.kind} "${raw}"`,
+      );
+    }
+  }
+  return raw.slice(start, end);
+}
+
+/** num, year, count, serial, const, foreignCode, amount, amountX: non-negative integers. */
+const integerCodec: Codec = {
+  encode(value, shape) {
+    if (value === undefined) {
+      return blank(shape);
+    }
+    if (typeof value !== 'number') {
+      throw invalid(value, shape, 'a number');
+    }
+    return encodeInteger(value, shape);
+  },
+  decode(raw, shape) {
+    const digits = readDigits(raw, shape);
+    return digits === undefined ? undefined : Number(digits);
+  },
+};
+
+/** id9, shareholderId, digits: digit strings, decoded as the full-width string. */
+const digitStringCodec: Codec = {
+  encode(value, shape) {
+    if (value === undefined) {
+      return blank(shape);
+    }
+    if (typeof value !== 'string' || !DIGITS.test(value)) {
+      throw invalid(value, shape, 'a string of digits');
+    }
+    return pad(value, shape);
+  },
+  decode(raw, shape) {
+    return readDigits(raw, shape);
+  },
+};
+
+/**
+ * `value × 100` as an integer, or undefined when `value` is not finite or has more than 2
+ * decimals (SPEC §4.4). The tolerance grows with the magnitude: the product carries a rounding
+ * error of about one ulp, which exceeds a fixed 1e-6 for amounts above about 10^8. The single
+ * decimals check of the package: field.decimals and the ×100 encoders both use it.
+ */
+export function scaleBy100Exact(value: number): number | undefined {
+  const product = value * 100;
+  const scaled = Math.round(product);
+  const tolerance = Math.max(SCALE_EPSILON, 4 * Number.EPSILON * Math.abs(product));
+  return Number.isFinite(product) && Math.abs(product - scaled) <= tolerance ? scaled : undefined;
+}
+
+/**
+ * Returns `value × 100` as an integer; throws Opcn1214InternalError for a value that is not a
+ * finite number with at most 2 decimals (SPEC §4.4).
+ */
+export function scaleBy100(value: Primitive, shape: FieldShape): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw invalid(value, shape, 'a finite number');
+  }
+  const scaled = scaleBy100Exact(value);
+  if (scaled === undefined) {
+    throw invalid(value, shape, 'at most 2 decimals');
+  }
+  return scaled;
+}
+
+/**
+ * amountX100, rateX100 (and percentX100, SPEC §15 A-2): natural units with at most 2 decimals,
+ * written as value × 100.
+ */
+export const scaledCodec: Codec = {
+  encode(value, shape) {
+    if (value === undefined) {
+      return blank(shape);
+    }
+    return encodeInteger(scaleBy100(value, shape), shape);
+  },
+  decode(raw, shape) {
+    const digits = readDigits(raw, shape);
+    return digits === undefined ? undefined : Number(digits) / 100;
+  },
+};
+
+/** filler: always written as zeros or spaces; ignored on decode (D-4). */
+const fillerCodec: Codec = {
+  encode(value, shape) {
+    if (value !== undefined) {
+      throw invalid(value, shape, 'no value (filler)');
+    }
+    return blank(shape);
+  },
+  decode(raw, shape) {
+    checkLength(raw, shape);
+    return undefined;
+  },
+};
+
+export const NUMERIC_CODECS = {
+  num: integerCodec,
+  year: integerCodec,
+  count: integerCodec,
+  serial: integerCodec,
+  const: integerCodec,
+  foreignCode: integerCodec,
+  amount: integerCodec,
+  amountX: integerCodec,
+  id9: digitStringCodec,
+  shareholderId: digitStringCodec,
+  digits: digitStringCodec,
+  amountX100: scaledCodec,
+  rateX100: scaledCodec,
+  filler: fillerCodec,
+} as const satisfies Partial<Record<FieldKind | CodeKind, Codec>>;

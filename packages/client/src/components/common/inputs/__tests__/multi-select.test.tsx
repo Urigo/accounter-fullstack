@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MultiSelect } from '../multi-select.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -76,5 +76,59 @@ describe('MultiSelect search', () => {
     type('zzz');
     expect(itemTexts()).not.toContain('Delta ltd');
     expect(document.body.textContent).toContain('No results found.');
+  });
+});
+
+describe('MultiSelect onOpenChange', () => {
+  // The chevron sits inside both the trigger's own button and Radix's, so a click on it bubbles
+  // through both toggles, as a real click does.
+  function trigger(): SVGElement {
+    const chevron = container.querySelector<SVGElement>('button svg.lucide-chevron-down');
+    if (!chevron) {
+      throw new Error('no trigger rendered');
+    }
+    return chevron;
+  }
+
+  function item(text: string): HTMLElement {
+    const match = [...document.querySelectorAll<HTMLElement>('[cmdk-item]')].find(
+      element => element.textContent === text,
+    );
+    if (!match) {
+      throw new Error(`no "${text}" item rendered`);
+    }
+    return match;
+  }
+
+  it('reports each open and close once, and not the toggles in between', () => {
+    const onOpenChange = vi.fn<(open: boolean) => void>();
+    const onValueChange = vi.fn<(value: string[]) => void>();
+    act(() => {
+      root.render(
+        <MultiSelect options={OPTIONS} onValueChange={onValueChange} onOpenChange={onOpenChange} />,
+      );
+    });
+
+    act(() => {
+      trigger().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
+
+    act(() => item('Alpha ltd').click());
+    act(() => item('Charlie ltd').click());
+    expect(onValueChange).toHaveBeenLastCalledWith(['a', 'c']);
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
+
+    act(() => item('Close').click());
+    expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    expect(document.querySelector('[cmdk-item]')).toBeNull();
+
+    act(() => {
+      trigger().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    act(() => {
+      trigger().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(onOpenChange.mock.calls).toEqual([[true], [false], [true], [false]]);
   });
 });

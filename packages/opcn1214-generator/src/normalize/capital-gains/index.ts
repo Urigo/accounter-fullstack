@@ -1,0 +1,212 @@
+/**
+ * Normalizer of the capital-gains appendices, records 30xx (SPEC §3.3, §3.7, §7.4, §15 A-7): their
+ * order in the file, appendix numbers and the "מספר בתל"ם" sequence, shared by every appendix type.
+ */
+import { capitalGainsRecordType, type CapitalGainsRecordType } from '../../layout/capital-gains.js';
+import type { YearLayout } from '../../layout/types.js';
+import type { CapitalGainsAppendix } from '../../model/input.js';
+import type { NormalizedRecord } from '../../model/normalized.js';
+import type { ValidateOptions } from '../../model/options.js';
+import type { Issue } from '../../validate/issue.js';
+import { codeSection, headerValues } from '../fields.js';
+import {
+  assetHeader,
+  BETTERMENT_TAX_INPUT_KEYS,
+  FORCED_VIRTUAL_CURRENCY_INPUT_KEYS,
+  OIL_PARTNERSHIP_INPUT_KEYS,
+  SHARES_INPUT_KEYS,
+  walletAddressesHeader,
+} from './assets.js';
+import {
+  NO_WITHHOLDING_1322_INPUT_KEYS,
+  NO_WITHHOLDING_1326_INPUT_KEYS,
+  noWithholding1322Header,
+  noWithholding1326Header,
+} from './no-withholding.js';
+import {
+  improvementCodes,
+  improvementsHeader,
+  improvementsMaxNotice,
+  OTHER_TRANSACTIONS_INPUT_KEYS,
+} from './other.js';
+import { SECTION6_INPUT_KEYS, section6Header } from './section6.js';
+import { SECURITIES_INPUT_KEYS, securitiesHeader } from './securities.js';
+
+/** The transaction symbols the input model has an appendix type for. */
+export type CapitalGainsInputSymbol = CapitalGainsAppendix['symbol'];
+
+/**
+ * Header keys of each appendix type that are scalar members of the appendix (dotted for a member
+ * of a nested object: `dates.code15`), besides `symbol`, `amounts`, `withholders`,
+ * `walletAddresses` and `improvements` (the transaction symbol, appendix number, improvement count
+ * and sequence are derived).
+ */
+export const CAPITAL_GAINS_INPUT_KEYS: Readonly<
+  Record<CapitalGainsInputSymbol, readonly string[]>
+> = {
+  27: SHARES_INPUT_KEYS,
+  50: BETTERMENT_TAX_INPUT_KEYS,
+  51: FORCED_VIRTUAL_CURRENCY_INPUT_KEYS,
+  54: OIL_PARTNERSHIP_INPUT_KEYS,
+  60: SECURITIES_INPUT_KEYS,
+  63: SECTION6_INPUT_KEYS,
+  64: SECURITIES_INPUT_KEYS,
+  65: NO_WITHHOLDING_1322_INPUT_KEYS,
+  66: NO_WITHHOLDING_1326_INPUT_KEYS,
+  77: OTHER_TRANSACTIONS_INPUT_KEYS,
+};
+
+/** The symbols whose appendix has `withholders`, header keys `withholders[i].*` (SPEC §7.3). */
+const WITHHOLDING_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([60, 64, 65]);
+
+/** True when appendices of `symbol` have `withholders` (records 3060, 3064, 3065). */
+export function hasWithholders(symbol: CapitalGainsInputSymbol): boolean {
+  return WITHHOLDING_SYMBOLS.has(symbol);
+}
+
+/** The symbols whose appendix has `walletAddresses`, header keys `walletAddresses[i]` (SPEC §7.3). */
+const WALLET_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([51, 77]);
+
+/** True when appendices of `symbol` have `walletAddresses` (records 3051 and 3077). */
+export function hasWalletAddresses(symbol: CapitalGainsInputSymbol): boolean {
+  return WALLET_SYMBOLS.has(symbol);
+}
+
+/** Header keys of the derived transaction symbol (30xx@137) and appendix number (30xx@139). */
+const TRANSACTION_SYMBOL_KEY = 'transactionSymbol';
+const APPENDIX_NUMBER_KEY = 'appendixNumber';
+/** Header key of the derived "מספר בתל"ם" sequence, in the record types that have one (SPEC §7.4). */
+const SEQUENCE_NUMBER_KEY = 'sequenceNumber';
+
+/** Where an appendix goes in the file (SPEC §3.3, §7.4). */
+export interface CapitalGainsPlacement<T> {
+  appendix: T;
+  /** 0-based index of the appendix in the input list. */
+  inputIndex: number;
+  /** 30xx@139: 1-based among appendices of the same symbol, in emission order (SPEC §15 A-7). */
+  appendixNumber: number;
+  /** "מספר בתל"ם": 1-based among all capital-gains appendices, in emission order (SPEC §7.4). */
+  sequenceNumber: number;
+}
+
+/**
+ * The appendices in emission order: grouped by symbol (= record type) ascending, input order within
+ * a symbol (SPEC §3.3, §15 A-7), each with its input index, appendix number and sequence number.
+ */
+export function placeCapitalGains<T extends { symbol: number }>(
+  appendices: readonly T[],
+): Array<CapitalGainsPlacement<T>> {
+  const perSymbol = new Map<number, number>();
+  return appendices
+    .map((appendix, inputIndex) => ({ appendix, inputIndex }))
+    .sort((a, b) => a.appendix.symbol - b.appendix.symbol || a.inputIndex - b.inputIndex)
+    .map(({ appendix, inputIndex }, emissionIndex) => {
+      const appendixNumber = (perSymbol.get(appendix.symbol) ?? 0) + 1;
+      perSymbol.set(appendix.symbol, appendixNumber);
+      return { appendix, inputIndex, appendixNumber, sequenceNumber: emissionIndex + 1 };
+    });
+}
+
+/** The header input values of an appendix of any type, by FieldDef.key (derived ones aside). */
+function headerInput(appendix: CapitalGainsAppendix) {
+  switch (appendix.symbol) {
+    case 27:
+      return assetHeader(appendix, SHARES_INPUT_KEYS);
+    case 50:
+      return assetHeader(appendix, BETTERMENT_TAX_INPUT_KEYS);
+    case 51:
+      return {
+        ...assetHeader(appendix, FORCED_VIRTUAL_CURRENCY_INPUT_KEYS),
+        ...walletAddressesHeader(appendix.walletAddresses),
+      };
+    case 54:
+      return assetHeader(appendix, OIL_PARTNERSHIP_INPUT_KEYS);
+    case 60:
+    case 64:
+      return securitiesHeader(appendix);
+    case 63:
+      return section6Header(appendix);
+    case 65:
+      return noWithholding1322Header(appendix);
+    case 66:
+      return noWithholding1326Header(appendix);
+    case 77:
+      return {
+        ...assetHeader(appendix, OTHER_TRANSACTIONS_INPUT_KEYS),
+        ...improvementsHeader(appendix.improvements),
+        ...walletAddressesHeader(appendix.walletAddresses),
+      };
+  }
+}
+
+/** The derived codes of an appendix (SPEC §7.4): 3077 codes 501–505, none for the other types. */
+function derivedCodes(appendix: CapitalGainsAppendix): Record<string, number | undefined> {
+  return appendix.symbol === 77 ? improvementCodes(appendix.improvements) : {};
+}
+
+export interface NormalizedCapitalGains {
+  /** In emission order (SPEC §3.3). */
+  records: NormalizedRecord[];
+  /** Codes whose input value 0 was omitted (every 30xx code but 3054 016, SPEC §4.5). */
+  omittedZeroCodes: Array<{ record: CapitalGainsRecordType; recordIndex: number; code: string }>;
+  /** Raised while normalizing: improvements after the fifth (cg.improvements.max). */
+  notices: Issue[];
+}
+
+/**
+ * The 30xx records of `appendices` in emission order (placeCapitalGains): each indexed among the
+ * records of its type, with its input index, the derived symbol (30xx@137), appendix number
+ * (30xx@139) and, where the record type has the field, "מספר בתל"ם" sequence, its header values
+ * and its code-amount section (derived codes from their sources, amounts rounded per
+ * `options.rounding`, SPEC §4.4, then zero codes omitted unless zeroAllowed). Paths per pathFor
+ * (records 30xx).
+ */
+export function normalizeCapitalGains(
+  appendices: readonly CapitalGainsAppendix[],
+  layout: YearLayout,
+  options: ValidateOptions,
+): NormalizedCapitalGains {
+  const omittedZeroCodes: NormalizedCapitalGains['omittedZeroCodes'] = [];
+  const notices: Issue[] = [];
+  const records = placeCapitalGains(appendices).map(
+    ({ appendix, inputIndex, appendixNumber, sequenceNumber }): NormalizedRecord => {
+      const recordType = capitalGainsRecordType(appendix.symbol);
+      const def = layout.records[recordType];
+      const index = appendixNumber - 1;
+      const hasSequence = def.fields.some(field => field.key === SEQUENCE_NUMBER_KEY);
+      const { values, paths } = headerValues(
+        def,
+        inputIndex,
+        {
+          [TRANSACTION_SYMBOL_KEY]: appendix.symbol,
+          [APPENDIX_NUMBER_KEY]: appendixNumber,
+          ...(hasSequence ? { [SEQUENCE_NUMBER_KEY]: sequenceNumber } : {}),
+          ...headerInput(appendix),
+        },
+        options.rounding,
+      );
+      if (appendix.symbol === 77) {
+        notices.push(...improvementsMaxNotice(appendix.improvements, inputIndex, index));
+      }
+      // Derived codes come from their sources only, never from `amounts` (SPEC §7.4).
+      const amounts: Readonly<Partial<Record<string, number>>> = {
+        ...appendix.amounts,
+        ...derivedCodes(appendix),
+      };
+      const section = codeSection(def, inputIndex, amounts, options.rounding);
+      for (const code of section.omittedZeroCodes) {
+        omittedZeroCodes.push({ record: recordType, recordIndex: index, code });
+      }
+      return {
+        recordType,
+        index,
+        inputIndex,
+        values,
+        codes: section.codes,
+        countries: [],
+        paths: { ...paths, ...section.paths },
+      };
+    },
+  );
+  return { records, omittedZeroCodes, notices };
+}

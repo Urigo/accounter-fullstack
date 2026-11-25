@@ -6,6 +6,7 @@ import {
 import { getFragmentData } from '../../../../gql/index.js';
 import { formatTimelessDate } from '../../../../helpers/dates.js';
 import { formatStringifyAmount } from '../../../../helpers/numbers.js';
+import { ChargeNavigateButton } from '../../../common/index.js';
 import { TableCell, TableRow } from '../../../ui/table.js';
 
 type Props = {
@@ -17,7 +18,14 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
 
   return (
     <TableRow>
-      <TableCell>{record.description}</TableCell>
+      <TableCell>
+        {record.description}
+        {record.disposalDate && (
+          <span className="block text-xs text-muted-foreground">
+            Disposed {formatTimelessDate(record.disposalDate, 'dd/MM/yyyy')}
+          </span>
+        )}
+      </TableCell>
       <TableCell>{formatTimelessDate(record.purchaseDate, 'dd/MM/yyyy')}</TableCell>
       <TableCell>
         {record.activationDate
@@ -29,6 +37,16 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
       </TableCell>
       <TableCell>
         {summary.reportYearDelta ? formatStringifyAmount(summary.reportYearDelta, 0) : undefined}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearDisposedCost
+          ? `(${formatStringifyAmount(summary.reportYearDisposedCost, 0)})`
+          : undefined}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearRefundedCost
+          ? `(${formatStringifyAmount(summary.reportYearRefundedCost, 0)})`
+          : undefined}
       </TableCell>
       <TableCell>{formatStringifyAmount(summary.totalDepreciableCosts, 0)}</TableCell>
       <TableCell>{formatStringifyAmount(record.statutoryDepreciationRate, 0)}%</TableCell>
@@ -48,9 +66,22 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
           : '-'}
       </TableCell>
       <TableCell>
+        {summary.reportYearDisposedDepreciation
+          ? `(${formatStringifyAmount(summary.reportYearDisposedDepreciation, 0)})`
+          : '-'}
+      </TableCell>
+      <TableCell>
+        {summary.reportYearDepreciationCorrection
+          ? `(${formatStringifyAmount(summary.reportYearDepreciationCorrection, 0)})`
+          : '-'}
+      </TableCell>
+      <TableCell>
         {summary.totalDepreciation ? formatStringifyAmount(summary.totalDepreciation, 0) : '-'}
       </TableCell>
       <TableCell>{summary.netValue ? formatStringifyAmount(summary.netValue, 0) : '-'}</TableCell>
+      <TableCell className="print:hidden">
+        <ChargeNavigateButton chargeId={record.chargeId} />
+      </TableCell>
     </TableRow>
   );
 };

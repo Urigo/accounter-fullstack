@@ -5,21 +5,28 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { UserContext } from '../../providers/user-provider.js';
 import { ProtectedRoute, PublicOnlyGuard } from '../../router/guards/auth-guards.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, useViewerMock } = vi.hoisted(() => ({
-  useAuth0Mock: vi.fn(),
-  useViewerMock: vi.fn(),
-}));
+const { useAuth0Mock, useSessionViewerMock, useViewerMock, refreshUserContextMock } = vi.hoisted(
+  () => ({
+    useAuth0Mock: vi.fn(),
+    useSessionViewerMock: vi.fn(),
+    useViewerMock: vi.fn(),
+    refreshUserContextMock: vi.fn<() => Promise<void>>(),
+  }),
+);
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
 }));
 
-// ProtectedRoute composes OnboardingGuard, which queries `viewer` through urql.
-// Stubbing the hook keeps these cases about auth state alone.
+// ProtectedRoute composes OnboardingGuard, which reads `viewer` from the boot request
+// (`useSessionViewer`) and, when that answer is not active, once more from the server
+// (`useViewer`). Stubbing both hooks keeps these cases about the guards' decisions alone.
 vi.mock('../../hooks/use-viewer.js', () => ({
+  useSessionViewer: useSessionViewerMock,
   useViewer: useViewerMock,
 }));
 
@@ -42,13 +49,19 @@ type ViewerState = typeof ACTIVE_VIEWER | Record<string, unknown>;
   }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+/**
+ * `sessionState` is what the boot request said, and `freshState` what the server says when the
+ * guard reads `viewer` again. They are the same unless a case is about the two disagreeing.
+ */
 async function renderProtectedPath(
   pathname: string,
   authState: AuthState,
-  viewerState: ViewerState = ACTIVE_VIEWER,
+  sessionState: ViewerState = ACTIVE_VIEWER,
+  freshState: ViewerState = sessionState,
 ) {
   useAuth0Mock.mockReturnValue(authState);
-  useViewerMock.mockReturnValue(viewerState);
+  useSessionViewerMock.mockReturnValue(sessionState);
+  useViewerMock.mockReturnValue(freshState);
 
   const router = createMemoryRouter(
     [
@@ -75,10 +88,25 @@ async function renderProtectedPath(
   const container = document.createElement('div');
   document.body.append(container);
 
+  refreshUserContextMock.mockResolvedValue(undefined);
+
   let root: Root | null = null;
   await act(async () => {
     root = createRoot(container);
-    root.render(React.createElement(RouterProvider, { router }));
+    root.render(
+      // The provider's part the guard uses: a way to have the boot request read again.
+      React.createElement(
+        UserContext.Provider,
+        {
+          value: {
+            userContext: null,
+            setUserContext: () => {},
+            refreshUserContext: refreshUserContextMock,
+          },
+        },
+        React.createElement(RouterProvider, { router }),
+      ),
+    );
     await Promise.resolve();
   });
 
@@ -220,7 +248,7 @@ describe('OnboardingGuard', () => {
     await cleanup();
   });
 
-  it('holds the app shell back while the viewer query is in flight', async () => {
+  it('holds the app shell back while the boot request is in flight', async () => {
     const { html, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated, {
       fetching: true,
       error: undefined,
@@ -231,7 +259,7 @@ describe('OnboardingGuard', () => {
     await cleanup();
   });
 
-  it('renders the app on a viewer query error rather than trapping the user', async () => {
+  it('renders the app on a boot request error rather than trapping the user', async () => {
     const { html, router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated, {
       fetching: false,
       error: new Error('network down'),
@@ -241,6 +269,130 @@ describe('OnboardingGuard', () => {
     expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
     expect(html).toContain('Charges Page');
     await cleanup();
+  });
+
+  describe('reading the viewer again', () => {
+    const noWorkspace = {
+      fetching: false,
+      error: undefined,
+      viewer: { email: 'new@example.com', emailVerified: true, status: 'NO_WORKSPACE' },
+    };
+
+    it('sends no request of its own for an active session', async () => {
+      const { html, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated);
+
+      expect(html).toContain('Charges Page');
+      expect(useViewerMock).toHaveBeenCalledWith({ pause: true });
+      expect(useViewerMock).not.toHaveBeenCalledWith({ pause: false });
+      await cleanup();
+    });
+
+    it('sends none while the boot request is in flight, or after it failed', async () => {
+      for (const sessionState of [
+        { fetching: true, error: undefined, viewer: null },
+        { fetching: false, error: new Error('network down'), viewer: null },
+      ]) {
+        vi.clearAllMocks();
+        const { cleanup } = await renderProtectedPath(
+          ROUTES.CHARGES.ROOT,
+          authenticated,
+          sessionState,
+        );
+
+        expect(useViewerMock).toHaveBeenCalledWith({ pause: true });
+        expect(useViewerMock).not.toHaveBeenCalledWith({ pause: false });
+        await cleanup();
+      }
+    });
+
+    it('reads a session that is not active again before redirecting', async () => {
+      const { router, cleanup } = await renderProtectedPath(
+        ROUTES.CHARGES.ROOT,
+        authenticated,
+        noWorkspace,
+      );
+
+      expect(useViewerMock).toHaveBeenCalledWith({ pause: false });
+      expect(router.state.location.pathname).toBe(ROUTES.WELCOME);
+      await cleanup();
+    });
+
+    it('lets the user in when the fresh read says active, as after accepting an invitation', async () => {
+      // The boot request answered before the invitation was accepted, and is not sent again.
+      const { html, router, cleanup } = await renderProtectedPath(
+        ROUTES.CHARGES.ROOT,
+        authenticated,
+        noWorkspace,
+        ACTIVE_VIEWER,
+      );
+
+      expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
+      expect(html).toContain('Charges Page');
+      await cleanup();
+    });
+
+    it('has the boot request read again when the fresh read says active: its user context is as out of date', async () => {
+      const { cleanup } = await renderProtectedPath(
+        ROUTES.CHARGES.ROOT,
+        authenticated,
+        noWorkspace,
+        ACTIVE_VIEWER,
+      );
+
+      expect(refreshUserContextMock).toHaveBeenCalledTimes(1);
+      await cleanup();
+    });
+
+    it('leaves the boot request alone when the two reads agree, or the fresh one has no answer', async () => {
+      for (const freshState of [
+        noWorkspace,
+        { fetching: true, error: undefined, viewer: null },
+        { fetching: false, error: new Error('network down'), viewer: null },
+      ]) {
+        vi.clearAllMocks();
+        const { cleanup } = await renderProtectedPath(
+          ROUTES.CHARGES.ROOT,
+          authenticated,
+          noWorkspace,
+          freshState,
+        );
+
+        expect(refreshUserContextMock).not.toHaveBeenCalled();
+        await cleanup();
+      }
+
+      // An active session needs no second read, and so nothing can disagree with it.
+      vi.clearAllMocks();
+      const { cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated);
+      expect(refreshUserContextMock).not.toHaveBeenCalled();
+      await cleanup();
+    });
+
+    it('holds the app shell back, without redirecting, while the fresh read is in flight', async () => {
+      const { html, router, cleanup } = await renderProtectedPath(
+        ROUTES.CHARGES.ROOT,
+        authenticated,
+        noWorkspace,
+        { fetching: true, error: undefined, viewer: null },
+      );
+
+      expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
+      expect(html).not.toContain('Charges Page');
+      await cleanup();
+    });
+
+    it('renders the app when the fresh read fails rather than trapping the user', async () => {
+      const { html, router, cleanup } = await renderProtectedPath(
+        ROUTES.CHARGES.ROOT,
+        authenticated,
+        noWorkspace,
+        { fetching: false, error: new Error('network down'), viewer: null },
+      );
+
+      expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
+      expect(html).toContain('Charges Page');
+      await cleanup();
+    });
   });
 });
 

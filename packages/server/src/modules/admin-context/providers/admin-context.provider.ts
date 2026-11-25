@@ -138,9 +138,25 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $marketingDepreciationExpensesTaxCategoryId,
       marketing_depreciation_expenses_tax_category_id
     ),
+    depreciation_disposal_gain_tax_category_id = COALESCE(
+      $depreciationDisposalGainTaxCategoryId,
+      depreciation_disposal_gain_tax_category_id
+    ),
+    depreciation_disposal_loss_tax_category_id = COALESCE(
+      $depreciationDisposalLossTaxCategoryId,
+      depreciation_disposal_loss_tax_category_id
+    ),
+    depreciation_correction_tax_category_id = COALESCE(
+      $depreciationCorrectionTaxCategoryId,
+      depreciation_correction_tax_category_id
+    ),
     bank_deposit_interest_income_tax_category_id = COALESCE(
       $bankDepositInterestIncomeTaxCategoryId,
       bank_deposit_interest_income_tax_category_id
+    ),
+    bank_deposit_withholding_tax_category_id = COALESCE(
+      $bankDepositWithholdingTaxCategoryId,
+      bank_deposit_withholding_tax_category_id
     ),
     business_trip_tax_category_id = COALESCE(
       $businessTripTaxCategoryId,
@@ -395,11 +411,15 @@ export class AdminContextProvider {
         gnmDepreciationExpensesTaxCategoryId: rawContext.gnm_depreciation_expenses_tax_category_id,
         marketingDepreciationExpensesTaxCategoryId:
           rawContext.marketing_depreciation_expenses_tax_category_id,
+        disposalGainTaxCategoryId: rawContext.depreciation_disposal_gain_tax_category_id,
+        disposalLossTaxCategoryId: rawContext.depreciation_disposal_loss_tax_category_id,
+        correctionTaxCategoryId: rawContext.depreciation_correction_tax_category_id,
       },
       bankDeposits: {
         bankDepositBusinessId: rawContext.bank_deposit_business_id,
         bankDepositInterestIncomeTaxCategoryId:
           rawContext.bank_deposit_interest_income_tax_category_id,
+        bankDepositWithholdingTaxCategoryId: rawContext.bank_deposit_withholding_tax_category_id,
       },
       foreignSecurities: {
         foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,

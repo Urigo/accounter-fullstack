@@ -128,6 +128,8 @@ const config: CodegenConfig = {
           DepreciationCategory:
             '../modules/depreciation/types.js#IGetAllDepreciationCategoriesResult',
           DepreciationRecord: '../modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
+          DepreciationDisposal:
+            '../modules/depreciation/types.js#IGetDepreciationDisposalsByIdsResult',
           DividendCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '../shared/types#DocumentSuggestionsProto',
           DynamicReportComment: '../modules/reports/types.js#IGetCommentsByThreadIdsResult',

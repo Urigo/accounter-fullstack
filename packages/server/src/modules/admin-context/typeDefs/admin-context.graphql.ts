@@ -97,7 +97,11 @@ export default gql`
     rndDepreciationExpensesTaxCategoryId: UUID
     gnmDepreciationExpensesTaxCategoryId: UUID
     marketingDepreciationExpensesTaxCategoryId: UUID
+    depreciationDisposalGainTaxCategoryId: UUID
+    depreciationDisposalLossTaxCategoryId: UUID
+    depreciationCorrectionTaxCategoryId: UUID
     bankDepositInterestIncomeTaxCategoryId: UUID
+    bankDepositWithholdingTaxCategoryId: UUID
     businessTripTaxCategoryId: UUID
     businessTripTagId: UUID
     expensesToPayTaxCategoryId: UUID
@@ -173,7 +177,13 @@ export default gql`
     rndDepreciationExpensesTaxCategory: TaxCategory
     gnmDepreciationExpensesTaxCategory: TaxCategory
     marketingDepreciationExpensesTaxCategory: TaxCategory
+    depreciationDisposalGainTaxCategory: TaxCategory
+    depreciationDisposalLossTaxCategory: TaxCategory
+    " Ordinary income from cost refunds of depreciated assets (the depreciation they reverse) "
+    depreciationCorrectionTaxCategory: TaxCategory
     bankDepositInterestIncomeTaxCategory: TaxCategory
+    " Withholding tax receivable for tax the bank withholds on deposit interest "
+    bankDepositWithholdingTaxCategory: TaxCategory
     businessTripTaxCategory: TaxCategory
     businessTripTag: Tag
     expensesToPayTaxCategory: TaxCategory!

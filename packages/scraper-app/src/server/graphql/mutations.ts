@@ -12,6 +12,7 @@ import {
   UploadOtsarHahayalCreditCardTransactionsMutationVariables,
   UploadOtsarHahayalForeignTransactionsMutationVariables,
   UploadOtsarHahayalIlsTransactionsMutationVariables,
+  UploadPoalimDepositTaxEventsMutationVariables,
   UploadPoalimForeignTransactionsMutationVariables,
   UploadPoalimIlsTransactionsMutationVariables,
   UploadPoalimSecuritiesMutationVariables,
@@ -22,6 +23,7 @@ import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type { PoalimDepositsTaxEventsPayload } from '../payload-schemas/poalim-deposits-tax-events.schema.js';
 import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
 import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
 import type {
@@ -291,6 +293,31 @@ export const UPLOAD_POALIM_SECURITIES = /* GraphQL */ `
 export const UPLOAD_POALIM_SECURITIES_TRANSACTIONS = /* GraphQL */ `
   mutation UploadPoalimSecuritiesTransactions($transactions: [PoalimSecurityTransactionInput!]!) {
     uploadPoalimSecuritiesTransactions(transactions: $transactions) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_POALIM_DEPOSIT_TAX_EVENTS = /* GraphQL */ `
+  mutation UploadPoalimDepositTaxEvents($events: [PoalimDepositTaxEventInput!]!) {
+    uploadPoalimDepositTaxEvents(events: $events) {
       inserted
       skipped
       insertedIds
@@ -1199,4 +1226,39 @@ export function currencyRatesVars(payload: CurrencyRatesPayload) {
     sek: cols['sek'],
   }));
   return { rates };
+}
+
+/**
+ * Maps `savingsAndCurrentProductsTaxEvents[]` 1:1 onto upload rows. The rows carry
+ * no account, so the requested account is stamped on; `executingDate` (yyyymmdd)
+ * becomes an ISO date. Field names are the bank's own, `crditAmount` included.
+ */
+export function poalimDepositTaxEventsVars(
+  payload: PoalimDepositsTaxEventsPayload,
+  bankAccount: {
+    bankNumber: number;
+    branchNumber: number;
+    accountNumber: number;
+  },
+): UploadPoalimDepositTaxEventsMutationVariables {
+  const events = payload.savingsAndCurrentProductsTaxEvents.map(e => {
+    const d = String(e.executingDate);
+    return {
+      bankNumber: bankAccount.bankNumber,
+      branchNumber: bankAccount.branchNumber,
+      accountNumber: bankAccount.accountNumber,
+      eventSerialNumber: e.eventSerialNumber,
+      executingDate: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`,
+      formattedExecutingDate: e.formattedExecutingDate ?? null,
+      actionTypeDescription: e.actionTypeDescription,
+      shortProductName: e.shortProductName ?? null,
+      taxActionTypeDescription: e.taxActionTypeDescription ?? null,
+      taxEventAmount: e.taxEventAmount,
+      debitCurrencyShortedDescription: e.debitCurrencyShortedDescription ?? null,
+      debitAmount: e.debitAmount,
+      crditAmount: e.crditAmount,
+      additionalInformationExistenceSwitch: e.additionalInformationExistenceSwitch ?? null,
+    };
+  });
+  return { events } satisfies UploadPoalimDepositTaxEventsMutationVariables;
 }
