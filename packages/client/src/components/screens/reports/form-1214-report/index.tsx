@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useBlocker, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, type CombinedError } from 'urql';
 import {
   Form1214ReportScreenDocument,
@@ -91,6 +91,33 @@ export function Form1214Report(): ReactElement {
   }, [selectedYear, yearParam, location.search, location.hash, navigate]);
 
   const { setDirty, hasDirtySections } = useForm1214DirtySections();
+
+  // Leaving the page loses unsaved edits too. In-app navigation away (a link, back, forward) asks
+  // first; a `?year=` change on this page is the year select's own question below
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      currentLocation.pathname !== nextLocation.pathname && hasDirtySections(),
+  );
+  useEffect(() => {
+    if (blocker.state !== 'blocked') {
+      return;
+    }
+    if (window.confirm('You have unsaved changes in the 1214 report. Discard them and leave?')) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
+  // A reload or closing the tab gets the browser's own prompt
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (hasDirtySections()) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [hasDirtySections]);
 
   // A year picked by hand starts at the top of the page: the section anchor is dropped. Switching
   // unmounts the sections, so unsaved edits would be lost: ask first

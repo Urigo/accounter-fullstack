@@ -37,6 +37,8 @@ import {
 } from './shareholders.js';
 
 type Props = {
+  /** The business the report is of. Only its own businesses can be linked to a shareholder. */
+  ownerId: string;
   /** The saved shareholders of the year, in report order. */
   shareholders: ShareholderData[];
 };
@@ -55,14 +57,23 @@ const NUMERIC_COLUMNS: Array<{ field: NumericField; label: string; widthClass: s
 /**
  * The shareholders of the year (form 1214 records 1020), edited locally and saved as a whole list:
  * the list order is the report order. Format typos, repeated IDs and more than 99 rows are caught
- * here, before the round trip: Save then shows every error and focuses the first instead of sending; the generator reports the rest (the 100% dividend total among them)
- * in the validation panel.
+ * here, before the round trip: Save then shows every error and focuses the first instead of
+ * sending. The generator reports the rest (the 100% dividend total among them) in the validation
+ * panel.
  */
-export function ShareholdersEditor({ shareholders }: Props): ReactElement {
+export function ShareholdersEditor({ ownerId, shareholders }: Props): ReactElement {
   const { year, refresh, setDirty } = useForm1214Report();
   const { setShareholders, fetching: saving } = useSetShareholders();
   const { copyShareholdersFromYear, fetching: copying } = useCopyShareholdersFromYear();
-  const { selectableBusinesses, fetching: fetchingBusinesses } = useGetBusinesses();
+  const { businesses, fetching: fetchingBusinesses } = useGetBusinesses();
+  // The read scope may span several owners, but the server links only the owner's own businesses
+  const ownBusinesses = useMemo(
+    () =>
+      businesses
+        .filter(business => business.ownerId === ownerId)
+        .map(business => ({ value: business.id, label: business.name })),
+    [businesses, ownerId],
+  );
 
   const propRows = useMemo(() => shareholders.map(shareholderToRow), [shareholders]);
   // What the last save or copy stored, shown until the refreshed report catches up with it
@@ -263,7 +274,7 @@ export function ShareholdersEditor({ shareholders }: Props): ReactElement {
                   rowCount={rows.length}
                   errors={visibleErrors[index]}
                   disabled={busy}
-                  businesses={selectableBusinesses}
+                  businesses={ownBusinesses}
                   fetchingBusinesses={fetchingBusinesses}
                   onChange={patch => updateRow(index, patch)}
                   onBlur={field => touch(row.key, field)}

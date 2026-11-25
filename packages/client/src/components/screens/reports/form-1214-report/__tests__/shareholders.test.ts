@@ -180,7 +180,14 @@ describe('sameShareholderRows', () => {
     expect(sameShareholderRows(a, b)).toBe(true);
     expect(sameShareholderRows(a, [...b].reverse())).toBe(false);
     expect(sameShareholderRows(a, [b[0]])).toBe(false);
-    expect(sameShareholderRows(a, [b[0], { ...b[1], isMaterialShareholder: false }])).toBe(false);
+    expect(sameShareholderRows(a, [b[0], { ...b[1], isMaterialShareholder: true }])).toBe(false);
+  });
+
+  it('treats an unset material flag as false, as the generator writes both as 0', () => {
+    const unset = [row({ isMaterialShareholder: null })];
+    expect(sameShareholderRows(unset, [row({ isMaterialShareholder: false })])).toBe(true);
+    expect(sameShareholderRows([row({ isMaterialShareholder: false })], unset)).toBe(true);
+    expect(sameShareholderRows(unset, [row({ isMaterialShareholder: true })])).toBe(false);
   });
 });
 

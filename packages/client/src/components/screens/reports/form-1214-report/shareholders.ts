@@ -115,16 +115,26 @@ export function rowToShareholderInput(row: ShareholderRow): ShareholderInput {
   };
 }
 
-/** Whether two lists hold the same shareholders in the same order (local keys aside). */
+/**
+ * Whether two lists hold the same shareholders in the same order (local keys aside). An unset
+ * material flag equals `false`: the generator writes both as 0, so checking and unchecking the box
+ * changes nothing.
+ */
 export function sameShareholderRows(a: ShareholderRow[], b: ShareholderRow[]): boolean {
   if (a.length !== b.length) {
     return false;
   }
   return a.every((row, index) => {
     const other = b[index];
-    return (Object.keys(row) as Array<keyof ShareholderRow>).every(
-      field => field === 'key' || row[field] === other[field],
-    );
+    return (Object.keys(row) as Array<keyof ShareholderRow>).every(field => {
+      if (field === 'key') {
+        return true;
+      }
+      if (field === 'isMaterialShareholder') {
+        return (row[field] ?? false) === (other[field] ?? false);
+      }
+      return row[field] === other[field];
+    });
   });
 }
 
