@@ -9,7 +9,7 @@ import { runRules } from '../../src/validate/engine.js';
 import { fieldRules } from '../../src/validate/field-rules.js';
 import type { Issue } from '../../src/validate/issue.js';
 import type { RuleId } from '../../src/validate/rules.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
 const OPTIONS = { today: () => '2024-06-30' };
@@ -176,6 +176,93 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
       expect(issuesOf(shareholder(100.5), 'field.length').map(issue => issue.path)).toEqual([
         'shareholders[0].dividendRightsPercent',
       ]);
+    });
+  });
+
+  describe('field.checkDigit (SPEC §15 A-25, shopcn)', () => {
+    it('reports a company file number whose check digit is wrong', () => {
+      const input = minimalInput({ company: { fileNumber: '570000001' } });
+      expect(issuesOf(input, 'field.checkDigit')).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          path: 'company.fileNumber',
+          recordType: '1000',
+          recordIndex: 0,
+          value: '570000001',
+          field: { position: 137, length: 9, nameHe: 'מספר תיק' },
+          specRef: { page: 5 },
+        }),
+      ]);
+    });
+
+    it('checks every id9 and shareholderId field that has a value', () => {
+      const input = fullDeclarationsInput({
+        company: { withholdingFileNumber: '940000001', vatFileNumber: '123456789' },
+        preparer: { licensedDealerNumber: '012345678' },
+        declarations: { familyCompany: { representativeFileNumber: '300000001' } },
+        amounts: { '165': 1 },
+        relatedCompanies: [
+          {
+            companyName: 'חברה קשורה בע"מ',
+            companyFileNumber: '510000001',
+            relationType: 'parent',
+          },
+        ],
+        rdInvestments: [
+          { companyName: 'חברת מו"פ בע"מ', companyFileNumber: '520000002', investmentAmount: 1 },
+        ],
+        shareholders: [
+          {
+            idNumber: '100000000',
+            fullName: 'ישראל ישראלי',
+            isControllingShareholder: true,
+            dividendRightsPercent: 100,
+          },
+        ],
+      });
+      expect(issuesOf(input, 'field.checkDigit').map(issue => issue.path)).toEqual([
+        'company.withholdingFileNumber',
+        'company.vatFileNumber',
+        'preparer.licensedDealerNumber',
+        'declarations.familyCompany.representativeFileNumber',
+        'relatedCompanies[0].companyFileNumber',
+        'shareholders[0].idNumber',
+        'rdInvestments[0].companyFileNumber',
+      ]);
+    });
+
+    it('accepts valid identifiers, shorter values left-padded and the special shareholder IDs', () => {
+      const input = minimalInput({
+        company: { fileNumber: '18', withholdingFileNumber: '940000003' },
+        shareholders: [
+          {
+            idNumber: '999999964',
+            fullName: 'ישראל ישראלי',
+            isControllingShareholder: true,
+            dividendRightsPercent: 50,
+          },
+          {
+            idNumber: '999999998',
+            fullName: 'החזקת ציבור',
+            isControllingShareholder: false,
+            dividendRightsPercent: 50,
+          },
+        ],
+      });
+      expect(issuesOf(input, 'field.checkDigit')).toEqual([]);
+    });
+
+    it('does not report values that already fail field.numeric or field.length', () => {
+      const nonDigits = minimalInput({ company: { fileNumber: '12a' } });
+      expect(issuesOf(nonDigits, 'field.checkDigit')).toEqual([]);
+      const tooLong = minimalInput({ company: { fileNumber: '5140000091' } });
+      expect(issuesOf(tooLong, 'field.checkDigit')).toEqual([]);
+    });
+
+    it('does not check digit fields of kind digits (phone number)', () => {
+      // 1000@496 is kind digits; 1234567 (001234567 once padded) fails the check digit.
+      const input = minimalInput({ company: { phone: { prefix: '03', number: '1234567' } } });
+      expect(issuesOf(input, 'field.checkDigit')).toEqual([]);
     });
   });
 
