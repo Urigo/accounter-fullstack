@@ -9,4 +9,5 @@ about, with each rule ID and spec reference and a link to the section to fix; th
 company details, required declarations, related companies, R&D investments and record 1000 amounts
 the report is built from, read-only for now; and a button that downloads the file for SHAAM once
 the report has no errors. The annual audit's step 18 now opens this page for the audited year and
-is marked done by hand, and step 6's "Manage Shareholders" opens its shareholders section.
+is marked done by hand, and step 6's "Manage Shareholders" opens its shareholders section in a new tab. Step 6's dead
+"Import Data" action is removed.
