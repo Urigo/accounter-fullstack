@@ -65,7 +65,7 @@
     "@graphql-codegen/typescript-graphql-request": "8.0.2",
     "@graphql-codegen/typescript-operations": "7.0.2",
     "@graphql-codegen/typescript-resolvers": "7.0.1",
-    "@graphql-eslint/eslint-plugin": "4.4.2",
+    "@graphql-eslint/eslint-plugin": "5.0.0",
     "@graphql-hive/cli": "0.68.7",
     "@graphql-inspector/cli": "7.0.8",
     "@graphql-tools/mock": "10.1.4",
