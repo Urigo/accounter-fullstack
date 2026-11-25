@@ -61,7 +61,11 @@ type Props = {
 /** Related companies (records 1010): edited as a list and saved whole. */
 export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
   const { profile } = getFragmentData(Form1214RelatedCompaniesSectionFragmentDoc, data);
-  const draft = useBlockDraft(profile.relatedCompanies, relatedCompanyRowsFromProfile);
+  const draft = useBlockDraft(
+    'related-companies',
+    profile.relatedCompanies,
+    relatedCompanyRowsFromProfile,
+  );
   const { saving, save } = useSaveProfileBlock();
   const rows = draft.value;
   const rowErrors = useMemo(() => rows.map(validateRelatedCompanyRow), [rows]);
@@ -73,7 +77,6 @@ export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
   const onSave = async (): Promise<void> => {
     const input = relatedCompanyRowsToInput(rows);
     if (!input.ok) {
-      draft.attemptSave();
       return;
     }
     if (await save({ relatedCompanies: input.value }, 'related companies')) {
@@ -136,6 +139,12 @@ export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
                   <TableCell>
                     <Select
                       value={row.relationType || undefined}
+                      // The menu takes the focus while open: closing it counts as leaving the field
+                      onOpenChange={open => {
+                        if (!open) {
+                          draft.touch(`${row.rowId}.relationType`);
+                        }
+                      }}
                       onValueChange={value =>
                         updateRow(row.rowId, {
                           relationType: value as Report1214RelatedCompanyRelationType,
@@ -145,7 +154,6 @@ export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
                       <SelectTrigger
                         className="w-56"
                         aria-label={`Related company ${index + 1} relation`}
-                        // The menu takes the focus while open: only a save attempt shows the error
                         {...relation.inputProps}
                         onBlur={undefined}
                       >
@@ -202,7 +210,11 @@ export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        blocked={draft.saveAttempted && hasErrors}
+        hasErrors={hasErrors}
+        hasVisibleErrors={rows.some((row, index) =>
+          Object.keys(rowErrors[index] ?? {}).some(name => draft.showError(`${row.rowId}.${name}`)),
+        )}
+        errorHint="Fill in a name and a relation type for every company to save."
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       >

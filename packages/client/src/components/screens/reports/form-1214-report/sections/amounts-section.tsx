@@ -60,7 +60,7 @@ type Props = {
  */
 export function Form1214AmountsSection({ data }: Props): ReactElement {
   const { profile, amounts } = getFragmentData(Form1214AmountsSectionFragmentDoc, data);
-  const draft = useBlockDraft(profile.amountOverrides, amountOverrideDraftsFromProfile);
+  const draft = useBlockDraft('amounts', profile.amountOverrides, amountOverrideDraftsFromProfile);
   const { saving, save } = useSaveProfileBlock();
   const [newCode, setNewCode] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -96,7 +96,6 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
   const onSave = async (): Promise<void> => {
     const input = buildAmountOverridesInput(drafts);
     if (!input.ok) {
-      draft.attemptSave();
       return;
     }
     if (await save({ amountOverrides: input.value }, 'amount overrides')) {
@@ -197,7 +196,13 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        blocked={draft.saveAttempted && hasErrors}
+        hasErrors={hasErrors}
+        hasVisibleErrors={drafts.some(
+          override =>
+            overrideAmountError(override.amount) !== null &&
+            draft.showError(`override.${override.code}`),
+        )}
+        errorHint="Enter an amount for every override, or remove it, to save."
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       >

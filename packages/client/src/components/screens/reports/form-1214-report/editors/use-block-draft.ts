@@ -1,25 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm1214Report } from '../report-context.js';
 
 export type BlockDraft<T> = {
-  /** What the editor shows: the draft while editing, otherwise the server's value. */
+  /** What the editor shows: the draft while editing, otherwise the saved value. */
   value: T;
-  /** Whether the shown value differs from the saved one (an edit undone by hand is not dirty). */
+  /** Whether the shown value differs from the saved one. */
   dirty: boolean;
-  /** Replaces the draft (starting one from the shown value on the first edit). */
+  /** Edits the shown value. An edit that brings it back to the saved value drops the draft. */
   update: (next: (current: T) => T) => void;
-  /** Drops the draft, back to the server's value. */
+  /** Drops the draft and the visited fields, back to the saved value. */
   cancel: () => void;
   /** Keeps the saved draft on screen until the refreshed report arrives, then drops it. */
   markSaved: () => void;
   /** Marks a field as visited (on blur), so its error shows. */
   touch: (fieldKey: string) => void;
-  /** Whether a field's error should show: once it was visited, or a save was attempted. */
+  /** Whether a field's error should show: once the field was visited. */
   showError: (fieldKey: string) => boolean;
-  /** Records a save attempt, so every field's error shows. */
-  attemptSave: () => void;
-  /** Whether a save was attempted since the last edit session started. */
-  saveAttempted: boolean;
 };
 
 /** Compares drafts by content: row ids are client-side only. */
@@ -29,59 +25,69 @@ function sameContent(a: unknown, b: unknown): boolean {
 }
 
 /**
- * The draft of one profile block. `serverValue` is the block as the report query returned it; a
- * new reference means a refreshed report. The page stays mounted while it refreshes, so a draft
- * survives a refresh another editor triggered; it is dropped after its own save, once the
- * refreshed value arrives (so the saved rows do not flicker back meanwhile), and when the year
- * changes (a draft belongs to its year).
+ * The draft of one profile block, reported to the page as `section`'s dirty state. `serverValue`
+ * is the block as the report query returned it; a new reference means a refreshed report. The page
+ * stays mounted while it refreshes, so a draft survives a refresh another editor triggered; after
+ * its own save it stays on screen until the refreshed value arrives (so the saved rows do not
+ * flicker back meanwhile), then the refreshed value replaces it. A draft belongs to its year.
  */
-export function useBlockDraft<S, T>(serverValue: S, fromServer: (value: S) => T): BlockDraft<T> {
-  const { year } = useForm1214Report();
+export function useBlockDraft<S, T>(
+  section: string,
+  serverValue: S,
+  fromServer: (value: S) => T,
+): BlockDraft<T> {
+  const { year, setDirty } = useForm1214Report();
   // `fromServer` may assign fresh row ids, so it runs once per server value
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `fromServer` is a pure mapping
   const initial = useMemo(() => fromServer(serverValue), [serverValue]);
+  // What the last save sent, shown until the refreshed report replaces `serverValue`
+  const [saved, setSaved] = useState<{ value: T; from: S } | null>(null);
+  // Local edits; `null` while showing what is saved
   const [draft, setDraft] = useState<T | null>(null);
-  const [savedFrom, setSavedFrom] = useState<{ value: S } | null>(null);
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
-  const [saveAttempted, setSaveAttempted] = useState(false);
   const [draftYear, setDraftYear] = useState(year);
 
-  const reset = (): void => {
-    setDraft(null);
-    setSavedFrom(null);
-    setTouched(new Set());
-    setSaveAttempted(false);
-  };
-
-  // Adjusting state while rendering: the refreshed report replaces the saved draft, and another
-  // year drops the draft
+  // Adjusting state while rendering: the refreshed report replaces what the last save sent, and
+  // another year drops the draft
   if (draftYear !== year) {
     setDraftYear(year);
-    reset();
-  } else if (savedFrom && savedFrom.value !== serverValue) {
-    reset();
+    setDraft(null);
+    setSaved(null);
+    setTouched(new Set());
+  } else if (saved && saved.from !== serverValue) {
+    setSaved(null);
   }
 
+  const savedValue = saved?.value ?? initial;
+  const dirty = draft !== null && !sameContent(draft, savedValue);
+
+  useEffect(() => {
+    setDirty(section, dirty);
+  }, [section, dirty, setDirty]);
+  useEffect(() => () => setDirty(section, false), [section, setDirty]);
+
   return {
-    value: draft ?? initial,
-    dirty: draft !== null && !savedFrom && !sameContent(draft, initial),
-    update: next => {
-      setSavedFrom(null);
-      setDraft(current => next(current ?? initial));
-    },
-    cancel: reset,
-    markSaved: () => {
+    value: draft ?? savedValue,
+    dirty,
+    update: next =>
+      setDraft(current => {
+        const edited = next(current ?? savedValue);
+        return sameContent(edited, savedValue) ? null : edited;
+      }),
+    cancel: () => {
+      setDraft(null);
       setTouched(new Set());
-      setSaveAttempted(false);
-      setSavedFrom({ value: serverValue });
+    },
+    markSaved: () => {
+      if (draft !== null) {
+        setSaved({ value: draft, from: serverValue });
+      }
+      setDraft(null);
+      setTouched(new Set());
     },
     touch: fieldKey => {
-      if (!touched.has(fieldKey)) {
-        setTouched(new Set(touched).add(fieldKey));
-      }
+      setTouched(current => (current.has(fieldKey) ? current : new Set(current).add(fieldKey)));
     },
-    showError: fieldKey => saveAttempted || touched.has(fieldKey),
-    attemptSave: () => setSaveAttempted(true),
-    saveAttempted,
+    showError: fieldKey => touched.has(fieldKey),
   };
 }

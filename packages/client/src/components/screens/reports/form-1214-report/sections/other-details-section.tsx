@@ -96,7 +96,9 @@ function OtherDetailsBlockEditor({
   block: OtherDetailsBlock;
   stored: object | null | undefined;
 }): ReactElement {
-  const draft = useBlockDraft(stored, value => otherDetailsValuesFromBlock(block, value));
+  const draft = useBlockDraft(`other-details:${block.key}`, stored, value =>
+    otherDetailsValuesFromBlock(block, value),
+  );
   const { saving, save } = useSaveProfileBlock();
   const values = draft.value;
   const errors = useMemo(() => otherDetailsFieldErrors(block, values), [block, values]);
@@ -108,7 +110,6 @@ function OtherDetailsBlockEditor({
   const onSave = async (): Promise<void> => {
     const input = otherDetailsBlockToInput(block, values);
     if (!input.ok) {
-      draft.attemptSave();
       return;
     }
     const blockInput = { [block.key]: input.value } as Report1214ProfileInput;
@@ -136,7 +137,9 @@ function OtherDetailsBlockEditor({
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        blocked={draft.saveAttempted && hasErrors}
+        hasErrors={hasErrors}
+        hasVisibleErrors={Object.keys(errors).some(path => draft.showError(`${block.key}.${path}`))}
+        errorHint="Fix the fields of this block to save."
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       />

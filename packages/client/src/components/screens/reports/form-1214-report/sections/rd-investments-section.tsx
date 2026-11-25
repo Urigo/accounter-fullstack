@@ -52,7 +52,7 @@ const totalFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 /** Investments in R&D companies (records 1030): edited as a list and saved whole. */
 export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
   const { profile } = getFragmentData(Form1214RdInvestmentsSectionFragmentDoc, data);
-  const draft = useBlockDraft(profile.rdInvestments, rdInvestmentRowsFromProfile);
+  const draft = useBlockDraft('rd-investments', profile.rdInvestments, rdInvestmentRowsFromProfile);
   const { saving, save } = useSaveProfileBlock();
   const rows = draft.value;
   const rowErrors = useMemo(() => rows.map(validateRdInvestmentRow), [rows]);
@@ -64,7 +64,6 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
   const onSave = async (): Promise<void> => {
     const input = rdInvestmentRowsToInput(rows);
     if (!input.ok) {
-      draft.attemptSave();
       return;
     }
     if (await save({ rdInvestments: input.value }, 'R&D investments')) {
@@ -176,7 +175,11 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
-        blocked={draft.saveAttempted && hasErrors}
+        hasErrors={hasErrors}
+        hasVisibleErrors={rows.some((row, index) =>
+          Object.keys(rowErrors[index] ?? {}).some(name => draft.showError(`${row.rowId}.${name}`)),
+        )}
+        errorHint="Fill in a company name and an amount for every investment to save."
         onSave={() => void onSave()}
         onCancel={draft.cancel}
       >

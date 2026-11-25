@@ -5,27 +5,33 @@ import { Button } from '../../../../ui/button.js';
 type Props = {
   dirty: boolean;
   saving: boolean;
-  /** Shown after a save attempt that the field errors stopped. */
-  blocked: boolean;
+  /** Whether a field holds an error: Save stays disabled until it is fixed. */
+  hasErrors: boolean;
+  /** Whether an error is showing (its field was visited). */
+  hasVisibleErrors: boolean;
+  /** Why Save is disabled while no error shows yet, e.g. "Fill in a name for every row to save." */
+  errorHint: string;
   onSave: () => void;
   onCancel: () => void;
   /** Extra controls on the left, such as an "Add" button. */
   children?: ReactNode;
 };
 
-/** Save / Cancel of one profile block. */
+/** Save / Cancel of one profile block, and why Save is disabled. */
 export function EditorFooter({
   dirty,
   saving,
-  blocked,
+  hasErrors,
+  hasVisibleErrors,
+  errorHint,
   onSave,
   onCancel,
   children,
 }: Props): ReactElement {
   return (
     <div className="mt-4 space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">{children}</div>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-wrap items-start gap-2">{children}</div>
         <div className="flex items-center gap-2">
           {dirty && <Badge variant="outline">Unsaved changes</Badge>}
           <Button
@@ -37,16 +43,20 @@ export function EditorFooter({
           >
             Cancel
           </Button>
-          <Button type="button" size="sm" onClick={onSave} disabled={!dirty || saving}>
+          <Button type="button" size="sm" onClick={onSave} disabled={!dirty || hasErrors || saving}>
             {saving ? 'Saving...' : 'Save'}
           </Button>
         </div>
       </div>
-      {blocked && (
-        <p role="alert" className="text-right text-sm text-red-600 dark:text-red-400">
-          Fix the fields marked in red to save.
-        </p>
-      )}
+      {dirty &&
+        hasErrors &&
+        (hasVisibleErrors ? (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Fix the highlighted fields before saving.
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">{errorHint}</p>
+        ))}
     </div>
   );
 }
