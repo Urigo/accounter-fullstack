@@ -2,7 +2,7 @@
 
 - **Scope:** the Annual Audit workflow screen (`/workflows/annual-audit/:year`), the server code
   behind its 21 steps, and the report pages it links to.
-- **Basis:** `main` at `85507ae` (18 Nov 2026).
+- **Basis:** `main` at `03ad775` (25 Nov 2026).
 - **Method:** I reviewed the client and server code behind every step and checked every link against
   the router. I also reproduced key behaviours (the lock-date comparison, the 6111 validation). This
   was not a live run against real books.
@@ -27,12 +27,12 @@ It does not yet take a year to filing:
 - **9 of the 21 steps are placeholders.** They link to pages that don't exist and can't be marked
   done, so progress can never pass 12/21 (57%).
 - **Filing outputs.**
-  - The 1214, 1214ב and 973/901א outputs don't exist.
+  - The 1214 file generator exists as a package, but nothing in the app feeds it or exposes it.
+  - The 1214ב and 973/901א outputs don't exist.
   - The 6111 screen produces a valid upload file, but its content still needs manual work before
     filing.
-- **Four calculations or controls are wrong.** They either put wrong numbers into the statements or
+- **Three calculations or controls are wrong.** They either put wrong numbers into the statements or
   let them change after the close:
-  - the tax expense in a loss year;
   - the vacation reserve;
   - sort code 931 in the tax computation;
   - the ledger lock.
@@ -46,20 +46,20 @@ It does not yet take a year to filing:
 | 1     | Validate all charges                                 | Works: counts the year's charges by approval status and links to the open ones. A saved manual status stops the automatic check and always wins (B2)                                 |
 | 2     | Pending ledger changes                               | Works: regenerates every charge of the year and compares it to the stored ledger. Same manual-status behaviour                                                                       |
 | 3     | Opening balance                                      | Partial: a link plus manual approval (B5)                                                                                                                                            |
-| 4     | Financial charges                                    | Generates the six year-end charges, with calculation bugs (A1–A3) and order/duplication issues (B3)                                                                                  |
+| 4     | Financial charges                                    | Generates the six year-end charges, with calculation bugs (A2–A3) and order/duplication issues (B3)                                                                                  |
 | 5     | Audit main process                                   | For each report (Balance Sheet, P&L): last year's final template as the baseline, plus this year's working template. Links to the trial balance and tax report; manual approval (B4) |
 | 6     | Shareholders data                                    | Links to pages that don't exist; can't be completed                                                                                                                                  |
 | 7     | Revalidate pending items                             | Mirrors steps 1 and 2, including their manual statuses                                                                                                                               |
 | 8     | Lock ledger                                          | Works, but leaks and can't be undone (A4)                                                                                                                                            |
 | 9     | Final templates                                      | Locks this year's working templates as the final Balance Sheet and P&L; complete when both are locked. Freezes the layout, not the numbers (B4)                                      |
 | 10    | Export year-end trial balance                        | Exports the year's movements, not closing balances (A6)                                                                                                                              |
-| 11    | Depreciation report                                  | Works; no disposals; image PDF only (B6)                                                                                                                                             |
+| 11    | Depreciation report                                  | Works: per-asset cost, disposals, cost refunds, accumulated depreciation and NBV, plus disposal and refund tables; image PDF only (B6)                                               |
 | 12    | Financial reports                                    | Page doesn't exist                                                                                                                                                                   |
-| 13    | Tax report                                           | Works; disagrees with the ledger in a loss year (A1); no loss carry-forward; image PDF only                                                                                          |
+| 13    | Tax report                                           | Works; a loss year shows the taxable loss and tax 0, and flags mixed-rate losses; no loss carry-forward; image PDF only                                                              |
 | 14    | Tax-ruling compliance                                | Works; see B7                                                                                                                                                                        |
 | 15    | 973 / 901א                                           | Pages don't exist                                                                                                                                                                    |
 | 16    | 6111                                                 | Opens the year, validates and downloads the upload file; content gaps (A5); can't be marked done                                                                                     |
-| 17–21 | 1214ב, 1214, tax-expense comparison, signing, filing | Pages don't exist                                                                                                                                                                    |
+| 17–21 | 1214ב, 1214, tax-expense comparison, signing, filing | Pages don't exist (for 1214, the file generator is ready but not connected; see #5083)                                                                                               |
 | –     | Quick Actions (3 buttons)                            | No handlers                                                                                                                                                                          |
 
 Steps 6, 7, 12 and 15–21 are `SimpleStep`s, which never read a saved status
@@ -69,7 +69,14 @@ Steps 6, 7, 12 and 15–21 are `SimpleStep`s, which never read a saved status
 
 ### Filing package
 
-- **1214:** no generator. The `opcn1214-generator` package listed in `CLAUDE.md` doesn't exist.
+- **1214:** the file side is done, the app side isn't.
+  - `packages/opcn1214-generator` generates, validates and parses the SHAAM 1214 file for 2024
+    and 2025. It covers the main form, shareholders, related companies, R&D investments, the foreign
+    appendix and the capital-gains appendices, and its output has been checked against SHAAM's
+    structure checker.
+  - Nothing in the server or client uses it yet. There is no shareholder data model, no per-year
+    declarations or code mapping, no `report1214` query and no page, and steps 6 and 18 still link
+    to routes that don't exist. The design and PR plan are in #5083.
 - **1214ב (dividend distribution):** no report. The dividends module's GraphQL schema is an empty
   placeholder. This is needed if dividends were distributed in 2025.
 - **973 / 901א:** the Preferred Technology Enterprise attachments, required in each benefit year.
@@ -77,7 +84,10 @@ Steps 6, 7, 12 and 15–21 are `SimpleStep`s, which never read a saved status
 - **1344 (losses carried forward):** there is no loss carry-forward data or logic anywhere.
 - **1385 (international related-party transactions):** not covered. It is required if the company
   transacts with related parties abroad; 1485 and 1585 likewise.
-- **1342 (depreciation):** the depreciation report has the right shape but no disposals (B6).
+- **1342 (depreciation):** the depreciation report is the working paper: per asset it shows opening
+  cost, additions, disposals and cost refunds, accumulated depreciation, NBV, and a table of the
+  year's disposals with proceeds and gain or loss. The form itself isn't produced, and the report
+  exports only as an image PDF.
 
 ### Tax computation
 
@@ -92,7 +102,10 @@ Steps 6, 7, 12 and 15–21 are `SimpleStep`s, which never read a saved status
 
 Missing:
 
-- losses carried forward, and a floor at zero (see A1);
+- losses carried forward: a loss year books no current tax and the tax report shows the taxable
+  loss, but the loss isn't stored or offset against later years (form 1344, 6111 line 480);
+- a confirmed offset order when the preferred-rate income and the sort-991 income have opposite
+  signs: the tax report flags this case (`mixedRateLoss`) but still nets them at different rates;
 - deferred taxes;
 - partly deductible expenses: tax categories carry only an all-or-nothing `tax_excluded` flag, while
   refreshments, vehicles, phones and gifts are partly deductible;
@@ -123,7 +136,6 @@ Missing:
 - **Severance liability,** where employees aren't under section 14.
 - **Accruals and cut-off review:** charge spreading exists, but nothing prompts a review of
   post-year-end documents.
-- **Fixed-asset disposals.**
 
 ### Financial statements
 
@@ -151,13 +163,7 @@ Missing:
 
 ### A. Wrong numbers or broken controls: fix or work around before closing
 
-**A1. Tax expense in a loss year.**
-
-- The tax-expense charge books `Math.abs(annualTaxExpenseAmount)` as an expense
-  (`ledger/resolvers/ledger-generation/financial-ledger-generation/tax-expenses-ledger-generation.resolver.ts:129-133`).
-- A loss year therefore records a positive tax expense equal to the would-be tax benefit, while the
-  tax report shows a negative figure.
-- 6111 then validates with wrong tax-expense (5600) and equity (9980) lines.
+Item numbers match the sub-issues of epic #5085.
 
 **A2. Vacation reserve.**
 
@@ -182,10 +188,10 @@ Missing:
   recovery and vacation generators still post into 2025.
   - They compare `` `${year}-12-31` `` with `year` already a full date, i.e.
     `'2025-12-31-12-31' <= '2025-12-31'`, which is false
-    (`charges/resolvers/financial-charges.resolver.ts:168,197,229,261`).
+    (`charges/resolvers/financial-charges.resolver.ts:183,212,244,276`).
   - A newly created charge isn't caught by `isChargeLocked` either, since it has no dates yet.
 - **The lock can't be undone.** `lockLedgerRecords` sets `locked = TRUE` on every record up to the
-  date (`ledger/providers/ledger.provider.ts:256-263`), and nothing ever clears it.
+  date (`ledger/providers/ledger.provider.ts:256-264`), and nothing ever clears it.
   - Moving the admin lock date back doesn't help: locked records can't be updated or deleted.
   - So auditor adjustments to existing 2025 charges can't be posted.
 - **The lock comes too early.** It sits before the tax-expense comparison (19) and signing (20), so
@@ -209,8 +215,12 @@ Still needs work:
 - **Hard-coded header** (`reports/helpers/shaam6111.helper.ts:310-330`): industry 6201, business
   type "more than one business", audit opinion always "unqualified", software registration 99999999,
   and the description text.
-- **Adjustment lines never filled:** 120/130 (depreciation differences), 140, 160, 181, 182 (linkage
-  on tax debts, currently inside 190), 183 (donations) and 480 (losses carried forward).
+- **Adjustment lines never filled:**
+  - 120/130 (book and tax depreciation) and 170 (gain or loss on disposing of fixed assets). The
+    depreciation module now has the data for all three: yearly depreciation, disposals with their
+    gain or loss, and cost-refund corrections.
+  - 140, 160, 181, 182 (linkage on tax debts, currently inside 190), 183 (donations) and 480 (losses
+    carried forward).
 - **Line 510** (income at the preferred rate) is all non-991 taxable income. It depends entirely on
   sort-code-991 tagging (B7).
 - **Wrong-side balances** (overdraft, VAT refund due, tax advances) fail validation instead of being
@@ -222,7 +232,7 @@ Still needs work:
   while the books come from the selected one.
 - **Description alignment:** the business description is left-aligned
   (`packages/shaam6111-generator/src/generators/generate-header.ts:17`); the spec right-aligns it.
-- **A1 and A3** flow straight into the file.
+- **A3** flows straight into the file.
 
 **A6. Step 10's "year-end trial balance" is the year's movement.**
 
@@ -266,7 +276,7 @@ Still needs work:
     (`charges/typeDefs/financial-charges.graphql.ts:32`).
 - **The revaluation check can be fooled.** The required "Revaluation" line can be satisfied by the
   bank-deposits revaluation charge, since both carry the revaluation category
-  (`charges/resolvers/financial-charges.resolver.ts:64-92`).
+  (`charges/resolvers/financial-charges.resolver.ts:81-107`).
 - **"Optional" labels mislead.** Depreciation and the reserves are marked "optional" even when there
   are assets and employees.
 
@@ -298,14 +308,32 @@ Still needs work:
 
 **B6. Depreciation.**
 
-- No disposal date, so sold or scrapped assets keep depreciating.
-- One accumulated-depreciation account for all asset classes, with no per-class split for the notes
-  or 6111.
-- Fully depreciated assets drop off the report while still owned
-  (`depreciation/providers/depreciation.provider.ts:36-46`).
-- Asset amounts are used without currency conversion
-  (`reports/helpers/depreciation-report.helper.ts:167-173`). Check that every asset is recorded in
-  ILS.
+What the module covers:
+
+- **Disposals:** sales, write-offs and supplier cost refunds. A cost refund is treated as a cost
+  correction, not a sale.
+- **Ledger:** the yearly charge and the disposal charge book cost, accumulated depreciation, gain or
+  loss, and the depreciation correction.
+- **Report:** fully depreciated assets stay listed until they are disposed of, and assets in 0%
+  categories are left out.
+- **Foreign-currency assets:** converted at the Bank of Israel rate on the activation date, with an
+  optional per-record ILS override.
+
+What's still open:
+
+- **One accumulated-depreciation account** for all asset classes. The cost side can now be split per
+  asset (`asset_tax_category_id`), but accumulated depreciation can't, so the fixed-asset note and
+  6111 get a single accumulated line.
+- **Foreign-currency cost basis vs the booked purchase.** The cost basis uses the activation-date
+  rate, while the purchase charge books the asset account at its own document rate. When the two
+  dates differ, the difference isn't booked, and the ILS override is the manual fix (tracked in
+  #5196).
+- **Tax treatment of the new accounts.** Disposal gains, disposal losses and depreciation
+  corrections post to their own admin-context tax categories
+  (`depreciationDisposalGainTaxCategoryId`, `depreciationDisposalLossTaxCategoryId`,
+  `depreciationCorrectionTaxCategoryId`). The tax computation has no rule for them, so their sort
+  codes decide how they're taxed. For a Preferred Technology Enterprise they are not preferred
+  income (see B7).
 
 **B7. Step 14 (tax-ruling compliance).**
 
@@ -316,7 +344,8 @@ Still needs work:
 - **Rigid inputs:** income is every 8xx sort code, the thresholds are hard-coded, and a zero
   denominator gives an invalid result.
 - **The rate split hangs on 991.** The 12% / 23% split (and 6111 line 510) depends entirely on sort
-  code 991. Check that interest, FX gains and capital gains are coded 991.
+  code 991. Check that interest, FX gains, capital gains and fixed-asset disposal gains are
+  coded 991.
 
 ### Smaller issues
 
@@ -362,9 +391,10 @@ Still needs work:
    Then 100% becomes reachable and meaningful.
 
 4. **Compute the tax number once.**
-   - 6111 line 400 already uses the tax report's taxable income.
-   - The ledger charge should come from the same computation, including its sign.
-   - Step 19 should be an automatic comparison, not a link.
+   - The tax report, the tax-expense charge and 6111 line 400 already share one computation, and
+     current tax is never negative.
+   - Step 19 should therefore be an automatic comparison, not a link. Once #5083 is done, the 1214
+     amounts should come from the same computation.
 5. **One charge per year and type.** Year-end charges should be updated in place ("regenerate")
    rather than inserted again, and the screen should enforce their order.
 6. **Two kinds of lock.**
@@ -385,21 +415,30 @@ Still needs work:
 
 ## 4. What to do for FY2025 now
 
-- Generate the tax expense last, then rerun step 2 and refresh step 1.
-- If 2025 is a loss year, reverse the tax-expense charge.
+- Record the 2025 asset sales, write-offs and supplier cost refunds in the depreciation module
+  before generating the depreciation charge.
+  - Set the asset account on records bought on one charge.
+  - For foreign-currency assets, compare the converted cost with what the purchase booked, and use
+    the ILS override where they differ.
+- Generate the tax expense last, then rerun step 2 and refresh step 1. If the tax report flags a
+  mixed-rate loss, settle the offset with the accountant.
 - Check the vacation reserve against the December payslips, and check what's coded 931.
+- Check the sort codes of the disposal gain, disposal loss and depreciation-correction tax
+  categories.
 - If they're material, revalue open foreign-currency receivables and payables by hand.
 - Run _Validate Reports_ on the 2025 PCN874 reports.
 - Before locking the final templates (step 9), make sure the dynamic report's side panel holds no
   accounts with balances.
 - Don't lock the ledger (step 8) until the auditor's adjustments and the tax true-up are posted.
 - Prepare the 1214, 1214ב and 973/901א outside the app, from a trial balance that runs from
-  inception to 31/12/2025 (not from 1 January).
+  inception to 31/12/2025 (not from 1 January). The 1214 can move into the app once #5083 connects
+  the generator.
 - For 6111, use the app's file as the draft:
   1. Review the mapping in the IRS Codes report, and fix every entity the validation panel flags.
   2. Fix wrong-side balances and set the withholding file number.
   3. Correct the header and add the missing adjustment lines in the CPA's software or the Tax
-     Authority's online form. The app can't override them.
+     Authority's online form. The app can't override them. Lines 120/130 and 170 can be taken from
+     the depreciation report.
 
 ## Sources
 
