@@ -176,8 +176,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                       error={fieldState.error?.message}
                     />
                     <p className="text-muted-foreground mt-1 text-xs">
-                      Leave empty to convert at the Bank of Israel rate of the purchase invoice date
-                      (or of the first payment, or of the activation date)
+                      Leave empty to convert at the Bank of Israel rate of the activation date
                     </p>
                   </div>
                 )}

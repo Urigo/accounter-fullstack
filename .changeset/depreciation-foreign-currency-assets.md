@@ -5,8 +5,8 @@
 
 - **Foreign-currency depreciation records**: an asset paid for in a foreign currency (e.g. USD) is
   now depreciated, reported and disposed of at its cost in the local currency: the amount converted
-  at the Bank of Israel rate of the purchase charge's contract date (its earliest document date,
-  else its earliest misc expense, else its first payment date, else the activation date). A new
+  at the Bank of Israel rate of the record's activation date (cost basis at the activation date's
+  rate). A new
   optional `localAmount` on depreciation records overrides the converted cost; on update, `null`
   clears it and leaving it out keeps it.
 - `DepreciationRecord` exposes `localAmount`, `localAmountOverride`, `exchangeRate` and

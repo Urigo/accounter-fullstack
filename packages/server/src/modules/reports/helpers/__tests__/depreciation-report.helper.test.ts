@@ -13,7 +13,7 @@ import { calculateDepreciationAmount } from '../depreciation-report.helper.js';
 
 vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
-  // a purchase charge in a foreign currency is dated on the contract date
+  // the refund charge's documents (refunds from the refund date only)
   getChargeDocumentsMeta: vi.fn(async () => ({ documentsMinDate: '2023-08-20' })),
 }));
 
@@ -75,7 +75,7 @@ function makeInjector(
   eventsByRecordId: Record<string, IGetDepreciationDisposalsByIdsResult[]> = {},
 ) {
   const loadCategory = vi.fn(async (id: string) => ({ id, percentage: PERCENTAGES[id] }));
-  // ₪3.700 to the dollar on the contract date
+  // ₪3.700 to the dollar on the activation date
   const getExchangeRates = vi.fn(async (_base: string, _quote: string, _date: string) => 3.7);
   const providers = new Map<unknown, unknown>([
     [
@@ -232,7 +232,7 @@ describe('calculateDepreciationAmount', () => {
     });
 
     describe('recorded in USD, as paid (no local cost overrides)', () => {
-      // the same assets in USD, converted at the contract date's ₪3.700, and the refunds entered
+      // the same assets in USD, converted at the activation date's ₪3.700, and the refunds entered
       // in USD: converted at the assets' cost-basis rate, the same ₪59,200 / ₪74,000 / ₪222,000
       const usd = (id: string, amount: string) => {
         const asset = assets.find(a => a.id === id)!;

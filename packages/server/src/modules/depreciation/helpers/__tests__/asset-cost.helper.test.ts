@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Injector } from 'graphql-modules';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
-import {
-  getChargeDocumentsMeta,
-  getChargeTransactionsMeta,
-} from '../../../charges/helpers/common.helper.js';
+import { getChargeDocumentsMeta } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
-import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
 import {
   convertForeignRefund,
   convertForeignRefunds,
@@ -18,7 +14,6 @@ import {
 vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
   getChargeDocumentsMeta: vi.fn(),
-  getChargeTransactionsMeta: vi.fn(),
 }));
 
 /*
@@ -32,13 +27,11 @@ const RATES: Record<TimelessDateString, number> = {
   '2025-01-10': 3.6,
   '2025-01-20': 3.7,
   '2025-02-01': 3.8,
-  // the acquisition case: the contract date, the payment date and the refund date
+  // an acquisition: the activation date, the payment date and the refund date
   '2023-08-20': 3.7,
   '2023-08-27': 3.68,
   '2024-04-14': 3.65,
 };
-
-type MiscExpense = { invoice_date: TimelessDateString; value_date: Date };
 
 function record(overrides: Partial<AssetCostRecord> = {}): AssetCostRecord {
   return {
@@ -52,7 +45,7 @@ function record(overrides: Partial<AssetCostRecord> = {}): AssetCostRecord {
   };
 }
 
-function buildInjector({ miscExpenses = [] }: { miscExpenses?: MiscExpense[] } = {}) {
+function buildInjector() {
   const getExchangeRates = vi.fn(async (base: string, quote: string, date: TimelessDateString) => {
     const rate = RATES[date];
     if (base !== 'USD' || quote !== 'ILS' || rate === undefined) {
@@ -68,30 +61,19 @@ function buildInjector({ miscExpenses = [] }: { miscExpenses?: MiscExpense[] } =
       if (token === ExchangeProvider) {
         return { getExchangeRates };
       }
-      if (token === MiscExpensesProvider) {
-        return { getExpensesByChargeIdLoader: { load: async () => miscExpenses } };
-      }
       throw new Error('unexpected provider requested');
     },
   } as unknown as Injector;
   return { injector, getExchangeRates };
 }
 
-function mockChargeDates({
-  documentsMinDate = null,
-  transactionsMinDebitDate = null,
-}: {
-  documentsMinDate?: TimelessDateString | null;
-  transactionsMinDebitDate?: TimelessDateString | null;
-}) {
+function mockRefundChargeDocumentsDate(documentsMinDate: TimelessDateString | null) {
   vi.mocked(getChargeDocumentsMeta).mockResolvedValue({ documentsMinDate } as never);
-  vi.mocked(getChargeTransactionsMeta).mockResolvedValue({ transactionsMinDebitDate } as never);
 }
 
 describe('resolveAssetLocalCost', () => {
   beforeEach(() => {
     vi.mocked(getChargeDocumentsMeta).mockReset();
-    vi.mocked(getChargeTransactionsMeta).mockReset();
   });
 
   it('takes the local cost override as is', async () => {
@@ -115,55 +97,27 @@ describe('resolveAssetLocalCost', () => {
     expect(getExchangeRates).not.toHaveBeenCalled();
   });
 
-  it('converts a foreign-currency amount at the rate of the invoice date', async () => {
-    mockChargeDates({ documentsMinDate: '2025-01-10', transactionsMinDebitDate: '2025-01-20' });
-    const { injector } = buildInjector();
-
-    const result = await resolveAssetLocalCost(injector, record());
-
-    expect(result).toMatchObject({ rate: 3.6, rateDate: '2025-01-10', source: 'CONVERTED' });
-    expect(result.cost).toBeCloseTo(3600);
-    expect(getChargeDocumentsMeta).toHaveBeenCalledWith(CHARGE_ID, injector);
-  });
-
-  it('falls back to the first payment date when the charge has no documents', async () => {
-    mockChargeDates({ transactionsMinDebitDate: '2025-01-20' });
-    const { injector } = buildInjector();
-
-    const result = await resolveAssetLocalCost(injector, record());
-
-    expect(result).toMatchObject({ rate: 3.7, rateDate: '2025-01-20', source: 'CONVERTED' });
-    expect(result.cost).toBeCloseTo(3700);
-  });
-
-  it('takes the contract date of an acquisition entered as misc expenses, not its payment date', async () => {
-    // the purchase charge has no documents: its misc expenses are dated on the contract date
-    // (₪3.700), its payment a week later (₪3.680)
-    mockChargeDates({ transactionsMinDebitDate: '2023-08-27' });
-    const { injector } = buildInjector({
-      miscExpenses: [
-        { invoice_date: '2023-08-20', value_date: new Date(2023, 7, 20) },
-        { invoice_date: '2023-08-21', value_date: new Date(2023, 7, 21) },
-      ],
-    });
-
-    const result = await resolveAssetLocalCost(
-      injector,
-      record({ amount: '160000', activation_date: '2023-08-20' }),
-    );
-
-    expect(result).toMatchObject({ rate: 3.7, rateDate: '2023-08-20', source: 'CONVERTED' });
-    expect(result.cost).toBeCloseTo(592_000);
-  });
-
-  it('falls back to the activation date when the charge has neither documents nor payments', async () => {
-    mockChargeDates({});
-    const { injector } = buildInjector();
+  it('converts a foreign-currency amount at the rate of its activation date', async () => {
+    // the purchase charge's invoice (2025-01-10, ₪3.60), misc expenses and payment (2025-01-20,
+    // ₪3.70) are dated otherwise: only the activation date (2025-02-01, ₪3.80) counts
+    mockRefundChargeDocumentsDate('2025-01-10');
+    const { injector, getExchangeRates } = buildInjector();
 
     const result = await resolveAssetLocalCost(injector, record());
 
     expect(result).toMatchObject({ rate: 3.8, rateDate: '2025-02-01', source: 'CONVERTED' });
     expect(result.cost).toBeCloseTo(3800);
+    expect(getExchangeRates).toHaveBeenCalledWith('USD', 'ILS', '2025-02-01');
+    expect(getChargeDocumentsMeta).not.toHaveBeenCalled();
+  });
+
+  it('takes a local cost override over the activation-date conversion', async () => {
+    const { injector, getExchangeRates } = buildInjector();
+
+    await expect(
+      resolveAssetLocalCost(injector, record({ amount: '1000', local_amount: '3650' })),
+    ).resolves.toEqual({ cost: 3650, rate: null, rateDate: null, source: 'OVERRIDE' });
+    expect(getExchangeRates).not.toHaveBeenCalled();
   });
 
   it('has no cost when the record has no amount', async () => {
@@ -178,18 +132,16 @@ describe('resolveAssetLocalCost', () => {
     expect(getExchangeRates).not.toHaveBeenCalled();
   });
 
-  it('asks for an override when there is no rate for the date', async () => {
-    mockChargeDates({ documentsMinDate: '2025-03-01' });
+  it('asks for an override when there is no rate on the activation date', async () => {
     const { injector } = buildInjector();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    await expect(resolveAssetLocalCost(injector, record())).rejects.toThrow(
-      'set its local cost instead',
-    );
+    await expect(
+      resolveAssetLocalCost(injector, record({ activation_date: '2025-03-01' })),
+    ).rejects.toThrow('set its local cost instead');
   });
 
   it('looks a record up once per operation', async () => {
-    mockChargeDates({ documentsMinDate: '2025-01-10' });
     const { injector, getExchangeRates } = buildInjector();
     const asset = record();
 
@@ -205,24 +157,17 @@ describe('resolveAssetLocalCost', () => {
 describe('convertForeignRefund', () => {
   beforeEach(() => {
     vi.mocked(getChargeDocumentsMeta).mockReset();
-    vi.mocked(getChargeTransactionsMeta).mockReset();
   });
 
-  // the acquired assets, paid in USD and entered as misc expenses dated 2023-08-20 (₪3.700)
-  const ACQUISITION = { documentsMinDate: null, transactionsMinDebitDate: '2023-08-27' } as const;
+  // the acquired assets, paid in USD and activated on 2023-08-20 (₪3.700)
   const assets = {
     goodwill: record({ id: 'goodwill', amount: '60000', activation_date: '2023-08-20' }),
     software: record({ id: 'software', amount: '160000', activation_date: '2023-08-20' }),
     customers: record({ id: 'customers', amount: '200000', activation_date: '2023-08-20' }),
     trademarks: record({ id: 'trademarks', amount: '40000', activation_date: '2023-08-20' }),
   };
-  const acquisitionExpenses: MiscExpense[] = [
-    { invoice_date: '2023-08-20', value_date: new Date(2023, 7, 20) },
-  ];
-
   it("converts refunds of the original price at the asset's cost-basis rate", async () => {
-    mockChargeDates(ACQUISITION);
-    const { injector } = buildInjector({ miscExpenses: acquisitionExpenses });
+    const { injector } = buildInjector();
     const refund = (originalAmount: number) => ({
       originalAmount,
       refundMode: 'FROM_ACTIVATION' as const,
@@ -280,7 +225,7 @@ describe('convertForeignRefund', () => {
   });
 
   it("converts a later rebate at the refund charge's rate", async () => {
-    mockChargeDates({ documentsMinDate: '2024-04-14' });
+    mockRefundChargeDocumentsDate('2024-04-14');
     const { injector } = buildInjector();
 
     const result = await convertForeignRefund(injector, assets.software, {

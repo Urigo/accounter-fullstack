@@ -24,7 +24,7 @@ import {
 vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
   getChargeTaxCategoryId: vi.fn(),
-  // the acquisition is dated on the contract date
+  // the refund charge's documents (refunds from the refund date only)
   getChargeDocumentsMeta: vi.fn(async () => ({ documentsMinDate: '2023-08-20' })),
 }));
 
@@ -108,7 +108,7 @@ function makeInjector(
         }),
       },
     ],
-    // ₪3.700 to the dollar on the contract date
+    // ₪3.700 to the dollar on the activation date
     [ExchangeProvider, { getExchangeRates: async () => 3.7 }],
     [
       DepreciationProvider,
@@ -257,5 +257,80 @@ describe('getAssetAccountId', () => {
     await expect(
       getAssetAccountId({ asset_tax_category_id: null, charge_id: ACQUISITION_CHARGE_ID }, injector),
     ).resolves.toBe('tax-category-charge');
+  });
+});
+
+describe('the currency of disposal rows', () => {
+  beforeEach(() => {
+    vi.mocked(getChargeTaxCategoryId).mockReset();
+  });
+
+  it("books a refund entered in the asset's currency in that currency, at its rate", async () => {
+    // USD 16,000 of the USD 160,000 software, from activation at its ₪3.700: ₪59,200, and the 2023
+    // depreciation it reverses, ₪7,172 (USD 1,938.38)
+    const software = asset('software', '160000', 'category-software', 'tax-category-software');
+    const refund = usdRefund('software', '16000');
+
+    const { entries, errors } = await generateDepreciationDisposalsLedger(
+      [refund],
+      { id: REFUND_CHARGE_ID, owner_id: OWNER_ID },
+      makeInjector([software], [refund]),
+      CLEARING,
+    );
+
+    expect(errors).toEqual([]);
+    expect(entries).toHaveLength(2);
+    const [costReduction, correction] = entries;
+    expect(costReduction).toMatchObject({
+      debitAccountID1: CLEARING,
+      creditAccountID1: 'tax-category-software',
+      currency: Currency.Usd,
+      // the refunded amount itself, so the row ties to the refund
+      debitAmount1: 16_000,
+      creditAmount1: 16_000,
+      localCurrencyDebitAmount1: 59_200,
+      localCurrencyCreditAmount1: 59_200,
+    });
+    expect(costReduction.currencyRate).toBeCloseTo(3.7);
+    expect(correction).toMatchObject({
+      debitAccountID1: AD,
+      creditAccountID1: CORRECTION,
+      currency: Currency.Usd,
+      debitAmount1: 1938.38,
+      creditAmount1: 1938.38,
+      localCurrencyDebitAmount1: 7172,
+      localCurrencyCreditAmount1: 7172,
+    });
+    expect(correction.currencyRate).toBeCloseTo(3.7);
+  });
+
+  it('keeps the rows of a refund of a local-currency asset in the local currency', async () => {
+    const laptops = {
+      ...asset('laptops', '592000', 'category-software', 'tax-category-laptops'),
+      currency: 'ILS' as const,
+    };
+    const refund: IGetDepreciationDisposalsByIdsResult = {
+      ...usdRefund('laptops', '0'),
+      disposed_cost: '59200',
+      original_amount: null,
+      original_currency: null,
+    };
+
+    const { entries, errors } = await generateDepreciationDisposalsLedger(
+      [refund],
+      { id: REFUND_CHARGE_ID, owner_id: OWNER_ID },
+      makeInjector([laptops], [refund]),
+      CLEARING,
+    );
+
+    expect(errors).toEqual([]);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const entry of entries) {
+      expect(entry.currency).toBe(Currency.Ils);
+      expect(entry.currencyRate).toBe(1);
+      expect(entry.debitAmount1).toBeUndefined();
+      expect(entry.creditAmount1).toBeUndefined();
+    }
+    expect(costReductions(entries)).toEqual([[CLEARING, 'tax-category-laptops', 59_200]]);
   });
 });

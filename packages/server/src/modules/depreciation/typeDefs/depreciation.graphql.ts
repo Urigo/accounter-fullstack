@@ -22,7 +22,7 @@ export default gql`
     charge: Charge!
     " the asset's cost, in the currency it was paid in "
     amount: FinancialAmount!
-    " the asset's cost basis in the local currency: the override when set, else the amount converted at the purchase date's rate. Null when the record has no amount "
+    " the asset's cost basis in the local currency: the override when set, else the amount converted at the activation date's rate. Null when the record has no amount "
     localAmount: FinancialAmount
     " the local cost basis override, if set "
     localAmountOverride: Float

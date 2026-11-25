@@ -1,15 +1,11 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, roundToAgorot } from '../../../shared/helpers/index.js';
+import { roundToAgorot } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import {
-  getChargeDocumentsMeta,
-  getChargeTransactionsMeta,
-} from '../../charges/helpers/common.helper.js';
+import { getChargeDocumentsMeta } from '../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
-import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import type { IGetDepreciationRecordsByIdsResult } from '../types.js';
 import type { CostRefundMode } from './asset-depreciation.helper.js';
 
@@ -18,7 +14,7 @@ export type AssetLocalCostSource =
   | 'OVERRIDE'
   /** the amount is already in the local currency */
   | 'LOCAL'
-  /** the amount is in a foreign currency, converted at the purchase date's rate */
+  /** the amount is in a foreign currency, converted at the activation date's rate */
   | 'CONVERTED'
   /** the record has no amount */
   | 'MISSING';
@@ -39,51 +35,13 @@ export type AssetCostRecord = Pick<
 >;
 
 /**
- * The earliest date of a charge's misc expenses: their earliest invoice date, else their earliest
- * value date; null when the charge has none
+ * The date a foreign-currency asset is converted at: its activation date, the date it was put in
+ * use and starts to depreciate
  */
-export async function getChargeMiscExpensesMinDate(
-  injector: Injector,
-  chargeId: string,
-): Promise<TimelessDateString | null> {
-  const expenses = await injector
-    .get(MiscExpensesProvider)
-    .getExpensesByChargeIdLoader.load(chargeId);
-  let minInvoiceDate: TimelessDateString | null = null;
-  let minValueDate: TimelessDateString | null = null;
-  for (const expense of expenses) {
-    if (expense.invoice_date && (!minInvoiceDate || expense.invoice_date < minInvoiceDate)) {
-      minInvoiceDate = expense.invoice_date;
-    }
-    if (expense.value_date) {
-      const valueDate = dateToTimelessDateString(expense.value_date);
-      if (!minValueDate || valueDate < minValueDate) {
-        minValueDate = valueDate;
-      }
-    }
-  }
-  return minInvoiceDate ?? minValueDate;
-}
-
-/**
- * The date a foreign-currency asset is converted at (the contract date): the purchase charge's
- * (earliest) document date, falling back to its misc expenses (an acquisition entered without
- * documents), then to its first payment date, then to the asset's activation date
- */
-export async function getAssetRateDate(
-  injector: Injector,
-  record: Pick<AssetCostRecord, 'charge_id' | 'activation_date'>,
-): Promise<TimelessDateString> {
-  const { documentsMinDate } = await getChargeDocumentsMeta(record.charge_id, injector);
-  if (documentsMinDate) {
-    return documentsMinDate;
-  }
-  const miscExpensesMinDate = await getChargeMiscExpensesMinDate(injector, record.charge_id);
-  if (miscExpensesMinDate) {
-    return miscExpensesMinDate;
-  }
-  const { transactionsMinDebitDate } = await getChargeTransactionsMeta(record.charge_id, injector);
-  return transactionsMinDebitDate ?? record.activation_date;
+export function getAssetRateDate(
+  record: Pick<AssetCostRecord, 'activation_date'>,
+): TimelessDateString {
+  return record.activation_date;
 }
 
 async function computeAssetLocalCost(
@@ -107,7 +65,7 @@ async function computeAssetLocalCost(
     return { cost: amount, rate: null, rateDate: null, source: 'LOCAL' };
   }
 
-  const rateDate = await getAssetRateDate(injector, record);
+  const rateDate = getAssetRateDate(record);
   let rate: number;
   try {
     rate = await injector
@@ -127,8 +85,8 @@ const cache = new WeakMap<Injector, WeakMap<AssetCostRecord, Promise<AssetLocalC
 
 /**
  * An asset's cost basis in the local currency. The local cost override wins; a local-currency
- * amount is taken as is; a foreign-currency amount is converted at the Bank of Israel rate of the
- * purchase date (see `getAssetRateDate`), the IAS 21 historical rate.
+ * amount is taken as is; a foreign-currency amount is converted at the Bank of Israel rate of its
+ * activation date (see `getAssetRateDate`), the historical rate it is carried at.
  */
 export function resolveAssetLocalCost(
   injector: Injector,
@@ -183,7 +141,7 @@ function byRefundDateThenId(a: ForeignRefund, b: ForeignRefund): number {
 /**
  * Converts an asset's cost refunds entered in its currency to the local currency, by id:
  * - `FROM_ACTIVATION` corrects the original price, so it converts at the asset's cost-basis rate
- *   (local cost ÷ amount): the purchase date's rate, or the rate implied by a local cost override.
+ *   (local cost ÷ amount): the activation date's rate, or the rate implied by a local cost override.
  *   These refunds are allocated cumulatively in whole shekels, in date then id order: each takes
  *   round(refunded so far × cost ÷ amount) less what the earlier ones took. Refunds of the whole
  *   amount, however split, then add up to exactly the asset's (whole-shekel) cost.
