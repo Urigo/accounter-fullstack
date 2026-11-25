@@ -2,6 +2,11 @@ import { GraphQLError } from 'graphql';
 import type { FinancialAmount, FinancialIntAmount } from '../../__generated__/types.js';
 import { Currency } from '../enums.js';
 
+/** Rounds a local-currency amount to agorot (2 decimal places) */
+export function roundToAgorot(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
 export const addCommasToStringifiedInt = (rawAmount: string | number): string => {
   // add commas
   const formattedAmount = rawAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');

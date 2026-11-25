@@ -515,6 +515,122 @@ describe('Fixture Validation', () => {
     });
   });
 
+  describe('misc expenses, exchange rates and depreciation', () => {
+    const ownerId = makeUUID('business', 'depreciation-owner');
+    const chargeId = makeUUID('charge', 'asset-purchase');
+    const categoryId = makeUUID('depreciation-category', 'computers');
+    const recordId = makeUUID('depreciation', 'laptop');
+    const assetAccountId = makeUUID('tax-category', 'computers');
+
+    const base = (): Fixture => ({
+      businesses: { businesses: [createBusiness({ id: ownerId, name: 'Owner' })] },
+      taxCategories: {
+        taxCategories: [createTaxCategory({ id: assetAccountId, name: 'Computers' })],
+      },
+      charges: {
+        charges: [createCharge({ owner_id: ownerId }, { id: chargeId, tax_category_id: null })],
+      },
+      exchangeRates: { rates: [{ date: '2024-01-01', usd: 3.6 }] },
+      depreciationCategories: {
+        categories: [{ id: categoryId, name: 'Computers', percentage: 33 }],
+      },
+      miscExpenses: {
+        expenses: [
+          {
+            id: makeUUID('misc-expense', 'laptop'),
+            chargeId,
+            ownerId,
+            amount: '1000',
+            currency: 'USD',
+            creditorId: ownerId,
+            debtorId: assetAccountId,
+            invoiceDate: '2024-01-01',
+            valueDate: '2024-01-01 00:00:00',
+          },
+        ],
+      },
+      depreciationRecords: {
+        records: [
+          {
+            id: recordId,
+            chargeId,
+            ownerId,
+            categoryId,
+            amount: '1000',
+            currency: 'USD',
+            activationDate: '2024-01-01',
+            assetTaxCategoryId: assetAccountId,
+          },
+        ],
+      },
+      depreciationDisposals: {
+        disposals: [
+          {
+            id: makeUUID('depreciation-disposal', 'laptop-refund'),
+            ownerId,
+            depreciationId: recordId,
+            chargeId,
+            type: 'COST_REFUND',
+            refundMode: 'FROM_ACTIVATION',
+            disposalDate: '2024-06-01',
+            originalAmount: '100',
+            originalCurrency: 'USD',
+          },
+        ],
+      },
+    });
+
+    it('accepts well-formed sections', () => {
+      expect(validateFixture(base())).toEqual({ ok: true });
+    });
+
+    it('accepts disposals of assets inserted by an earlier fixture', () => {
+      const { depreciationDisposals } = base();
+      expect(validateFixture({ depreciationDisposals })).toEqual({ ok: true });
+    });
+
+    it('checks references to sections the fixture defines', () => {
+      const fixture = base();
+      fixture.depreciationRecords!.records[0].categoryId = makeUUID('depreciation-category', 'x');
+      fixture.depreciationRecords!.records[0].assetTaxCategoryId = makeUUID('tax-category', 'x');
+      fixture.depreciationDisposals!.disposals[0].depreciationId = makeUUID('depreciation', 'x');
+      fixture.miscExpenses!.expenses[0].chargeId = makeUUID('charge', 'x');
+
+      const result = validateFixture(fixture);
+      expect(result.ok).toBe(false);
+      expect(!result.ok && result.errors).toEqual([
+        `Misc expense ${makeUUID('misc-expense', 'laptop')} references non-existent charge: ${makeUUID('charge', 'x')}`,
+        `Depreciation record ${recordId} references non-existent depreciation category: ${makeUUID('depreciation-category', 'x')}`,
+        `Depreciation record ${recordId} references non-existent tax category: ${makeUUID('tax-category', 'x')}`,
+        `Depreciation disposal ${makeUUID('depreciation-disposal', 'laptop-refund')} references non-existent depreciation record: ${makeUUID('depreciation', 'x')}`,
+      ]);
+    });
+
+    it('rejects malformed disposals, categories and rates', () => {
+      const fixture = base();
+      const disposalId = makeUUID('depreciation-disposal', 'laptop-refund');
+      fixture.depreciationDisposals!.disposals[0] = {
+        ...fixture.depreciationDisposals!.disposals[0],
+        type: 'SALE',
+        disposedCost: '100',
+        originalCurrency: null,
+      };
+      fixture.depreciationCategories!.categories[0].percentage = 120;
+      fixture.exchangeRates!.rates.push({ date: '2024-01-01', usd: 0 });
+
+      const result = validateFixture(fixture);
+      expect(!result.ok && result.errors).toEqual([
+        'Duplicate exchange rate date: 2024-01-01',
+        'Exchange rate 2024-01-01 has a rate that is not positive',
+        `Depreciation category ${categoryId} percentage must be between 0 and 100`,
+        `Depreciation disposal ${disposalId} has a refund mode but is not a cost refund`,
+        `Depreciation disposal ${disposalId} must give originalAmount and originalCurrency together`,
+        `Depreciation disposal ${disposalId} has an amount in the asset's currency but is not a cost refund`,
+        `Depreciation disposal ${disposalId} must give either disposedCost or originalAmount`,
+      ]);
+    });
+  });
+
   describe('assertValidFixture', () => {
     it('should not throw for valid fixture', () => {
       const ownerId = makeUUID('business', 'admin');

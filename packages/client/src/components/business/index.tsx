@@ -21,6 +21,7 @@ import { FiltersContext } from '@/providers/filters-context.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
 import { ProviderIntegrations } from '../admin-settings/provider-integrations/index.js';
 import { AdminBusinessSection } from './admin/admin-business-section.js';
+import { DepreciationSettingsSection } from './admin/depreciation-settings-section.js';
 import { FinancialAccountsSection } from './admin/financial-account-section.js';
 import { SecuritiesSettingsSection } from './admin/securities-settings-section.js';
 import { BalanceSection } from './balance-section.js';
@@ -264,6 +265,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
                 <div className="flex flex-col gap-4">
                   <AdminBusinessSection data={business} />
                   <SecuritiesSettingsSection adminBusinessId={business.id} />
+                  <DepreciationSettingsSection adminBusinessId={business.id} />
                 </div>
               </TabsContent>
               <TabsContent value="admin-config" className="mt-0">
