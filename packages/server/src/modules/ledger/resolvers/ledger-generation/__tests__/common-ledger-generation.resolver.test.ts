@@ -73,6 +73,8 @@ vi.mock('../../../helpers/depreciation-disposal-ledger.helper.js', async importO
     entries: [],
     errors: [],
     expectedProceeds: null,
+    proceedsDisposals: [],
+    directRefunds: [],
   })),
 }));
 
@@ -553,6 +555,8 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
       ],
       errors: [],
       expectedProceeds: null,
+      proceedsDisposals: [],
+      directRefunds: [],
     });
     const injector = makeInjector({
       transactions: [payment({ currency: Currency.Ils, amount: '-3600' })],
@@ -563,11 +567,17 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
     const { records, errors } = await generate(injector);
 
     expect(errors).toEqual([]);
+    // after the charge's own entries, which it gets without disposal rows
     expect(generateDepreciationDisposalsLedger).toHaveBeenCalledWith(
       [disposal],
       charge,
       injector,
       EXPENSES_TAX_CATEGORY_ID,
+      expect.arrayContaining([expect.objectContaining({ id: 'invoice' })]),
+    );
+    const [, , , , chargeEntries] = vi.mocked(generateDepreciationDisposalsLedger).mock.calls[0];
+    expect(chargeEntries?.some(entry => entry.description?.startsWith('Asset disposal'))).toBe(
+      false,
     );
     expect(records.map(summarize)).toEqual(
       expect.arrayContaining([
@@ -583,12 +593,14 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
   describe('a cost refund charge', () => {
     // the supplier refunds ₪20,000 of an asset's price: a credit note to the charge's tax category
     // P and the money received; the refund's rows move the ₪20,000 from P to the asset
+    const refund = { id: 'refund', depreciation_id: 'asset', charge_id: CHARGE_ID } as never;
+
     function refundInjector() {
       vi.mocked(ledgerEntryFromDocument).mockResolvedValue(creditNoteEntry(20_000));
       return makeInjector({
         transactions: [payment({ currency: Currency.Ils, amount: '20000' })],
         rates: [],
-        disposals: [{ id: 'refund', depreciation_id: 'asset', charge_id: CHARGE_ID }],
+        disposals: [refund],
       });
     }
 
@@ -597,6 +609,8 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         entries: costRefundEntries(20_000, 1500),
         errors: [],
         expectedProceeds: 20_000,
+        proceedsDisposals: [refund],
+        directRefunds: [],
       });
 
       const { records, balance, errors } = await generate(refundInjector());
@@ -625,12 +639,34 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         entries: costRefundEntries(25_000, 1500),
         errors: [],
         expectedProceeds: 25_000,
+        proceedsDisposals: [refund],
+        directRefunds: [],
       });
 
       const { errors } = await generate(refundInjector());
 
       expect(errors).toEqual([
-        'Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category (-5,000.00 diff)',
+        `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 20,000.00 to its tax category "${EXPENSES_TAX_CATEGORY_ID}" (-5,000.00 diff): book the refund to the asset's account, or set the charge's tax category to the account it is credited to`,
+      ]);
+    });
+
+    it('checks a refund booked to the asset account against what the charge credits it', async () => {
+      // the ₪20,000 refund was booked straight to the asset account, but the charge credits it
+      // nothing: only the correction row, and an error naming the account
+      vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
+        entries: costRefundEntries(0, 1500).slice(1),
+        errors: [],
+        expectedProceeds: null,
+        proceedsDisposals: [],
+        directRefunds: [
+          { assetAccountId: ASSET_ACCOUNT_ID, currency: Currency.Ils, amount: 20_000 },
+        ],
+      });
+
+      const { errors } = await generate(refundInjector());
+
+      expect(errors).toEqual([
+        `Cost refunds booked to the asset account "${ASSET_ACCOUNT_ID}" come to 20,000.00 ILS, but the charge credits it only 0.00 ILS: book the refund to the asset's account, or set the charge's tax category to the account it is credited to`,
       ]);
     });
   });

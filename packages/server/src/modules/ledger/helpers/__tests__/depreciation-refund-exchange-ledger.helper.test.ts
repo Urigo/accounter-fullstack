@@ -26,6 +26,8 @@ const FEES_ID = 'tax-category-fees';
 const CLEARING_ID = 'tax-category-refund-clearing';
 const EXCHANGE_RATES_ID = 'tax-category-exchange-rates';
 const DATE = '2024-04-14';
+const HINT =
+  "book the refund to the asset's account, or set the charge's tax category to the account it is credited to";
 
 function entry(
   overrides: Partial<LedgerProto> &
@@ -172,7 +174,7 @@ describe('buildCostRefundExchangeEntries', () => {
 
     expect(entries).toEqual([]);
     expect(errors).toEqual([
-      "Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (100,000.00 USD refunded, 99,000.00 USD credited to the charge's tax category)",
+      `Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (100,000.00 USD refunded, 99,000.00 USD credited to the charge's tax category "${CLEARING_ID}"): ${HINT}`,
     ]);
   });
 
@@ -190,7 +192,7 @@ describe('buildCostRefundExchangeEntries', () => {
 
     expect(entries).toEqual([]);
     expect(errors).toEqual([
-      "Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (100,000.00 USD refunded, 0.00 USD credited to the charge's tax category)",
+      `Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (100,000.00 USD refunded, 0.00 USD credited to the charge's tax category "${CLEARING_ID}"): ${HINT}`,
     ]);
   });
 

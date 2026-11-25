@@ -16,10 +16,13 @@ import type {
   IGetDepreciationRecordsByIdsResult,
 } from '../../../depreciation/types.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import {
+  checkDirectRefunds,
   generateDepreciationDisposalsLedger,
   getAssetAccountId,
 } from '../depreciation-disposal-ledger.helper.js';
+import { generateCostRefundExchangeLedger } from '../depreciation-refund-exchange-ledger.helper.js';
 
 vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
@@ -42,6 +45,16 @@ const REFUND_CHARGE_ID = 'charge-refund';
 const CLEARING = 'tax-category-refund-clearing';
 const AD = 'tax-category-accumulated-depreciation';
 const CORRECTION = 'tax-category-depreciation-correction';
+const EXCHANGE_RATES = 'tax-category-exchange-rates';
+const SELLER = 'business-seller';
+const REFUND_DATE = '2024-04-14';
+
+/** The accounts' names, as the financial entities provider gives them */
+const ACCOUNT_NAMES: Record<string, string> = {
+  [CLEARING]: 'Refund clearing',
+  'tax-category-acquisition': 'Acquired intangibles',
+  'tax-category-software': 'Software',
+};
 
 const PERCENTAGES: Record<string, string> = {
   'category-software': '33',
@@ -105,6 +118,7 @@ function makeInjector(
             disposalLossTaxCategoryId: 'tax-category-disposal-loss',
             correctionTaxCategoryId: CORRECTION,
           },
+          general: { taxCategories: { exchangeRateTaxCategoryId: EXCHANGE_RATES } },
         }),
       },
     ],
@@ -142,6 +156,14 @@ function makeInjector(
         },
       },
     ],
+    [
+      FinancialEntitiesProvider,
+      {
+        getFinancialEntityByIdLoader: {
+          load: async (id: string) => ({ id, name: ACCOUNT_NAMES[id] }),
+        },
+      },
+    ],
   ]);
   return {
     get: (token: unknown) => {
@@ -151,6 +173,39 @@ function makeInjector(
       return providers.get(token);
     },
   } as unknown as Injector;
+}
+
+/**
+ * A row of the refund charge's own entries (a misc expense, or the credit note) crediting
+ * `creditAccountId` with `usd` at the refund date's ₪3.650
+ */
+function usdCredit(creditAccountId: string, usd: number): LedgerProto {
+  return {
+    id: `credit-${creditAccountId}-${usd}`,
+    chargeId: REFUND_CHARGE_ID,
+    ownerId: OWNER_ID,
+    invoiceDate: REFUND_DATE,
+    valueDate: REFUND_DATE,
+    currency: Currency.Usd,
+    currencyRate: 3.65,
+    isCreditorCounterparty: true,
+    debitAccountID1: SELLER,
+    creditAccountID1: creditAccountId,
+    debitAmount1: usd,
+    creditAmount1: usd,
+    localCurrencyDebitAmount1: usd * 3.65,
+    localCurrencyCreditAmount1: usd * 3.65,
+    description: 'misc expense',
+  };
+}
+
+/** [debit, credit, amount] of the rows */
+function rows(entries: LedgerProto[]) {
+  return entries.map(entry => [
+    entry.debitAccountID1,
+    entry.creditAccountID1,
+    entry.localCurrencyDebitAmount1,
+  ]);
 }
 
 /** [debit, credit, amount] of the cost-reduction rows */
@@ -332,5 +387,209 @@ describe('the currency of disposal rows', () => {
       expect(entry.creditAmount1).toBeUndefined();
     }
     expect(costReductions(entries)).toEqual([[CLEARING, 'tax-category-laptops', 59_200]]);
+  });
+});
+
+describe('a cost refund booked to the asset account', () => {
+  /*
+   * The acquisition booked the software and the customer relationships to one acquisition account
+   * A, by misc expenses. The seller's refund charge credits the refunds straight to A, by misc
+   * expenses in USD, together with the refund of acquired receivables (not a depreciated asset),
+   * also credited to A. The charge's own tax category is the clearing account.
+   */
+  const ACQUISITION = 'tax-category-acquisition';
+  const assets = [
+    asset('software', '160000', 'category-software', ACQUISITION),
+    asset('customer-relationships', '200000', 'category-customer-relationships', ACQUISITION),
+  ];
+  const refunds = [usdRefund('software', '16000'), usdRefund('customer-relationships', '20000')];
+  const corrections = [
+    [AD, CORRECTION, 7172],
+    [AD, CORRECTION, 3396],
+  ];
+
+  beforeEach(() => {
+    vi.mocked(getChargeTaxCategoryId).mockReset();
+  });
+
+  it('books only the depreciation corrections, and expects at least the refunds in A', async () => {
+    const chargeEntries = [
+      usdCredit(ACQUISITION, 16_000),
+      usdCredit(ACQUISITION, 20_000),
+      // the acquired receivables' refund: unrelated, but credited to the same account
+      usdCredit(ACQUISITION, 5000),
+    ];
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      refunds,
+      { id: REFUND_CHARGE_ID, owner_id: OWNER_ID },
+      makeInjector(assets, refunds),
+      CLEARING,
+      chargeEntries,
+    );
+
+    // no cost-reduction row: the misc expenses reduced A already
+    expect(ledger.errors).toEqual([]);
+    expect(rows(ledger.entries)).toEqual(corrections);
+    // in the refunds' currency, like any row of a refund entered in it
+    expect(ledger.entries.map(entry => entry.currency)).toEqual([Currency.Usd, Currency.Usd]);
+    // nothing for the clearing account's checks, so no exchange row either
+    expect(ledger.expectedProceeds).toBeNull();
+    expect(ledger.proceedsDisposals).toEqual([]);
+    expect(ledger.directRefunds).toEqual([
+      { assetAccountId: ACQUISITION, currency: Currency.Usd, amount: 36_000 },
+    ]);
+    // USD 41,000 credited to A covers the USD 36,000 refunded
+    expect(
+      checkDirectRefunds({
+        directRefunds: ledger.directRefunds,
+        chargeEntries,
+        localCurrency: Currency.Ils,
+      }),
+    ).toEqual([]);
+  });
+
+  it('reports an asset account credited less than the refunds, by its name', async () => {
+    // the misc expenses credit A with USD 30,000 of the USD 36,000 refunded
+    const chargeEntries = [usdCredit(ACQUISITION, 30_000)];
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      refunds,
+      { id: REFUND_CHARGE_ID, owner_id: OWNER_ID },
+      makeInjector(assets, refunds),
+      CLEARING,
+      chargeEntries,
+    );
+
+    expect(ledger.errors).toEqual([]);
+    expect(
+      checkDirectRefunds({
+        directRefunds: ledger.directRefunds,
+        chargeEntries,
+        localCurrency: Currency.Ils,
+        accountNames: new Map([[ACQUISITION, 'Acquired intangibles']]),
+      }),
+    ).toEqual([
+      'Cost refunds booked to the asset account "Acquired intangibles" come to 36,000.00 USD, but the charge credits it only 30,000.00 USD: book the refund to the asset\'s account, or set the charge\'s tax category to the account it is credited to',
+    ]);
+  });
+
+  it('handles a refund booked to the asset account and one booked to the tax category on one charge', async () => {
+    // the software's refund is credited to its own account, the customer relationships' to the
+    // charge's clearing account
+    const software = asset('software', '160000', 'category-software', 'tax-category-software');
+    const customerRelationships = asset(
+      'customer-relationships',
+      '200000',
+      'category-customer-relationships',
+      'tax-category-customer-relationships',
+    );
+    const chargeEntries = [usdCredit('tax-category-software', 16_000), usdCredit(CLEARING, 20_000)];
+    const injector = makeInjector([software, customerRelationships], refunds);
+    const charge = { id: REFUND_CHARGE_ID, owner_id: OWNER_ID };
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      refunds,
+      charge,
+      injector,
+      CLEARING,
+      chargeEntries,
+    );
+
+    expect(ledger.errors).toEqual([]);
+    // only the customer relationships' cost reduction moves out of the clearing account
+    expect(rows(ledger.entries)).toEqual([
+      corrections[0],
+      [CLEARING, 'tax-category-customer-relationships', 74_000],
+      corrections[1],
+    ]);
+    expect(ledger.expectedProceeds).toBe(74_000);
+    expect(ledger.proceedsDisposals).toEqual([refunds[1]]);
+    expect(ledger.directRefunds).toEqual([
+      { assetAccountId: 'tax-category-software', currency: Currency.Usd, amount: 16_000 },
+    ]);
+
+    // the clearing account: USD 20,000 in currency, and its ₪1,000 gap to the cost reduction (at
+    // ₪3.650 rather than ₪3.700) is an exchange loss
+    const exchange = await generateCostRefundExchangeLedger({
+      disposals: ledger.proceedsDisposals,
+      proceedsAccountId: CLEARING,
+      expectedProceeds: ledger.expectedProceeds!,
+      charge,
+      chargeEntries,
+      injector,
+    });
+    expect(exchange.errors).toEqual([]);
+    expect(rows(exchange.entries)).toEqual([[EXCHANGE_RATES, CLEARING, 1000]]);
+    // the software's account: at least USD 16,000, with no exchange row of its own
+    expect(
+      checkDirectRefunds({
+        directRefunds: ledger.directRefunds,
+        chargeEntries,
+        localCurrency: Currency.Ils,
+      }),
+    ).toEqual([]);
+  });
+
+  it('names the clearing account when it is credited less than the refunds booked to it', async () => {
+    const software = asset('software', '160000', 'category-software', 'tax-category-software');
+    const refund = usdRefund('software', '16000');
+    const injector = makeInjector([software], [refund]);
+    const charge = { id: REFUND_CHARGE_ID, owner_id: OWNER_ID };
+    const chargeEntries = [usdCredit(CLEARING, 15_000)];
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      [refund],
+      charge,
+      injector,
+      CLEARING,
+      chargeEntries,
+    );
+    const exchange = await generateCostRefundExchangeLedger({
+      disposals: ledger.proceedsDisposals,
+      proceedsAccountId: CLEARING,
+      expectedProceeds: ledger.expectedProceeds!,
+      charge,
+      chargeEntries,
+      injector,
+    });
+
+    expect(exchange.errors).toEqual([
+      'Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (16,000.00 USD refunded, 15,000.00 USD credited to the charge\'s tax category "Refund clearing"): book the refund to the asset\'s account, or set the charge\'s tax category to the account it is credited to',
+    ]);
+  });
+
+  it('keeps the tax category for refunds the charge does not credit to the asset account', async () => {
+    // the charge credits the clearing account only: as without its entries
+    vi.mocked(getChargeTaxCategoryId).mockResolvedValue(null);
+    const allAssets = [
+      asset('goodwill', '60000', 'category-goodwill', 'tax-category-goodwill'),
+      asset('software', '160000', 'category-software', 'tax-category-software'),
+    ];
+    const allRefunds = [usdRefund('goodwill', '60000'), usdRefund('software', '16000')];
+    const charge = { id: REFUND_CHARGE_ID, owner_id: OWNER_ID };
+
+    const without = await generateDepreciationDisposalsLedger(
+      allRefunds,
+      charge,
+      makeInjector(allAssets, allRefunds),
+      CLEARING,
+    );
+    const withEntries = await generateDepreciationDisposalsLedger(
+      allRefunds,
+      charge,
+      makeInjector(allAssets, allRefunds),
+      CLEARING,
+      [usdCredit(CLEARING, 76_000)],
+    );
+
+    expect(withEntries).toEqual(without);
+    expect(costReductions(withEntries.entries)).toEqual([
+      [CLEARING, 'tax-category-goodwill', 222_000],
+      [CLEARING, 'tax-category-software', 59_200],
+    ]);
+    expect(withEntries.expectedProceeds).toBe(281_200);
+    expect(withEntries.proceedsDisposals).toEqual(allRefunds);
+    expect(withEntries.directRefunds).toEqual([]);
   });
 });

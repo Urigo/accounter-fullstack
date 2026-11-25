@@ -17,7 +17,6 @@ import {
 import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
 import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
-import type { IGetDepreciationDisposalsByIdsResult } from '../../../depreciation/types.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -31,11 +30,13 @@ import {
 } from '../../helpers/common-charge-ledger.helper.js';
 import { handleCrossYearLedgerEntries } from '../../helpers/cross-year-ledger.helper.js';
 import {
+  checkDirectRefunds,
   checkDisposalProceeds,
   generateDepreciationDisposalsLedger,
 } from '../../helpers/depreciation-disposal-ledger.helper.js';
 import {
   generateCostRefundExchangeLedger,
+  getLedgerAccountName,
   hasForeignCurrencyRefunds,
 } from '../../helpers/depreciation-refund-exchange-ledger.helper.js';
 import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
@@ -300,77 +301,98 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     });
     entriesPromises.push(expensesLedgerPromise);
 
-    // generate ledger for disposals of depreciated assets this charge carries the money for
-    const disposalEntries = new Set<LedgerProto>();
-    const disposalProceedsChecks: Array<{
-      disposals: IGetDepreciationDisposalsByIdsResult[];
-      proceedsAccountId: string;
-      expectedProceeds: number;
-    }> = [];
-    const disposalsLedgerPromise = injector
-      .get(DepreciationDisposalsProvider)
-      .getDisposalsByChargeIdLoader.load(chargeId)
-      .then(async disposals => {
-        if (disposals.length === 0) {
-          return;
-        }
-        const proceedsAccountId =
-          charge.tax_category_id ?? (await getChargeTaxCategoryId(chargeId, injector));
-        const {
-          entries,
-          errors: disposalErrors,
-          expectedProceeds,
-        } = await generateDepreciationDisposalsLedger(
-          disposals,
-          charge,
-          injector,
-          proceedsAccountId,
-        );
-        for (const error of disposalErrors) {
-          errors.add(error);
-        }
-        for (const entry of entries) {
-          disposalEntries.add(entry);
-          feeFinancialAccountLedgerEntries.push(entry);
-          updateLedgerBalance(entry);
-        }
-        if (proceedsAccountId && expectedProceeds != null) {
-          disposalProceedsChecks.push({ disposals, proceedsAccountId, expectedProceeds });
-        }
-      });
-    entriesPromises.push(disposalsLedgerPromise);
-
     await Promise.all(entriesPromises);
 
-    // the charge must carry the money for the sales and cost refunds linked to it
-    for (const check of disposalProceedsChecks) {
+    // generate ledger for disposals of depreciated assets this charge carries the money for, once
+    // the charge's own entries are in: they tell where the charge booked each refund
+    const disposals = await injector
+      .get(DepreciationDisposalsProvider)
+      .getDisposalsByChargeIdLoader.load(chargeId);
+    if (disposals.length > 0) {
+      // the charge's own entries: documents, transactions, fees and misc expenses
       const chargeEntries = [
         ...accountingLedgerEntries,
         ...financialAccountLedgerEntries,
         ...feeFinancialAccountLedgerEntries,
-      ].filter(entry => !disposalEntries.has(entry));
-      if (hasForeignCurrencyRefunds(check.disposals)) {
-        // refunds entered in an asset's foreign currency are checked in that currency instead, and
-        // the local-currency gap left in the refund account is their exchange-rate difference
-        const { entries, errors: refundExchangeErrors } = await generateCostRefundExchangeLedger({
-          ...check,
-          charge,
+      ];
+      const proceedsAccountId =
+        charge.tax_category_id ?? (await getChargeTaxCategoryId(chargeId, injector));
+      const {
+        entries,
+        errors: disposalErrors,
+        expectedProceeds,
+        proceedsDisposals,
+        directRefunds,
+      } = await generateDepreciationDisposalsLedger(
+        disposals,
+        charge,
+        injector,
+        proceedsAccountId,
+        chargeEntries,
+      );
+      for (const error of disposalErrors) {
+        errors.add(error);
+      }
+      const addDisposalEntry = (entry: LedgerProto) => {
+        feeFinancialAccountLedgerEntries.push(entry);
+        updateLedgerBalance(entry);
+      };
+      for (const entry of entries) {
+        addDisposalEntry(entry);
+      }
+
+      // the charge must carry the money for the sales and cost refunds booked to its tax category
+      if (proceedsAccountId && expectedProceeds != null) {
+        if (hasForeignCurrencyRefunds(proceedsDisposals)) {
+          // refunds entered in an asset's foreign currency are checked in that currency instead,
+          // and the local-currency gap left in the refund account is their exchange-rate difference
+          const { entries: exchangeEntries, errors: refundExchangeErrors } =
+            await generateCostRefundExchangeLedger({
+              disposals: proceedsDisposals,
+              proceedsAccountId,
+              expectedProceeds,
+              charge,
+              chargeEntries,
+              injector,
+            });
+          for (const error of refundExchangeErrors) {
+            errors.add(error);
+          }
+          for (const entry of exchangeEntries) {
+            addDisposalEntry(entry);
+          }
+        } else {
+          const error = checkDisposalProceeds({
+            expectedProceeds,
+            proceedsAccountId,
+            proceedsAccountName: await getLedgerAccountName(injector, proceedsAccountId),
+            chargeEntries,
+          });
+          if (error) {
+            errors.add(error);
+          }
+        }
+      }
+
+      // and credit at least the refunds booked straight to their asset's account to it
+      if (directRefunds.length > 0) {
+        const accountIds = [...new Set(directRefunds.map(refund => refund.assetAccountId))];
+        const accountNames = new Map(
+          await Promise.all(
+            accountIds.map(
+              async accountId =>
+                [accountId, await getLedgerAccountName(injector, accountId)] as const,
+            ),
+          ),
+        );
+        for (const error of checkDirectRefunds({
+          directRefunds,
           chargeEntries,
-          injector,
-        });
-        for (const error of refundExchangeErrors) {
+          localCurrency: defaultLocalCurrency,
+          accountNames,
+        })) {
           errors.add(error);
         }
-        for (const entry of entries) {
-          disposalEntries.add(entry);
-          feeFinancialAccountLedgerEntries.push(entry);
-          updateLedgerBalance(entry);
-        }
-        continue;
-      }
-      const error = checkDisposalProceeds({ ...check, chargeEntries });
-      if (error) {
-        errors.add(error);
       }
     }
 

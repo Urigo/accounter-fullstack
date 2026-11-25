@@ -451,7 +451,7 @@ describe('checkDisposalProceeds', () => {
         ],
       }),
     ).toBe(
-      'Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 21,000.00 to its tax category (-4,000.00 diff)',
+      `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 21,000.00 to its tax category "${CLEARING}" (-4,000.00 diff): book the refund to the asset's account, or set the charge's tax category to the account it is credited to`,
     );
   });
 });

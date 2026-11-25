@@ -146,6 +146,8 @@ describe('generateLedgerRecordsForDepreciationExpenses', () => {
       entries: [disposalEntry(400)],
       errors: ['Loss on disposal of fixed assets tax category is not defined'],
       expectedProceeds: null,
+      proceedsDisposals: [],
+      directRefunds: [],
     });
 
     const { records, errors } = await generate(injector);
