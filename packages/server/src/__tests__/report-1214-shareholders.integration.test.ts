@@ -42,7 +42,12 @@ const unbuiltPackageStub = vi.hoisted(
 vi.mock('@accounter/green-invoice-graphql', unbuiltPackageStub);
 vi.mock('@accounter/shaam-uniform-format-generator', unbuiltPackageStub);
 
-const ADMIN_ID = makeUUID('business', 'Admin Business');
+/**
+ * The suite's own owner company. It never touches the shared seeded Admin Business: another suite
+ * may delete that business's `businesses_admin` row, which cascades to its `business_users` and
+ * would sign this suite's user out mid-run.
+ */
+const OWNER_ID = makeUUID('business', 'report-1214-shareholders-owner');
 const USER_ID = makeUUID('user', 'report-1214-shareholders-user');
 /** A second tenant, with its own user, that must not see the admin's shareholders */
 const OTHER_OWNER_ID = makeUUID('business', 'report-1214-shareholders-other-owner');
@@ -161,14 +166,14 @@ async function execute<T>(query: string, variables: Record<string, unknown> = {}
   return json.data!;
 }
 
-const getShareholders = (year: number, ownerId: string | null = ADMIN_ID) =>
+const getShareholders = (year: number, ownerId: string | null = OWNER_ID) =>
   execute<{ shareholders: Shareholder[] }>(SHAREHOLDERS_QUERY, { ownerId, year }).then(
     data => data.shareholders,
   );
 
 const setShareholders = (year: number, shareholders: ShareholderInput[]) =>
   execute<{ setShareholders: Shareholder[] }>(SET_SHAREHOLDERS_MUTATION, {
-    ownerId: ADMIN_ID,
+    ownerId: OWNER_ID,
     year,
     shareholders,
   }).then(data => data.setShareholders);
@@ -189,7 +194,7 @@ async function withSuperuserClient<T>(fn: (client: PoolClient) => Promise<T>): P
   const client = await db.getPool().connect();
   try {
     await client.query('BEGIN');
-    await client.query("SELECT set_config('app.current_business_id', $1, true)", [ADMIN_ID]);
+    await client.query("SELECT set_config('app.current_business_id', $1, true)", [OWNER_ID]);
     const result = await fn(client);
     await client.query('COMMIT');
     return result;
@@ -223,7 +228,7 @@ async function removeShareholders() {
     client.query(
       `DELETE FROM ${qualifyTable('shareholders')}
        WHERE owner_id = ANY($1) AND year BETWEEN 2091 AND 2099`,
-      [[ADMIN_ID, OTHER_OWNER_ID]],
+      [[OWNER_ID, OTHER_OWNER_ID]],
     ),
   );
 }
@@ -252,23 +257,23 @@ beforeAll(async () => {
   db = new TestDatabase();
   await db.connect();
   await db.ensureLatestSchema();
-  await db.seedAdmin();
   await ensureRlsRole(db.getPool(), {
     // the role is per worker and dropped with its grants in afterAll (dropRlsRole)
     grants: [{ table: 'shareholders', privileges: 'SELECT, INSERT, DELETE' }],
   });
 
   await withSuperuserClient(async client => {
-    // `business_users` references `businesses_admin`: make sure the shared admin row exists
+    // `business_users` references `businesses_admin`
+    await ensureBusiness(client, OWNER_ID, OWNER_ID, 'Shareholders owner');
     await client.query(
       `INSERT INTO ${qualifyTable('businesses_admin')} (id, owner_id) VALUES ($1, $1)
        ON CONFLICT DO NOTHING`,
-      [ADMIN_ID],
+      [OWNER_ID],
     );
     await client.query(
       `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id)
        VALUES ($1, $2, 'business_owner') ON CONFLICT DO NOTHING`,
-      [USER_ID, ADMIN_ID],
+      [USER_ID, OWNER_ID],
     );
 
     await ensureBusiness(client, OTHER_OWNER_ID, OTHER_OWNER_ID, 'Shareholders other owner');
@@ -283,7 +288,7 @@ beforeAll(async () => {
       [OTHER_USER_ID, OTHER_OWNER_ID],
     );
 
-    await ensureBusiness(client, LINKED_BUSINESS_ID, ADMIN_ID, 'Shareholders linked holdco');
+    await ensureBusiness(client, LINKED_BUSINESS_ID, OWNER_ID, 'Shareholders linked holdco');
   });
 
   const pool = db.getPool();
@@ -310,10 +315,10 @@ afterAll(async () => {
     await client.query(`DELETE FROM ${qualifyTable('business_users')} WHERE user_id = ANY($1)`, [
       [USER_ID, OTHER_USER_ID],
     ]);
-    await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = $1`, [
-      OTHER_OWNER_ID,
+    await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = ANY($1)`, [
+      [OWNER_ID, OTHER_OWNER_ID],
     ]);
-    const ids = [LINKED_BUSINESS_ID, OTHER_OWNER_ID];
+    const ids = [LINKED_BUSINESS_ID, OTHER_OWNER_ID, OWNER_ID];
     await client.query(
       `UPDATE ${qualifyTable('financial_entities')} SET owner_id = NULL WHERE id = ANY($1)`,
       [ids],
@@ -393,7 +398,7 @@ describe('report 1214 shareholders', () => {
   it('rejects a repeated ordinary ID number with a friendly error, keeping the old list', async () => {
     await setShareholders(YEAR, [dana]);
     const error = await expectError(SET_SHAREHOLDERS_MUTATION, {
-      ownerId: ADMIN_ID,
+      ownerId: OWNER_ID,
       year: YEAR,
       shareholders: [holdco, { ...dana, idNumber: '000000042' }, { ...dana, fullName: 'Again' }],
     });
@@ -414,7 +419,7 @@ describe('report 1214 shareholders', () => {
     ];
     for (const [badRow, message] of cases) {
       const error = await expectError(SET_SHAREHOLDERS_MUTATION, {
-        ownerId: ADMIN_ID,
+        ownerId: OWNER_ID,
         year: YEAR,
         shareholders: [holdco, badRow],
       });
@@ -426,14 +431,14 @@ describe('report 1214 shareholders', () => {
 
   it('rejects a year outside 2000-2100', async () => {
     for (const year of [1999, 2101, 40_000]) {
-      const error = await expectError(SHAREHOLDERS_QUERY, { ownerId: ADMIN_ID, year });
+      const error = await expectError(SHAREHOLDERS_QUERY, { ownerId: OWNER_ID, year });
       expect(error.code).toBe('BAD_USER_INPUT');
     }
   });
 
   it("rejects a linked business outside the owner's books", async () => {
     const error = await expectError(SET_SHAREHOLDERS_MUTATION, {
-      ownerId: ADMIN_ID,
+      ownerId: OWNER_ID,
       year: YEAR,
       shareholders: [{ ...holdco, businessId: OTHER_OWNER_ID }],
     });
@@ -454,14 +459,14 @@ describe('report 1214 shareholders', () => {
     const { setShareholders: saved } = await execute<{ setShareholders: Shareholder[] }>(
       SET_SHAREHOLDERS_MUTATION,
       {
-        ownerId: ADMIN_ID.toUpperCase(),
+        ownerId: OWNER_ID.toUpperCase(),
         year: YEAR,
         shareholders: [{ ...holdco, businessId: LINKED_BUSINESS_ID.toUpperCase() }],
       },
     );
     expect(saved[0].businessId).toBe(LINKED_BUSINESS_ID);
     expect(saved[0].business?.id).toBe(LINKED_BUSINESS_ID);
-    const read = await getShareholders(YEAR, ADMIN_ID.toUpperCase());
+    const read = await getShareholders(YEAR, OWNER_ID.toUpperCase());
     expect(read).toEqual(saved);
   });
 
@@ -470,7 +475,7 @@ describe('report 1214 shareholders', () => {
       client.query(
         `INSERT INTO ${qualifyTable('shareholders')} (owner_id, year, business_id, id_number, full_name)
          VALUES ($1, $2, $3, '000000007', 'Stray link')`,
-        [ADMIN_ID, YEAR, OTHER_OWNER_ID],
+        [OWNER_ID, YEAR, OTHER_OWNER_ID],
       ),
     );
     const [stray] = await getShareholders(YEAR);
@@ -479,12 +484,12 @@ describe('report 1214 shareholders', () => {
 
   it('reports the first bad linked business in row order', async () => {
     const error = await expectError(SET_SHAREHOLDERS_MUTATION, {
-      ownerId: ADMIN_ID,
+      ownerId: OWNER_ID,
       year: YEAR,
       shareholders: [
         { ...dana, businessId: LINKED_BUSINESS_ID },
         { ...holdco, businessId: OTHER_OWNER_ID },
-        { idNumber: '7', fullName: 'Third', isControllingShareholder: false, businessId: ADMIN_ID },
+        { idNumber: '7', fullName: 'Third', isControllingShareholder: false, businessId: OWNER_ID },
       ],
     });
     expect(error.code).toBe('BAD_USER_INPUT');
@@ -499,7 +504,7 @@ describe('report 1214 shareholders', () => {
       ]);
       const { copyShareholdersFromYear: copied } = await execute<{
         copyShareholdersFromYear: Shareholder[];
-      }>(COPY_SHAREHOLDERS_MUTATION, { ownerId: ADMIN_ID, fromYear: YEAR, toYear: OTHER_YEAR });
+      }>(COPY_SHAREHOLDERS_MUTATION, { ownerId: OWNER_ID, fromYear: YEAR, toYear: OTHER_YEAR });
 
       const strip = ({ id: _id, year: _year, ...rest }: Shareholder) => rest;
       expect(copied.map(strip)).toEqual(source.map(strip));
@@ -515,7 +520,7 @@ describe('report 1214 shareholders', () => {
       const { copyShareholdersFromYear: copied } = await execute<{
         copyShareholdersFromYear: Shareholder[];
       }>(COPY_SHAREHOLDERS_MUTATION, {
-        ownerId: ADMIN_ID,
+        ownerId: OWNER_ID,
         fromYear: EMPTY_YEAR,
         toYear: OTHER_YEAR,
       });
@@ -531,7 +536,7 @@ describe('report 1214 shareholders', () => {
       ];
       for (const [fromYear, toYear, message] of cases) {
         const error = await expectError(COPY_SHAREHOLDERS_MUTATION, {
-          ownerId: ADMIN_ID,
+          ownerId: OWNER_ID,
           fromYear,
           toYear,
         });
@@ -545,7 +550,7 @@ describe('report 1214 shareholders', () => {
       await setShareholders(YEAR, [dana]);
       await setShareholders(OTHER_YEAR, [holdco]);
       const error = await expectError(COPY_SHAREHOLDERS_MUTATION, {
-        ownerId: ADMIN_ID,
+        ownerId: OWNER_ID,
         fromYear: YEAR,
         toYear: OTHER_YEAR,
       });
@@ -558,19 +563,19 @@ describe('report 1214 shareholders', () => {
     it("forbids another tenant's user from reading or writing the owner's shareholders", async () => {
       await setShareholders(YEAR, [dana]);
 
-      const read = await expectError(SHAREHOLDERS_QUERY, { ownerId: ADMIN_ID, year: YEAR }, otherYoga);
+      const read = await expectError(SHAREHOLDERS_QUERY, { ownerId: OWNER_ID, year: YEAR }, otherYoga);
       expect(read.code).toBe('FORBIDDEN');
 
       const write = await expectError(
         SET_SHAREHOLDERS_MUTATION,
-        { ownerId: ADMIN_ID, year: YEAR, shareholders: [] },
+        { ownerId: OWNER_ID, year: YEAR, shareholders: [] },
         otherYoga,
       );
       expect(write.code).toBe('FORBIDDEN');
 
       const copy = await expectError(
         COPY_SHAREHOLDERS_MUTATION,
-        { ownerId: ADMIN_ID, fromYear: YEAR, toYear: OTHER_YEAR },
+        { ownerId: OWNER_ID, fromYear: YEAR, toYear: OTHER_YEAR },
         otherYoga,
       );
       expect(copy.code).toBe('FORBIDDEN');
@@ -641,7 +646,7 @@ describe('report 1214 shareholders', () => {
         }
       };
 
-      expect(await visibleOwners(ADMIN_ID)).toEqual([ADMIN_ID]);
+      expect(await visibleOwners(OWNER_ID)).toEqual([OWNER_ID]);
       expect(await visibleOwners(OTHER_OWNER_ID)).toEqual([]);
     });
 
@@ -654,7 +659,7 @@ describe('report 1214 shareholders', () => {
         await client.query(
           `SELECT set_config('app.current_business_id', $1, true),
                   set_config('app.current_business_scope', $2, true)`,
-          [OTHER_OWNER_ID, `{${ADMIN_ID},${OTHER_OWNER_ID}}`],
+          [OTHER_OWNER_ID, `{${OWNER_ID},${OTHER_OWNER_ID}}`],
         );
         const pgCode = (error: unknown) => (error as { code?: string }).code;
 
@@ -663,7 +668,7 @@ describe('report 1214 shareholders', () => {
           client.query(
             `INSERT INTO accounter_schema.shareholders (owner_id, year, id_number, full_name)
              VALUES ($1, $2, '000000099', 'Intruder')`,
-            [ADMIN_ID, YEAR],
+            [OWNER_ID, YEAR],
           ),
         ).catch(error => error);
         expect(pgCode(insert)).toBe('42501');
@@ -673,7 +678,7 @@ describe('report 1214 shareholders', () => {
         const deleted = await runAsRlsRole(client, () =>
           client.query(
             `DELETE FROM accounter_schema.shareholders WHERE owner_id = $1 AND year = $2`,
-            [ADMIN_ID, YEAR],
+            [OWNER_ID, YEAR],
           ),
         );
         expect(deleted.rowCount).toBe(0);
@@ -684,7 +689,7 @@ describe('report 1214 shareholders', () => {
             `INSERT INTO accounter_schema.shareholders (owner_id, year, id_number, full_name)
              SELECT owner_id, $2, id_number, full_name
              FROM accounter_schema.shareholders WHERE owner_id = $1 AND year = $3`,
-            [ADMIN_ID, OTHER_YEAR, YEAR],
+            [OWNER_ID, OTHER_YEAR, YEAR],
           ),
         ).catch(error => error);
         expect(pgCode(copy)).toBe('42501');
