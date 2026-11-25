@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useClient } from 'urql';
 import { Shaam6111FileDocument } from '../../../../gql/graphql.js';
-import { downloadFile } from '../../../../helpers/files.js';
+import { base64ToBytes, downloadFile } from '../../../../helpers/files.js';
 import { SUPPRESS_ERROR_TOAST_CONTEXT } from '../../../../providers/urql-error-handler.js';
 import { Button } from '../../../ui/button.js';
 import { Spinner } from '../../../ui/spinner.js';
@@ -28,15 +28,6 @@ type Props = {
   /** Whether the report passed validation; an invalid report has no file to download. */
   disabled?: boolean;
 };
-
-function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
 
 /** Downloads the 6111 file for upload to SHAAM (Windows-1255, as the server encoded it). */
 export function Shaam6111DownloadButton({ year, businessId, disabled }: Props): ReactElement {
