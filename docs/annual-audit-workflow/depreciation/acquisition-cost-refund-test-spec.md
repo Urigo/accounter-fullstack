@@ -93,9 +93,9 @@ Goodwill is the residual: 480,000 − (160,000 + 200,000 + 40,000 + 20,000) = 60
 The acquisition is one charge. It has no documents. The allocation is entered as misc expenses
 against `seller`, dated 2023-08-20, and so are the assumed liabilities. The charge also carries the
 four asset records, in USD, activated on 2023-08-20, and the payment. The assets are converted at
-the rate of the earliest misc-expense date, 3.700 (the contract date), not at the payment's rate.
-Since the four assets were bought on one charge, each record names its own cost account (its asset
-tax category: the account its misc expense debits), which the cost reductions of §4.4 credit.
+the rate of their activation date, 3.700 (the contract date), not at the payment's rate. Since the
+four assets were bought on one charge, each record names its own cost account (its asset tax
+category: the account its misc expense debits), which the cost reductions of §4.4 credit.
 
 Depreciation starts on the acquisition date, 2023-08-20.
 
@@ -286,23 +286,25 @@ before and after the refunds are entered.
 
 ### 4.4 Refund: invoice date 2024-04-14, value date 2024-04-14 (every row)
 
-| #   | Debit                      | Credit                    | ILS        | USD     | Notes                                       |
-| --- | -------------------------- | ------------------------- | ---------- | ------- | ------------------------------------------- |
-| R0  | `refund-supplier`          | `P`                       | 365,000.00 | 100,000 | Credit note @ 3.650                         |
-| R1  | `P`                        | `software`                | 59,200.00  | —       | Cost reduction: USD 16,000 @ 3.700          |
-| R2  | `P`                        | `customer-relations`      | 74,000.00  | —       | Cost reduction: USD 20,000 @ 3.700          |
-| R3  | `P`                        | `goodwill`                | 222,000.00 | —       | Goodwill eliminated: USD 60,000 @ 3.700     |
-| R4  | `P`                        | `trademarks`              | 14,800.00  | —       | Cost reduction, not depreciated             |
-| R5  | `bank-usd`                 | `refund-supplier`         | 364,927.00 | 99,980  | @ 3.650                                     |
-| R6  | `bank-fees`                | `refund-supplier`         | 73.00      | 20      | SWIFT @ 3.650                               |
-| R7  | `fx-diff`                  | `P`                       | 5,000.00   | —       | FX loss, 100,000 × 0.050                    |
-| R8  | `accumulated-depreciation` | `depreciation-correction` | 7,172      | —       | Software: depreciation correction for 2023  |
-| R9  | `accumulated-depreciation` | `depreciation-correction` | 3,396      | —       | Customer relationships: correction for 2023 |
-| R10 | `accumulated-depreciation` | `depreciation-correction` | 8,150      | —       | Goodwill: all 2023 depreciation reversed    |
+| #   | Debit                      | Credit                    | ILS        | USD      | Notes                                       |
+| --- | -------------------------- | ------------------------- | ---------- | -------- | ------------------------------------------- |
+| R0  | `refund-supplier`          | `P`                       | 365,000.00 | 100,000  | Credit note @ 3.650                         |
+| R1  | `P`                        | `software`                | 59,200.00  | 16,000   | Cost reduction @ 3.700                      |
+| R2  | `P`                        | `customer-relations`      | 74,000.00  | 20,000   | Cost reduction @ 3.700                      |
+| R3  | `P`                        | `goodwill`                | 222,000.00 | 60,000   | Goodwill eliminated @ 3.700                 |
+| R4  | `P`                        | `trademarks`              | 14,800.00  | 4,000    | Cost reduction, not depreciated             |
+| R5  | `bank-usd`                 | `refund-supplier`         | 364,927.00 | 99,980   | @ 3.650                                     |
+| R6  | `bank-fees`                | `refund-supplier`         | 73.00      | 20       | SWIFT @ 3.650                               |
+| R7  | `fx-diff`                  | `P`                       | 5,000.00   | —        | FX loss, 100,000 × 0.050                    |
+| R8  | `accumulated-depreciation` | `depreciation-correction` | 7,172      | 1,938.38 | Software: depreciation correction for 2023  |
+| R9  | `accumulated-depreciation` | `depreciation-correction` | 3,396      | 917.84   | Customer relationships: correction for 2023 |
+| R10 | `accumulated-depreciation` | `depreciation-correction` | 8,150      | 2,202.70 | Goodwill: all 2023 depreciation reversed    |
 
-The cost-reduction rows (R1–R4) are booked in ILS. Their amounts are the USD refunds at the assets'
-cost-basis rate (3.700), so the historical rate is the basis of the conversion even though the rows
-are dated in 2024. Trademarks have no recapture row (0).
+The refund's cost-reduction and recapture rows (R1–R4, R8–R10) are booked in the assets' currency at
+their cost-basis rate (3.700), so the historical rate is the basis of the conversion even though the
+rows are dated in 2024. A cost-reduction row carries the refunded USD amount; a recapture row
+carries its ILS amount ÷ 3.700, in cents. The FX row (R7) is ILS only. Trademarks have no recapture
+row (0).
 
 `refund-supplier` is debited 365,000.00 (R0) and credited 365,000.00 (R5, R6), so its balance is 0.
 `P` is credited 370,000.00 (R0, R7) and debited 370,000.00 (R1 to R4), so its balance is 0. The
