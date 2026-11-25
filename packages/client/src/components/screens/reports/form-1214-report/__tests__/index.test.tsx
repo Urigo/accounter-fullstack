@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { useQueryMock, navigateMock, location } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
@@ -40,12 +40,19 @@ vi.mock('../../../../ui/select.js', () => ({
 import { Form1214Report } from '../index.js';
 
 describe('Form1214Report', () => {
-  it('replaces an unsupported URL year with the latest supported one, once, keeping the hash', async () => {
+  beforeEach(() => {
+    navigateMock.mockClear();
+    useQueryMock.mockReset();
     useQueryMock.mockImplementation(({ query }: { query: { name: string } }) =>
       query.name === 'years'
         ? [{ data: { report1214SupportedYears: [2024, 2025] }, fetching: false }]
         : [{ data: undefined, fetching: true }, vi.fn()],
     );
+  });
+
+  it('replaces an unsupported URL year with the latest supported one, once, keeping the hash', async () => {
+    location.search = '?year=2019';
+    location.hash = '#shareholders';
 
     const container = document.createElement('div');
     document.body.append(container);
@@ -63,6 +70,25 @@ describe('Form1214Report', () => {
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({ variables: { year: 2025 }, pause: false }),
     );
+    // the requested year is reported, not replaced silently
+    expect(container.textContent).toContain('Form 1214 is not available for 2019');
+    expect(container.textContent).toContain('Showing 2025 instead.');
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it('falls back to the latest supported year without a notice when the URL has no year', async () => {
+    location.search = '';
+    location.hash = '';
+
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => root.render(<Form1214Report />));
+
+    expect(navigateMock).toHaveBeenCalledWith({ search: '?year=2025', hash: '' }, { replace: true });
+    expect(container.textContent).not.toContain('not available');
 
     await act(async () => root.unmount());
     container.remove();
