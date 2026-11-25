@@ -3,30 +3,11 @@ import { CodecDecodeError, type FieldShape, type Primitive } from '../../src/cod
 import { Opcn1214InternalError } from '../../src/errors.js';
 import { getLayout, supportedTaxYears } from '../../src/layout/registry.js';
 import type { CodeKind, EnumValue, FieldKind } from '../../src/layout/types.js';
+import { PHONE_PREFIXES } from '../../src/model/input.js';
 
 type Kind = FieldKind | CodeKind;
 
-/** Allowed phone prefixes (SPEC §4.2), as the layout stores them (numbers, leading zero lost). */
-const PHONE_PREFIXES = [
-  '02',
-  '03',
-  '04',
-  '08',
-  '09',
-  '072',
-  '073',
-  '074',
-  '076',
-  '077',
-  '050',
-  '052',
-  '053',
-  '054',
-  '055',
-  '057',
-  '058',
-  '059',
-] as const;
+/** PHONE_PREFIXES (the model's list) as the layout stores them (numbers, leading zero lost). */
 const PREFIX_VALUES: readonly EnumValue[] = PHONE_PREFIXES.map(prefix => ({
   value: Number(prefix),
 }));

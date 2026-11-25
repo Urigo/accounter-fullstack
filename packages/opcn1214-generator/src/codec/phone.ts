@@ -8,7 +8,7 @@ import { CodecDecodeError, type Codec, type FieldShape } from './types.js';
  * `052` → 52); every allowed prefix is a single `0` followed by its significant digits (SPEC §4.2;
  * asserted over the layout in tests/codec/text.test.ts), so the leading zero is restored here.
  */
-function allowedPrefixes(shape: FieldShape): string[] {
+export function allowedPhonePrefixes(shape: Pick<FieldShape, 'values'>): string[] {
   return (shape.values ?? []).map(({ value }) => `0${value}`);
 }
 
@@ -23,7 +23,7 @@ const phonePrefixCodec: Codec = {
     if (value === undefined) {
       return blank(shape);
     }
-    if (typeof value !== 'string' || !allowedPrefixes(shape).includes(value)) {
+    if (typeof value !== 'string' || !allowedPhonePrefixes(shape).includes(value)) {
       throw invalid(value, shape, 'an allowed phone prefix');
     }
     return pad(value, shape);
@@ -38,7 +38,7 @@ const phonePrefixCodec: Codec = {
       return undefined;
     }
     const prefix = `0${significant}`;
-    if (!allowedPrefixes(shape).includes(prefix)) {
+    if (!allowedPhonePrefixes(shape).includes(prefix)) {
       throw new CodecDecodeError(
         'format',
         raw.indexOf(digits),

@@ -1,7 +1,7 @@
 /** Date codec (SPEC §4.2): ISO `YYYY-MM-DD` in the model, `DD/MM/YYYY` in the file. */
 import type { CodeKind, FieldKind } from '../layout/types.js';
 import { blank, checkLength, invalid } from './numeric.js';
-import { CodecDecodeError, type Codec } from './types.js';
+import { CodecDecodeError, type Codec, type Primitive } from './types.js';
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 /** `d` is a digit, any other character must match literally. */
@@ -22,6 +22,12 @@ function isCalendarDate(year: number, month: number, day: number): boolean {
   return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth(year, month);
 }
 
+/** True for a real calendar date in ISO `YYYY-MM-DD` form (SPEC §4.2; field.date). */
+export function isIsoDate(value: Primitive): value is string {
+  const match = typeof value === 'string' ? ISO_DATE.exec(value) : null;
+  return match !== null && isCalendarDate(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
 function invalidDate(raw: string, offset: number): CodecDecodeError {
   return new CodecDecodeError('date', offset, `Invalid DD/MM/YYYY date "${raw}"`);
 }
@@ -31,15 +37,10 @@ const dateCodec: Codec = {
     if (value === undefined) {
       return blank(shape);
     }
-    const match = typeof value === 'string' ? ISO_DATE.exec(value) : null;
-    if (
-      !match ||
-      !isCalendarDate(Number(match[1]), Number(match[2]), Number(match[3])) ||
-      shape.length !== FILE_DATE_PATTERN.length
-    ) {
+    if (!isIsoDate(value) || shape.length !== FILE_DATE_PATTERN.length) {
       throw invalid(value, shape, `a real calendar date YYYY-MM-DD in a field of width 10`);
     }
-    const [, year, month, day] = match;
+    const [year, month, day] = value.split('-');
     return `${day}/${month}/${year}`;
   },
   decode(raw, shape) {

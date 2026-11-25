@@ -55,12 +55,88 @@ export const RULES = [
       'Normalized text longer than the field width, or a number with more digits than the width.',
   },
   {
+    id: 'field.integer',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description:
+      "An amount, amountX or num value is not an integer (with rounding 'halfUp', amounts are rounded instead).",
+    specRef: { page: 13, note: 'no dots' },
+  },
+  {
+    id: 'field.decimals',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description:
+      'An amountX100, percentX100, percentLiteral or rateX100 value has more than 2 decimals.',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'field.negative',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description: 'A number is negative (losses have their own codes).',
+    specRef: { page: 13 },
+  },
+  {
+    id: 'field.enum',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description:
+      'An enum or rateX100 value is not one of the values of its field or code (the values of other kinds are documentation).',
+  },
+  {
+    id: 'field.date',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description: 'A date is not a real calendar date in ISO YYYY-MM-DD form.',
+  },
+  {
+    id: 'field.percentRange',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description:
+      'A percentage (percentX100, percentLiteral) is outside 1–100, compared as written (rounded to hundredths).',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'field.hebrewFirstLetter',
+    severity: 'error',
+    source: 'spec',
+    scope: 'report',
+    description: 'A hebrewText value does not start with a Hebrew letter (U+05D0–U+05EA).',
+    specRef: { page: 9 },
+  },
+  {
     id: 'field.charset',
     severity: 'error',
     source: 'derived',
     scope: 'report',
     description:
       'A text value (after SPEC §4.3 normalization) contains a control character or a character not representable in windows-1255.',
+  },
+  {
+    id: 'field.phonePrefix',
+    severity: 'warning',
+    source: 'spec',
+    scope: 'report',
+    description:
+      'A phone or fax prefix is not in the allowed list: it is dropped (SHAAM deletes it); for the required 1000@493 the follow-up field.required is the error.',
+    specRef: { page: 6 },
+  },
+  {
+    id: 'field.phoneNumber',
+    severity: 'error',
+    source: 'derived',
+    scope: 'report',
+    description:
+      'A phone or fax number is not exactly 7 digits (shorter numbers would be silently zero-padded).',
+    specRef: { page: 6 },
   },
 ] as const satisfies readonly RuleMetaInput[];
 

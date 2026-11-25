@@ -314,8 +314,12 @@ representable in windows-1255 and are kept. Length checks run on the normalized 
 - `amount`/`amountX`: must be an integer. Option `rounding: 'reject' | 'halfUp'` (default
   `'reject'`): `'reject'` raises `field.integer`; `'halfUp'` rounds half away from zero and reports
   nothing. There is no silent rounding by default (R-14).
-- `amountX100`/`percentX100`/`percentLiteral`: at most 2 decimals. Check with integer arithmetic:
-  `scaled = Math.round(v * 100)`; error `field.decimals` if `Math.abs(v * 100 - scaled) > 1e-6`.
+- `amountX100`/`percentX100`/`percentLiteral` (and `rateX100`): at most 2 decimals. Check with
+  integer arithmetic: `p = v * 100`, `scaled = Math.round(p)`; error `field.decimals` if
+  `Math.abs(p - scaled) > Math.max(1e-6, 4 * Number.EPSILON * Math.abs(p))`. The tolerance grows
+  with the magnitude because `v * 100` carries a rounding error of about one ulp, which exceeds a
+  fixed `1e-6` for amounts above about 10^8 (e.g. `9481199461.12 * 100` is off by 1.2e-4); a third
+  decimal moves `p` by at least 0.1, far above the tolerance at any width of the layout.
 - Negative values ⇒ `field.negative` (losses have their own codes; p.13 forbids signs).
 - Max value is implied by width (`10^width - 1`); exceeding it ⇒ `field.length`.
 
@@ -1253,11 +1257,11 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 | `field.numeric`           | E   | spec    | digit-string field (`id9`, `shareholderId`, `digits`: phone/fax numbers, withholder branch/account) contains non-digits                              | type column    |
 | `field.length`            | E   | spec    | normalized text longer than width, or number with more digits than width                                                                             | length column  |
 | `field.integer`           | E   | spec    | `amount`/`amountX`/`num` not an integer (`rounding: 'reject'`)                                                                                       | p.13 "no dots" |
-| `field.decimals`          | E   | spec    | `amountX100`/`percentX100`/`percentLiteral` with more than 2 decimals                                                                                | p.10, 23, 35   |
+| `field.decimals`          | E   | spec    | `amountX100`/`percentX100`/`percentLiteral`/`rateX100` with more than 2 decimals                                                                     | p.10, 23, 35   |
 | `field.negative`          | E   | spec    | negative number                                                                                                                                      | p.13           |
 | `field.enum`              | E   | spec    | kinds `enum` and `rateX100` only: value not in `values` (code 014 ∉ {1, 2, 12}; 018 ∉ 2..7; 30xx 018 ∉ {23, 50}; relation type ∉ 1..8)               | values column  |
 | `field.date`              | E   | spec    | not a valid ISO date (input) / `DD/MM/YYYY` (parse)                                                                                                  | date fields    |
-| `field.percentRange`      | E   | spec    | percentage outside 1–100                                                                                                                             | p.10, 23       |
+| `field.percentRange`      | E   | spec    | percentage outside 1–100, compared as written (rounded to hundredths, so float noise such as `100.00000000000001` is 100)                            | p.10, 23       |
 | `field.hebrewFirstLetter` | E   | spec    | `hebrewText` value whose first character is not א–ת                                                                                                  | p.9, 23, 34 …  |
 | `field.charset`           | E   | derived | control character or character not representable in windows-1255 (after §4.3); the message names the first one and its 1-based position              | §4.3           |
 | `field.phonePrefix`       | W   | spec    | prefix not in the allowed list: the prefix is dropped (SHAAM deletes it, p.6); for the required 1000@493 the follow-up `field.required` is the error | p.6–7          |
