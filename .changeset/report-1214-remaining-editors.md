@@ -10,4 +10,4 @@ kept and suppresses the code; code 165 always follows the R&D investments). A ne
 section edits the attachments, a changed bank account, other taxable income, the capital-gains
 appendices summary and a qualifying-company purchase. Each block has its own Save and Cancel, saves
 the whole block, shows the server's validation message as is, and refreshes the report's
-validation afterwards.
+validation afterwards. The validation panel links issues in these blocks to the new section.

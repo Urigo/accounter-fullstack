@@ -50,7 +50,7 @@ export const useUpdateReport1214Profile = (): UseUpdateReport1214Profile => {
     select: () => true,
     successToast: (_result, variables) => ({
       title: 'Saved',
-      description: `The form 1214 ${blockName.current} for ${variables.year} were saved`,
+      description: `Saved the form 1214 ${blockName.current} for ${variables.year}`,
     }),
   });
 
