@@ -1,9 +1,14 @@
-import { useCallback, type ReactElement } from 'react';
+import { Fragment, useCallback, useState, type ReactElement } from 'react';
+import { PackageMinus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargeDepreciationDocument, DepreciationType } from '../../../gql/graphql.js';
 import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
+import { Button } from '../../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
+import { Tooltip } from '../index.js';
 import { AddDepreciationRecord } from './add-depreciation-record.js';
+import { DepreciationDisposalModal } from './depreciation-disposal-modal.js';
+import { DepreciationDisposalsList } from './depreciation-disposals-list.js';
 import { DepreciationRow } from './depreciation-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -12,6 +17,16 @@ import { DepreciationRow } from './depreciation-row.js';
     depreciationRecordsByCharge(chargeId: $chargeId) {
       id
       ...DepreciationRecordRowFields
+      amount {
+        currency
+      }
+      remainingCost {
+        raw
+      }
+      disposals {
+        id
+        ...DepreciationDisposalFields
+      }
     }
   }
 `;
@@ -55,7 +70,26 @@ export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
         </TableHeader>
         <TableBody>
           {data?.depreciationRecordsByCharge.map(depreciation => (
-            <DepreciationRow data={depreciation} onChange={onRecordsChange} key={depreciation.id} />
+            <Fragment key={depreciation.id}>
+              <DepreciationRow data={depreciation} onChange={onRecordsChange} />
+              <TableRow>
+                <TableCell colSpan={5} className="pt-0">
+                  <div className="flex flex-col gap-2 pl-4">
+                    <DepreciationDisposalsList
+                      disposals={depreciation.disposals}
+                      onChange={onRecordsChange}
+                    />
+                    {depreciation.remainingCost.raw > 0 && (
+                      <RecordDisposalButton
+                        depreciationRecordId={depreciation.id}
+                        assetCurrency={depreciation.amount.currency}
+                        onDone={onRecordsChange}
+                      />
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            </Fragment>
           ))}
           <TableRow>
             <TableCell colSpan={5}>
@@ -72,3 +106,42 @@ export const depreciationTypes = Object.entries(DepreciationType).map(([key, val
   value,
   label: key,
 }));
+
+function RecordDisposalButton({
+  depreciationRecordId,
+  assetCurrency,
+  onDone,
+}: {
+  depreciationRecordId: string;
+  assetCurrency?: string | null;
+  onDone?: () => void;
+}): ReactElement {
+  const [opened, setOpened] = useState(false);
+  return (
+    <>
+      <Tooltip content="Record a sale, supplier refund or write-off of this asset">
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={event => {
+            event.stopPropagation();
+            setOpened(true);
+          }}
+        >
+          <PackageMinus className="size-4" />
+          Dispose / refund
+        </Button>
+      </Tooltip>
+      {opened && (
+        <DepreciationDisposalModal
+          opened={opened}
+          close={() => setOpened(false)}
+          onDone={onDone}
+          depreciationRecordId={depreciationRecordId}
+          assetCurrency={assetCurrency}
+        />
+      )}
+    </>
+  );
+}

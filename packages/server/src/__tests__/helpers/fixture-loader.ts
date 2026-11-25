@@ -66,12 +66,20 @@ export type FixtureIdMapping = Map<string, string>;
  * error handling for clear diagnostics. Insertion order ensures foreign key
  * constraints are satisfied:
  *
+ * 0. Exchange rates and depreciation categories (global tables)
  * 1. Businesses (financial entities)
  * 2. Tax categories (financial entities)
  * 3. Financial accounts (references businesses)
  * 4. Charges (references businesses and tax categories)
  * 5. Transactions (references charges, accounts, businesses)
  * 6. Documents (references charges and businesses)
+ * 7. Misc expenses (references charges and financial entities)
+ * 8. Depreciation records (references charges and depreciation categories)
+ * 9. Depreciation disposals (references depreciation records and charges)
+ *
+ * The misc-expense and depreciation sections may build on a fixture inserted before in the same
+ * transaction (e.g. disposals entered after the assets they dispose of): their references to rows
+ * the fixture doesn't define are left to the foreign keys at insertion time.
  *
  * Each section is wrapped in a SAVEPOINT so that partial failures can be
  * rolled back to a known state with clear error context.
@@ -144,6 +152,19 @@ export async function insertFixture(
 
   const idMapping: FixtureIdMapping = new Map();
 
+  // Pin the RLS write target to a row's owner, as the transactions and documents below do, rather
+  // than inheriting whatever the previous section left in the session.
+  async function setWriteTarget(ownerId: string | null | undefined, what: string) {
+    const writeTarget = ownerId || adminBusinessId;
+    if (!writeTarget) {
+      throw new Error(
+        `${what} has no owner id and no adminBusinessId was provided, so the RLS write target ` +
+          `cannot be determined.`,
+      );
+    }
+    await client.query("SELECT set_config('app.current_business_id', $1, true)", [writeTarget]);
+  }
+
   // Helper to execute a section with savepoint protection
   async function executeSavepointSection<T>(
     sectionName: string,
@@ -165,6 +186,43 @@ export async function insertFixture(
         { savepointName },
       );
     }
+  }
+
+  // 0a. Upsert exchange rates (a global table, one row per date): only the given currencies are
+  // written, so a row the database already holds keeps its other currencies
+  if (fixture.exchangeRates?.rates && fixture.exchangeRates.rates.length > 0) {
+    await executeSavepointSection('exchange_rates', async () => {
+      for (const rate of fixture.exchangeRates!.rates) {
+        const currencies = EXCHANGE_RATE_COLUMNS.filter(column => rate[column] != null);
+        const columns = ['exchange_date', ...currencies];
+        const placeholders = columns.map((_, index) => `$${index + 1}`);
+        const updates = currencies.map(column => `${column} = EXCLUDED.${column}`);
+        await client.query(
+          `INSERT INTO ${qualifyTable('exchange_rates')} (${columns.join(', ')})
+           VALUES (${placeholders.join(', ')})
+           ON CONFLICT (exchange_date) DO ${updates.length > 0 ? `UPDATE SET ${updates.join(', ')}` : 'NOTHING'}`,
+          [rate.date, ...currencies.map(column => rate[column])],
+        );
+      }
+    });
+  }
+
+  // 0b. Insert depreciation categories (a global table)
+  if (
+    fixture.depreciationCategories?.categories &&
+    fixture.depreciationCategories.categories.length > 0
+  ) {
+    await executeSavepointSection('depreciation_categories', async () => {
+      for (const category of fixture.depreciationCategories!.categories) {
+        await client.query(
+          `INSERT INTO ${qualifyTable('depreciation_categories')} (id, name, percentage)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (id) DO NOTHING`,
+          [category.id, category.name, category.percentage],
+        );
+        idMapping.set(category.id, category.id);
+      }
+    });
   }
 
   // 1. Insert businesses (financial entities of type 'business')
@@ -477,5 +535,103 @@ export async function insertFixture(
     });
   }
 
+  // 7. Insert misc expenses (reference charges and financial entities)
+  if (fixture.miscExpenses?.expenses && fixture.miscExpenses.expenses.length > 0) {
+    await executeSavepointSection('misc_expenses', async () => {
+      for (const expense of fixture.miscExpenses!.expenses) {
+        await setWriteTarget(expense.ownerId, `Misc expense ${expense.id}`);
+        await client.query(
+          `INSERT INTO ${qualifyTable('misc_expenses')} (
+            id, charge_id, owner_id, amount, currency, creditor_id, debtor_id, description,
+            invoice_date, value_date
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          ON CONFLICT (id) DO NOTHING`,
+          [
+            expense.id,
+            expense.chargeId,
+            expense.ownerId,
+            expense.amount,
+            expense.currency,
+            expense.creditorId,
+            expense.debtorId,
+            expense.description ?? null,
+            expense.invoiceDate,
+            expense.valueDate,
+          ],
+        );
+        idMapping.set(expense.id, expense.id);
+      }
+    });
+  }
+
+  // 8. Insert depreciation records (reference charges and depreciation categories)
+  if (fixture.depreciationRecords?.records && fixture.depreciationRecords.records.length > 0) {
+    await executeSavepointSection('depreciation_records', async () => {
+      for (const record of fixture.depreciationRecords!.records) {
+        await setWriteTarget(record.ownerId, `Depreciation record ${record.id}`);
+        await client.query(
+          `INSERT INTO ${qualifyTable('depreciation')} (
+            id, charge_id, owner_id, category, amount, currency, local_amount, activation_date,
+            type, asset_tax_category_id
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          ON CONFLICT (id) DO NOTHING`,
+          [
+            record.id,
+            record.chargeId,
+            record.ownerId,
+            record.categoryId,
+            record.amount,
+            record.currency ?? null,
+            record.localAmount ?? null,
+            record.activationDate,
+            record.type ?? null,
+            record.assetTaxCategoryId ?? null,
+          ],
+        );
+        idMapping.set(record.id, record.id);
+      }
+    });
+  }
+
+  // 9. Insert depreciation disposals (reference depreciation records and charges)
+  if (
+    fixture.depreciationDisposals?.disposals &&
+    fixture.depreciationDisposals.disposals.length > 0
+  ) {
+    await executeSavepointSection('depreciation_disposals', async () => {
+      for (const disposal of fixture.depreciationDisposals!.disposals) {
+        await setWriteTarget(disposal.ownerId, `Depreciation disposal ${disposal.id}`);
+        await client.query(
+          `INSERT INTO ${qualifyTable('depreciation_disposals')} (
+            id, owner_id, depreciation_id, charge_id, type, refund_mode, disposal_date,
+            disposed_cost, original_amount, original_currency, proceeds, description
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          ON CONFLICT (id) DO NOTHING`,
+          [
+            disposal.id,
+            disposal.ownerId,
+            disposal.depreciationId,
+            disposal.chargeId ?? null,
+            disposal.type,
+            disposal.refundMode ?? null,
+            disposal.disposalDate,
+            disposal.disposedCost ?? null,
+            disposal.originalAmount ?? null,
+            disposal.originalCurrency ?? null,
+            disposal.proceeds ?? '0',
+            disposal.description ?? null,
+          ],
+        );
+        idMapping.set(disposal.id, disposal.id);
+      }
+    });
+  }
+
   return idMapping;
 }
+
+/** The currency columns of `exchange_rates` */
+const EXCHANGE_RATE_COLUMNS = ['usd', 'eur', 'gbp', 'cad', 'jpy', 'aud', 'sek'] as const;
