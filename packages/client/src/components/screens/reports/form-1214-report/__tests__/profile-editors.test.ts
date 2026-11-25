@@ -42,6 +42,18 @@ describe('parseOptionalNumber', () => {
     expect(parseOptionalNumber('-7')).toBe(-7);
     expect(parseOptionalNumber('abc')).toBeUndefined();
   });
+
+  it('accepts commas only as thousands separators, and no exponent or hex', () => {
+    expect(parseOptionalNumber('1,234,567')).toBe(1_234_567);
+    expect(parseOptionalNumber('-12,345.67')).toBe(-12_345.67);
+    expect(parseOptionalNumber('12,5')).toBeUndefined();
+    expect(parseOptionalNumber('1,23')).toBeUndefined();
+    expect(parseOptionalNumber('1234,567')).toBeUndefined();
+    expect(parseOptionalNumber('1e3')).toBeUndefined();
+    expect(parseOptionalNumber('0x10')).toBeUndefined();
+    expect(parseOptionalNumber('.5')).toBeUndefined();
+    expect(parseOptionalNumber('5.')).toBeUndefined();
+  });
 });
 
 describe('related companies', () => {

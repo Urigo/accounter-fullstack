@@ -1,4 +1,4 @@
-import { useMemo, type ReactElement } from 'react';
+import { useMemo, useRef, type ReactElement } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -90,17 +90,23 @@ function RelatedCompaniesEditor({
     resolver: zodResolver(relatedCompaniesFormSchema),
     toInput: values => {
       const input = relatedCompanyRowsToInput(values.rows);
-      // The schema ran the same checks, so the rows are valid here
-      return { relatedCompanies: input.ok ? input.value : [] };
+      // The schema ran the same checks; `null` (never expected) sends nothing
+      return input.ok ? { relatedCompanies: input.value } : null;
     },
   });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'rows' });
   const { isDirty } = form.formState;
+  const addButton = useRef<HTMLButtonElement>(null);
+  // The removed row's button disappears: move the focus to the add button
+  const removeRow = (index: number): void => {
+    remove(index);
+    addButton.current?.focus();
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-3" aria-label="Related companies">
-        <fieldset disabled={saving} className="space-y-3">
+        <fieldset disabled={saving} className="min-w-0 space-y-3">
           {fields.length === 0 ? (
             <Empty>
               {isDirty
@@ -115,7 +121,9 @@ function RelatedCompaniesEditor({
                   <TableHead>File number</TableHead>
                   <TableHead>Relation</TableHead>
                   <TableHead>Assessing office</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-10">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -145,7 +153,7 @@ function RelatedCompaniesEditor({
                         render={({ field }): ReactElement => (
                           <FormItem className="gap-1">
                             <Select
-                              value={field.value || undefined}
+                              value={field.value ?? ''}
                               onValueChange={value =>
                                 field.onChange(value as Report1214RelatedCompanyRelationType)
                               }
@@ -188,7 +196,7 @@ function RelatedCompaniesEditor({
                         variant="ghost"
                         size="icon"
                         aria-label={`Remove related company ${index + 1}`}
-                        onClick={() => remove(index)}
+                        onClick={() => removeRow(index)}
                       >
                         <Trash2 />
                       </Button>
@@ -205,6 +213,7 @@ function RelatedCompaniesEditor({
             </p>
           )}
           <Button
+            ref={addButton}
             type="button"
             variant="outline"
             size="sm"

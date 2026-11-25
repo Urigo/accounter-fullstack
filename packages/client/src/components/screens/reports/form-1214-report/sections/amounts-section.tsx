@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -78,7 +78,7 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
         An override replaces the computed amount of its code. An override of 0 is kept, not removed:
         for a code that does not allow zero, it leaves the code out of the report. Remove an
         override to go back to the computed amount. Code {RD_TOTAL_CODE} is the total of the R&D
-        investments and always follows them.
+        investments and always follows them, unless an override was set through the API.
       </p>
       <AmountsEditor key={year} overrides={profile.amountOverrides} amounts={amounts} />
     </Section>
@@ -106,8 +106,8 @@ function AmountsEditor({
     resolver: zodResolver(amountOverridesFormSchema),
     toInput: values => {
       const input = buildAmountOverridesInput(values.overrides);
-      // The schema ran the same checks, so the overrides are valid here
-      return { amountOverrides: input.ok ? input.value : [] };
+      // The schema ran the same checks; `null` (never expected) sends nothing
+      return input.ok ? { amountOverrides: input.value } : null;
     },
   });
   const { fields, insert, remove } = useFieldArray({ control: form.control, name: 'overrides' });
@@ -117,13 +117,32 @@ function AmountsEditor({
   const rows = amountEditorRows(amounts, fields);
   const indexByCode = new Map(fields.map((field, index) => [field.code, index]));
 
+  // The pending new override is deliberately outside the form: it is not part of the block until
+  // "Add" checks it and inserts it, and it must not make the block dirty or be validated on Save
   const [newCode, setNewCode] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [addErrors, setAddErrors] = useState<{ code?: string; amount?: string }>({});
 
+  const addButton = useRef<HTMLButtonElement>(null);
+
+  // `insert` focuses the new override's amount input
   const addOverride = (code: string, amount: string): void => {
     const trimmed = code.trim();
     insert(overrideInsertIndex(fields, trimmed), { code: trimmed, amount });
+  };
+
+  // The removed row's button disappears: move the focus to "Add override"
+  const removeOverride = (index: number): void => {
+    remove(index);
+    addButton.current?.focus();
+  };
+
+  // Enter adds the pending override instead of submitting the whole block
+  const addOnEnter = (event: KeyboardEvent<HTMLInputElement>): void => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      onAdd();
+    }
   };
 
   // The new-override inputs are checked when "Add" is pressed, not while typing
@@ -144,7 +163,7 @@ function AmountsEditor({
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-3" aria-label="Amount overrides">
-        <fieldset disabled={saving} className="space-y-3">
+        <fieldset disabled={saving} className="min-w-0 space-y-3">
           {rows.length === 0 ? (
             <Empty>No amounts are computed or entered for this year.</Empty>
           ) : (
@@ -156,7 +175,9 @@ function AmountsEditor({
                   <TableHead className="text-right">Computed</TableHead>
                   <TableHead className="text-right">Override</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-10">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,7 +243,7 @@ function AmountsEditor({
                             variant="ghost"
                             size="icon"
                             aria-label={`Remove the override of code ${row.code}`}
-                            onClick={() => remove(index)}
+                            onClick={() => removeOverride(index)}
                           >
                             <Trash2 />
                           </Button>
@@ -238,7 +259,6 @@ function AmountsEditor({
             <div>
               <Input
                 inputMode="numeric"
-                maxLength={3}
                 className="w-24 font-mono"
                 placeholder="Code"
                 aria-label="Code of the new override"
@@ -249,6 +269,7 @@ function AmountsEditor({
                   setNewCode(event.target.value);
                   setAddErrors(errors => ({ ...errors, code: undefined }));
                 }}
+                onKeyDown={addOnEnter}
               />
               {addErrors.code && <AddError id={NEW_CODE_ERROR_ID} message={addErrors.code} />}
             </div>
@@ -265,10 +286,11 @@ function AmountsEditor({
                   setNewAmount(event.target.value);
                   setAddErrors(errors => ({ ...errors, amount: undefined }));
                 }}
+                onKeyDown={addOnEnter}
               />
               {addErrors.amount && <AddError id={NEW_AMOUNT_ERROR_ID} message={addErrors.amount} />}
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={onAdd}>
+            <Button ref={addButton} type="button" variant="outline" size="sm" onClick={onAdd}>
               <Plus /> Add override
             </Button>
           </div>

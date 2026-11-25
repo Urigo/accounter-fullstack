@@ -9,14 +9,25 @@ export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string
 export const parsed = <T>(value: T): ParseResult<T> => ({ ok: true, value });
 export const parseError = <T = never>(error: string): ParseResult<T> => ({ ok: false, error });
 
-/** A blank-or-number text: `null` when blank, `undefined` when not a finite number. */
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/;
+const GROUPED_NUMBER = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+/**
+ * A blank-or-number text: `null` when blank, `undefined` when not a plain decimal number. Commas
+ * are accepted only as thousands separators (`1,234.5`); `12,5`, `1e3` and `0x10` are invalid.
+ */
 export function parseOptionalNumber(text: string): number | null | undefined {
-  const trimmed = text.trim().replaceAll(',', '');
+  const trimmed = text.trim();
   if (trimmed === '') {
     return null;
   }
-  const value = Number(trimmed);
-  return Number.isFinite(value) ? value : undefined;
+  if (PLAIN_NUMBER.test(trimmed)) {
+    return Number(trimmed);
+  }
+  if (GROUPED_NUMBER.test(trimmed)) {
+    return Number(trimmed.replaceAll(',', ''));
+  }
+  return undefined;
 }
 
 /** A blank-or-non-negative-integer text: `null` when blank, `undefined` when invalid. */

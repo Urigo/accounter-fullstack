@@ -36,6 +36,8 @@ export type OtherDetailsField = {
   label: string;
   kind: OtherDetailsFieldKind;
   digits?: [number, number];
+  /** A short hint under the field. */
+  hint?: string;
 };
 
 export type OtherDetailsBlock = {
@@ -83,7 +85,12 @@ export const OTHER_DETAILS_BLOCKS: OtherDetailsBlock[] = [
     fields: [
       { path: 'source', label: 'Source', kind: 'text' },
       { path: 'amount', label: 'Amount', kind: 'number' },
-      { path: 'ratePercent', label: 'Tax rate %', kind: 'number' },
+      {
+        path: 'ratePercent',
+        label: 'Tax rate %',
+        kind: 'number',
+        hint: 'Between 0 and 100, at most 2 decimals',
+      },
     ],
   },
   {

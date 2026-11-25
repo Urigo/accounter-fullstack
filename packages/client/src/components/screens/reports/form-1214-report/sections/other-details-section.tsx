@@ -10,6 +10,7 @@ import { Checkbox } from '../../../../ui/checkbox.js';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -115,8 +116,8 @@ function OtherDetailsBlockEditor({
     resolver,
     toInput: values => {
       const input = otherDetailsBlockToInput(block, otherDetailsValuesFromForm(block, values));
-      // The schema ran the same checks, so the values are valid here
-      return { [block.key]: input.ok ? input.value : null } as Report1214ProfileInput;
+      // The schema ran the same checks; `null` (never expected) sends nothing
+      return input.ok ? ({ [block.key]: input.value } as Report1214ProfileInput) : null;
     },
   });
 
@@ -133,7 +134,7 @@ function OtherDetailsBlockEditor({
         </div>
         <fieldset
           disabled={saving}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
         >
           {block.fields.map((field, index) => (
             <FieldControl key={field.path} control={form.control} index={index} field={field} />
@@ -199,9 +200,9 @@ function FieldControl({
                   definition.kind === 'number' ? 'decimal' : numeric ? 'numeric' : undefined
                 }
                 className={definition.kind === 'digits' ? 'font-mono' : undefined}
-                maxLength={definition.kind === 'digits' ? definition.digits?.[1] : undefined}
               />
             </FormControl>
+            {definition.hint && <FormDescription>{definition.hint}</FormDescription>}
             <FormMessage />
           </FormItem>
         );

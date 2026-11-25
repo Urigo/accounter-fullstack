@@ -22,8 +22,12 @@ export function useProfileBlockForm<T extends FieldValues>({
   /** The form state of the saved block; a new value is the refreshed report. */
   defaults: T;
   resolver: Resolver<T>;
-  /** The profile input to send; called with valid values only. */
-  toInput: (values: T) => Report1214ProfileInput;
+  /**
+   * The profile input to send; called with valid values only. `null` means the values could not
+   * be turned into input after all: nothing is sent, since a block is replaced whole and a
+   * fallback would wipe what is stored.
+   */
+  toInput: (values: T) => Report1214ProfileInput | null;
 }) {
   const form = useForm<T>({
     mode: 'onTouched',
@@ -36,7 +40,12 @@ export function useProfileBlockForm<T extends FieldValues>({
   useReportDirtyState(section, form.formState.isDirty);
 
   const onSubmit = form.handleSubmit(async values => {
-    if (await save(toInput(values), blockName)) {
+    const input = toInput(values);
+    if (!input) {
+      console.error(`Form 1214 ${blockName}: the validated values could not be saved`, values);
+      return;
+    }
+    if (await save(input, blockName)) {
       // What was sent shows until the refreshed report replaces it
       markSaved(values);
     }
