@@ -221,6 +221,7 @@ import migration_2026_10_25T12_00_00_provider_credentials_business_id from './ac
 import migration_2026_11_18T12_00_00_poalim_swift_document_type_code from './actions/2026-11-18T12-00-00.poalim-swift-document-type-code.js';
 import migration_2026_11_22T12_00_00_add_poalim_deposit_tax_events_table from './actions/2026-11-22T12-00-00.add-poalim-deposit-tax-events-table.js';
 import migration_2026_11_22T13_00_00_bank_deposit_withholding_tax_category from './actions/2026-11-22T13-00-00.bank-deposit-withholding-tax-category.js';
+import migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders from './actions/2026-11-25T12-00-00.report-1214-profile-and-shareholders.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -446,6 +447,7 @@ export const MIGRATIONS = [
   migration_2026_11_18T12_00_00_poalim_swift_document_type_code,
   migration_2026_11_22T12_00_00_add_poalim_deposit_tax_events_table,
   migration_2026_11_22T13_00_00_bank_deposit_withholding_tax_category,
+  migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
