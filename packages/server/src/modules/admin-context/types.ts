@@ -115,6 +115,15 @@ export type AdminContext = {
     rndDepreciationExpensesTaxCategoryId: string | null;
     gnmDepreciationExpensesTaxCategoryId: string | null;
     marketingDepreciationExpensesTaxCategoryId: string | null;
+    /** Gain on disposal of fixed assets (map to sort code 991 / IRS code 5210) */
+    disposalGainTaxCategoryId: string | null;
+    /** Loss on disposal of fixed assets (IRS code 5310) */
+    disposalLossTaxCategoryId: string | null;
+    /**
+     * Depreciation correction: ordinary income from cost refunds (the recapture, or the excess of a
+     * refund over book value). Sort and IRS codes to be confirmed with the accountant.
+     */
+    correctionTaxCategoryId: string | null;
   };
 };
 

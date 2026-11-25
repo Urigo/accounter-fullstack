@@ -3,17 +3,28 @@ import { GraphQLError } from 'graphql';
 import {
   currentTenantYear,
   endOfTimelessYear,
-  getTimelessDateYear,
   startOfTimelessYear,
 } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import {
+  calculateAssetYear,
+  type AssetDepreciationInput,
+  type AssetYearResult,
+} from '../../depreciation/helpers/asset-depreciation.helper.js';
+import {
+  loadAssetInput,
+  loadDisposalInputs,
+} from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
-import { IGetAllDepreciationCategoriesResult } from '../../depreciation/types.js';
-import { calculateDepreciation } from '../helpers/depreciation-report.helper.js';
+import type {
+  IGetAllDepreciationCategoriesResult,
+  IGetDepreciationDisposalsByIdsResult,
+} from '../../depreciation/types.js';
 import type { ReportsModule } from '../types.js';
 
 type AssetRecord = {
@@ -24,14 +35,85 @@ type AssetRecord = {
   activationDate: TimelessDateString;
   originalCost: number;
   reportYearDelta: number;
+  reportYearDisposedCost: number;
+  reportYearRefundedCost: number;
   totalDepreciableCosts: number;
   statutoryDepreciationRate: number;
   claimedDepreciationRate: number;
   reportYearClaimedDepreciation: number;
   pastYearsAccumulatedDepreciation: number;
+  reportYearDisposedDepreciation: number;
+  reportYearDepreciationCorrection: number;
   totalDepreciation: number;
   netValue: number;
+  reportYearDisposalProceeds: number;
+  reportYearDisposalGainLoss: number;
+  disposalDate?: TimelessDateString;
+  /** The year's sales and write-offs */
+  disposals: IGetDepreciationDisposalsByIdsResult[];
+  /** The year's cost refunds */
+  costRefunds: IGetDepreciationDisposalsByIdsResult[];
 };
+
+const SUMMARY_KEYS = [
+  'originalCost',
+  'reportYearDelta',
+  'reportYearDisposedCost',
+  'reportYearRefundedCost',
+  'totalDepreciableCosts',
+  'reportYearClaimedDepreciation',
+  'pastYearsAccumulatedDepreciation',
+  'reportYearDisposedDepreciation',
+  'reportYearDepreciationCorrection',
+  'totalDepreciation',
+  'netValue',
+  'reportYearDisposalProceeds',
+  'reportYearDisposalGainLoss',
+] as const;
+
+type Summary = Record<(typeof SUMMARY_KEYS)[number], number>;
+
+function emptySummary(): Summary {
+  return Object.fromEntries(SUMMARY_KEYS.map(key => [key, 0])) as Summary;
+}
+
+function addToSummary(summary: Summary, record: Summary) {
+  for (const key of SUMMARY_KEYS) {
+    summary[key] += record[key];
+  }
+}
+
+function nullableRound(value?: number | null) {
+  return value ? Math.round(value) : null;
+}
+
+/**
+ * True when an asset with a cost was closed by its events (fully disposed of or refunded) before
+ * the year started, so it had nothing on the books during the year and gets no row. An asset
+ * without a cost (a missing amount) is not closed: its zero row is the cue to fill it in.
+ */
+function isClosedBeforeYear(
+  asset: AssetDepreciationInput,
+  events: readonly Pick<IGetDepreciationDisposalsByIdsResult, 'disposal_date'>[],
+  yearStart: TimelessDateString,
+  yearResult: AssetYearResult,
+) {
+  return (
+    asset.cost > 0 &&
+    events.some(event => event.disposal_date < yearStart) &&
+    yearResult.openingCost === 0 &&
+    yearResult.additions === 0 &&
+    yearResult.disposals.length === 0 &&
+    yearResult.costRefunds.length === 0 &&
+    yearResult.openingAccumulatedDepreciation === 0 &&
+    yearResult.closingAccumulatedDepreciation === 0
+  );
+}
+
+/** A category with a 0% rate holds assets that are not depreciated, such as trademarks */
+function isDepreciated(category: Pick<IGetAllDepreciationCategoriesResult, 'percentage'>) {
+  return Number(category.percentage) > 0;
+}
 
 export const depreciationReportResolvers: ReportsModule.Resolvers = {
   Query: {
@@ -68,70 +150,61 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
         depreciationCategoriesPromise,
       ]);
 
+      // Assets in categories that are not depreciated (0%) stay off the report: no rows, no totals
+      const notDepreciatedCategoryIds = new Set(
+        depreciationCategories
+          .filter(category => !isDepreciated(category))
+          .map(category => category.id),
+      );
       const categoryMap = new Map<
         string,
         {
           category: IGetAllDepreciationCategoriesResult;
           assets: AssetRecord[];
-          originalCost: number;
-          reportYearDelta: number;
-          totalDepreciableCosts: number;
-          reportYearClaimedDepreciation: number;
-          pastYearsAccumulatedDepreciation: number;
-          totalDepreciation: number;
-          netValue: number;
+          summary: Summary;
         }
       >(
-        depreciationCategories.map(category => [
-          category.id,
-          {
-            category,
-            assets: [],
-            originalCost: 0,
-            reportYearDelta: 0,
-            totalDepreciableCosts: 0,
-            reportYearClaimedDepreciation: 0,
-            pastYearsAccumulatedDepreciation: 0,
-            totalDepreciation: 0,
-            netValue: 0,
-          },
-        ]),
+        depreciationCategories
+          .filter(category => isDepreciated(category))
+          .map(category => [category.id, { category, assets: [], summary: emptySummary() }]),
       );
 
       await Promise.all(
         depreciationRecords.map(async record => {
+          if (notDepreciatedCategoryIds.has(record.category)) {
+            return;
+          }
           const depreciationCategory = categoryMap.get(record.category);
           if (!depreciationCategory) {
             console.error('No depreciation category for depreciation record', record);
             return;
           }
 
-          const [charge, { transactionsMinDebitDate }] = await Promise.all([
+          const [charge, { transactionsMinDebitDate }, disposals, asset] = await Promise.all([
             injector.get(ChargesProvider).getChargeByIdLoader.load(record.charge_id),
             getChargeTransactionsMeta(record.charge_id, injector),
+            injector
+              .get(DepreciationDisposalsProvider)
+              .getDisposalsByDepreciationIdLoader.load(record.id),
+            // the cost basis in the local currency: a foreign-currency asset is converted
+            loadAssetInput(injector, record, depreciationCategory.category),
           ]);
           if (!charge || charge instanceof Error) {
             console.error('No charge for depreciation record', record);
             return;
           }
 
-          const amount = Math.round(Number(record.amount));
-
-          const { yearlyDepreciationAmount, yearlyDepreciationRate, pastDepreciationAmount } =
-            calculateDepreciation(
-              Number(depreciationCategory.category.percentage),
-              amount,
-              record.activation_date,
-              year,
-              record.expiration_date ?? undefined,
-            );
-
-          const activationYear = getTimelessDateYear(record.activation_date);
-
-          const originalCost = activationYear === year ? 0 : amount;
-          const reportYearDelta = activationYear === year ? amount : 0;
-          const totalDepreciableCosts = originalCost + reportYearDelta;
-          const totalDepreciation = yearlyDepreciationAmount + pastDepreciationAmount;
+          const yearResult = calculateAssetYear(
+            asset,
+            await loadDisposalInputs(injector, record, disposals),
+            year,
+          );
+          if (isClosedBeforeYear(asset, disposals, startOfTimelessYear(year), yearResult)) {
+            return;
+          }
+          const yearDisposalIds = new Set(yearResult.disposals.map(disposal => disposal.id));
+          const yearRefundIds = new Set(yearResult.costRefunds.map(refund => refund.id));
+          const fullyDisposed = yearResult.closingCost === 0 && yearResult.disposals.length > 0;
 
           const assetRecord: AssetRecord = {
             id: record.id,
@@ -139,64 +212,50 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             description: charge.user_description ?? undefined,
             purchaseDate: transactionsMinDebitDate ?? record.activation_date,
             activationDate: record.activation_date,
-            originalCost,
-            reportYearDelta,
-            totalDepreciableCosts,
+            originalCost: yearResult.openingCost,
+            reportYearDelta: yearResult.additions,
+            reportYearDisposedCost: yearResult.disposedCost,
+            reportYearRefundedCost: yearResult.refundedCost,
+            totalDepreciableCosts: yearResult.closingCost,
             statutoryDepreciationRate: Number(depreciationCategory.category.percentage),
-            claimedDepreciationRate: yearlyDepreciationRate,
-            reportYearClaimedDepreciation: yearlyDepreciationAmount,
-            pastYearsAccumulatedDepreciation: pastDepreciationAmount,
-            totalDepreciation,
-            netValue: totalDepreciableCosts - totalDepreciation,
+            claimedDepreciationRate: yearResult.yearlyDepreciationRate,
+            reportYearClaimedDepreciation: yearResult.yearDepreciation,
+            pastYearsAccumulatedDepreciation: yearResult.openingAccumulatedDepreciation,
+            reportYearDisposedDepreciation: yearResult.disposedAccumulatedDepreciation,
+            reportYearDepreciationCorrection: yearResult.depreciationCorrection,
+            totalDepreciation: yearResult.closingAccumulatedDepreciation,
+            netValue: yearResult.netBookValue,
+            reportYearDisposalProceeds: yearResult.disposals.reduce(
+              (sum, disposal) => sum + disposal.proceeds,
+              0,
+            ),
+            reportYearDisposalGainLoss: yearResult.disposals.reduce(
+              (sum, disposal) => sum + disposal.gainLoss,
+              0,
+            ),
+            disposalDate: fullyDisposed ? yearResult.disposals.at(-1)?.disposalDate : undefined,
+            disposals: disposals.filter(disposal => yearDisposalIds.has(disposal.id)),
+            costRefunds: disposals.filter(disposal => yearRefundIds.has(disposal.id)),
           };
 
           depreciationCategory.assets.push(assetRecord);
-          depreciationCategory.originalCost += assetRecord.originalCost;
-          depreciationCategory.reportYearDelta += assetRecord.reportYearDelta;
-          depreciationCategory.totalDepreciableCosts += assetRecord.totalDepreciableCosts;
-          depreciationCategory.reportYearClaimedDepreciation +=
-            assetRecord.reportYearClaimedDepreciation;
-          depreciationCategory.pastYearsAccumulatedDepreciation +=
-            assetRecord.pastYearsAccumulatedDepreciation;
-          depreciationCategory.totalDepreciation += assetRecord.totalDepreciation;
-          depreciationCategory.netValue += assetRecord.netValue;
+          addToSummary(depreciationCategory.summary, assetRecord);
         }),
       );
 
-      const summary = {
-        originalCost: 0,
-        reportYearDelta: 0,
-        totalDepreciableCosts: 0,
-        reportYearClaimedDepreciation: 0,
-        pastYearsAccumulatedDepreciation: 0,
-        totalDepreciation: 0,
-        netValue: 0,
-      };
+      const summary = emptySummary();
 
       const categories = Array.from(categoryMap.values()).map(category => {
-        const categorySummary = {
+        addToSummary(summary, category.summary);
+        return {
           id: `${financialEntityId}-${category.category.id}-${year}`,
           category: category.category,
           records: category.assets,
           summary: {
             id: `${financialEntityId}-${category.category.id}-${year}`,
-            originalCost: category.originalCost,
-            reportYearDelta: category.reportYearDelta,
-            totalDepreciableCosts: category.totalDepreciableCosts,
-            reportYearClaimedDepreciation: category.reportYearClaimedDepreciation,
-            pastYearsAccumulatedDepreciation: category.pastYearsAccumulatedDepreciation,
-            totalDepreciation: category.totalDepreciation,
-            netValue: category.netValue,
+            ...category.summary,
           },
         };
-        summary.originalCost += category.originalCost;
-        summary.reportYearDelta += category.reportYearDelta;
-        summary.totalDepreciableCosts += category.totalDepreciableCosts;
-        summary.reportYearClaimedDepreciation += category.reportYearClaimedDepreciation;
-        summary.pastYearsAccumulatedDepreciation += category.pastYearsAccumulatedDepreciation;
-        summary.totalDepreciation += category.totalDepreciation;
-        summary.netValue += category.netValue;
-        return categorySummary;
       });
 
       return {
@@ -204,13 +263,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
         categories,
         summary: {
           id: `${financialEntityId}-${year}`,
-          originalCost: summary.originalCost,
-          reportYearDelta: summary.reportYearDelta,
-          totalDepreciableCosts: summary.totalDepreciableCosts,
-          reportYearClaimedDepreciation: summary.reportYearClaimedDepreciation,
-          pastYearsAccumulatedDepreciation: summary.pastYearsAccumulatedDepreciation,
-          totalDepreciation: summary.totalDepreciation,
-          netValue: summary.netValue,
+          ...summary,
         },
         year,
       };
@@ -219,6 +272,13 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
   DepreciationReportSummaryRecord: {
     originalCost: record => (record.originalCost ? Math.round(record.originalCost) : null),
     reportYearDelta: record => (record.reportYearDelta ? Math.round(record.reportYearDelta) : null),
+    reportYearDisposedCost: record => nullableRound(record.reportYearDisposedCost),
+    reportYearRefundedCost: record => nullableRound(record.reportYearRefundedCost),
+    reportYearDisposedDepreciation: record => nullableRound(record.reportYearDisposedDepreciation),
+    reportYearDepreciationCorrection: record =>
+      nullableRound(record.reportYearDepreciationCorrection),
+    reportYearDisposalProceeds: record => nullableRound(record.reportYearDisposalProceeds),
+    reportYearDisposalGainLoss: record => nullableRound(record.reportYearDisposalGainLoss),
     totalDepreciableCosts: record => Math.round(record.totalDepreciableCosts),
     reportYearClaimedDepreciation: record => Math.round(record.reportYearClaimedDepreciation),
     pastYearsAccumulatedDepreciation: record => Math.round(record.pastYearsAccumulatedDepreciation),
@@ -228,6 +288,13 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
   DepreciationReportRecord: {
     originalCost: record => (record.originalCost ? Math.round(record.originalCost) : null),
     reportYearDelta: record => (record.reportYearDelta ? Math.round(record.reportYearDelta) : null),
+    reportYearDisposedCost: record => nullableRound(record.reportYearDisposedCost),
+    reportYearRefundedCost: record => nullableRound(record.reportYearRefundedCost),
+    reportYearDisposedDepreciation: record => nullableRound(record.reportYearDisposedDepreciation),
+    reportYearDepreciationCorrection: record =>
+      nullableRound(record.reportYearDepreciationCorrection),
+    reportYearDisposalProceeds: record => nullableRound(record.reportYearDisposalProceeds),
+    reportYearDisposalGainLoss: record => nullableRound(record.reportYearDisposalGainLoss),
     totalDepreciableCosts: record => Math.round(record.totalDepreciableCosts),
     reportYearClaimedDepreciation: record => Math.round(record.reportYearClaimedDepreciation),
     pastYearsAccumulatedDepreciation: record => Math.round(record.pastYearsAccumulatedDepreciation),
