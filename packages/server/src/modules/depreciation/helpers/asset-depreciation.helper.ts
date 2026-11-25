@@ -42,7 +42,8 @@ export function naturalDepreciationEndDate(
  * @param activationDate - Date when the asset depreciation began
  * @param calculationYear - Year for which to calculate depreciation (as of December 31st)
  * @param depreciationEndDate - Optional natural end of depreciation (the asset's expiration date).
- *  In its year the whole remaining value is depreciated. Disposals are not modelled here: use
+ *  In its year the whole remaining value is depreciated; in later years the accumulated
+ *  depreciation stays at that year's closing balance. Disposals are not modelled here: use
  *  `calculateAssetYear` for assets that were sold, refunded or written off.
  * @returns Object containing yearly depreciation amount and past depreciation amount
  */
@@ -75,17 +76,21 @@ export function calculateDepreciation(
 
   // If depreciation ended before the calculation year, no yearly depreciation
   if (depreciationEndDate < startOfCalculationYear) {
-    // Calculate total depreciation up to the end date
-    const totalYearsActive = differenceInTimelessDays(depreciationEndDate, activationDate) / 365.25;
-    const totalDepreciation = Math.min(
+    // Accumulated depreciation stays at its closing balance of the end year. That call does not
+    // come back here (the end date is inside its year), and gives zeros when the end year is
+    // before the activation year.
+    const atEnd = calculateDepreciation(
+      depreciationRate,
       valueAmount,
-      Math.round(valueAmount * normalizedRate * totalYearsActive),
+      activationDate,
+      getTimelessDateYear(depreciationEndDate),
+      depreciationEndDate,
     );
 
     return {
       yearlyDepreciationAmount: 0,
       yearlyDepreciationRate: 0,
-      pastDepreciationAmount: totalDepreciation,
+      pastDepreciationAmount: atEnd.pastDepreciationAmount + atEnd.yearlyDepreciationAmount,
     };
   }
 
@@ -205,12 +210,59 @@ export type AssetYearResult = {
   disposals: AssetDisposalResult[];
 };
 
+/** Whether a disposed cost is a usable amount (validation rejects the others) */
+function isPositiveAmount(amount: number): boolean {
+  return Number.isFinite(amount) && amount > 0;
+}
+
+/** round(Σ raw disposed cost) in whole shekels, summed in agorot */
+function roundedDisposedTotal(rawCosts: readonly number[]): number {
+  const agorot = rawCosts
+    .filter(isPositiveAmount)
+    .reduce((sum, raw) => sum + Math.round(raw * 100), 0);
+  return Math.round(agorot / 100);
+}
+
+/**
+ * Splits disposed costs, in date order, into whole-shekel slices that add up to the rounded total,
+ * as the asset's cost is rounded (DB numerics carry agorot): each slice is round(Σ raw up to and
+ * including it) − round(Σ raw before it). Summing in agorot keeps float drift off the .5 edge.
+ * A slice depends only on the disposals before it, so adding or editing a later disposal never
+ * moves an earlier one. A disposed cost that is not positive takes a 0 slice and does not move the
+ * total.
+ */
+function wholeShekelSlices(rawCosts: readonly number[]): number[] {
+  let totalAgorot = 0;
+  let previousTotal = 0;
+  return rawCosts.map(raw => {
+    if (!isPositiveAmount(raw)) {
+      return 0;
+    }
+    totalAgorot += Math.round(raw * 100);
+    const total = Math.round(totalAgorot / 100);
+    const slice = total - previousTotal;
+    previousTotal = total;
+    return slice;
+  });
+}
+
 function sortDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalInput[] {
   return [...disposals].sort((a, b) =>
     a.disposalDate === b.disposalDate
       ? a.id.localeCompare(b.id)
       : a.disposalDate.localeCompare(b.disposalDate),
   );
+}
+
+/**
+ * The disposals by date (then id), with disposed cost in whole shekels, rounded cumulatively (see
+ * `wholeShekelSlices`). Proceeds are kept as given: they only feed the gain or loss, and the
+ * ledger moves them out of the charge's proceeds in full.
+ */
+function normalizeDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalInput[] {
+  const sorted = sortDisposals(disposals);
+  const slices = wholeShekelSlices(sorted.map(disposal => disposal.disposedCost));
+  return sorted.map((disposal, index) => ({ ...disposal, disposedCost: slices[index] }));
 }
 
 /**
@@ -225,7 +277,14 @@ function sortDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalI
  * - at a disposal, the slice takes round(accumulated × disposedCost / cost) of the accumulated
  *   depreciation; its gain or loss is proceeds − (disposedCost − that share);
  * - what remains keeps depreciating at the same rate on the reduced cost, and the year of the
- *   natural end date takes the whole remaining value, as `calculateDepreciation` does.
+ *   natural end date takes the whole remaining value, as `calculateDepreciation` does: the segment
+ *   that reaches the end date takes it (before any disposal on or after the end date, so such a
+ *   disposal leaves with its slice fully depreciated), and later segments depreciate nothing.
+ *
+ * Cost amounts are whole shekels: the asset's cost is rounded, and the disposed costs are rounded
+ * cumulatively in date order (each slice is round(Σ up to it) − round(Σ before it)), so the slices
+ * add up to the rounded total and a full disposal lands on the rounded cost. The results report
+ * those slices. Proceeds are used as given, so their agorot carry into the gain or loss.
  */
 export function calculateAssetYear(
   asset: AssetDepreciationInput,
@@ -256,7 +315,7 @@ export function calculateAssetYear(
     return zero;
   }
 
-  const sorted = sortDisposals(disposals).filter(
+  const sorted = normalizeDisposals(disposals).filter(
     disposal => getTimelessDateYear(disposal.disposalDate) <= year,
   );
 
@@ -338,8 +397,11 @@ function rollAssetYear(
     }
     let amount: number;
     if (from > expirationDate) {
+      // Segments after the end date depreciate nothing
       amount = 0;
-    } else if (last && isFinalYear) {
+    } else if (isFinalYear && (last || to >= expirationDate)) {
+      // The segment that reaches the end date takes the whole remaining value, also when a
+      // disposal falls on the end date or after it
       amount = remaining;
     } else {
       const segmentEnd = to > expirationDate ? expirationDate : to;
@@ -416,17 +478,23 @@ export function computeDisposal(
   return results.find(result => result.id === disposalId) ?? null;
 }
 
-/** Cost still on the books after all the given disposals. */
+/**
+ * Cost still on the books after all the given disposals, in whole shekels:
+ * round(cost) − round(Σ disposed cost), as the cumulatively rounded slices add up to.
+ */
 export function remainingAssetCost(
   asset: Pick<AssetDepreciationInput, 'cost'>,
   disposals: readonly Pick<AssetDisposalInput, 'disposedCost'>[],
 ): number {
-  const disposed = disposals.reduce((sum, disposal) => sum + disposal.disposedCost, 0);
+  const disposed = roundedDisposedTotal(disposals.map(disposal => disposal.disposedCost));
   return Math.max(0, Math.round(asset.cost) - disposed);
 }
 
 /**
- * Validates an asset's full set of disposals (existing ones plus a new or edited one).
+ * Validates an asset's full set of disposals (existing ones plus a new or edited one). Disposed
+ * costs must be positive as given; their whole-shekel slices (rounded cumulatively, as
+ * `calculateAssetYear` uses them) must be at least 1, and round(Σ disposed cost) must not exceed
+ * the rounded cost. Proceeds are checked as given.
  * Returns error messages; an empty array means valid.
  */
 export function validateAssetDisposals(
@@ -440,15 +508,22 @@ export function validateAssetDisposals(
     return errors;
   }
 
+  // The checks on the amount as given come first, and an invalid amount takes no slice, so one
+  // bad disposal does not shift the slices of the later ones
+  const sorted = sortDisposals(disposals);
+  const slices = wholeShekelSlices(sorted.map(disposal => disposal.disposedCost));
   let disposed = 0;
-  for (const disposal of sortDisposals(disposals)) {
+  for (const [index, disposal] of sorted.entries()) {
+    const slice = slices[index];
     if (disposal.disposalDate < asset.activationDate) {
       errors.push(
         `Disposal date ${disposal.disposalDate} is before the asset's activation date ${asset.activationDate}`,
       );
     }
-    if (Number.isNaN(disposal.disposedCost) || disposal.disposedCost <= 0) {
+    if (!isPositiveAmount(disposal.disposedCost)) {
       errors.push('Disposed cost must be positive');
+    } else if (slice <= 0) {
+      errors.push('Disposed cost must be at least 1 (amounts are rounded to whole shekels)');
     }
     if (Number.isNaN(disposal.proceeds) || disposal.proceeds < 0) {
       errors.push('Proceeds cannot be negative');
@@ -456,10 +531,13 @@ export function validateAssetDisposals(
     if (disposed >= cost) {
       errors.push(`The asset was fully disposed of before ${disposal.disposalDate}`);
     }
-    disposed += disposal.disposedCost;
+    disposed += slice;
   }
+  // The slices add up to round(Σ disposed cost)
   if (disposed > cost) {
-    errors.push(`Disposed cost (${disposed}) exceeds the asset's cost (${cost})`);
+    errors.push(
+      `Disposed cost (${disposed}) exceeds the asset's cost (${cost}), both rounded to whole shekels`,
+    );
   }
   return errors;
 }

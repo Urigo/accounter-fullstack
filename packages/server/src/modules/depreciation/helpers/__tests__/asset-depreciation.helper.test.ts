@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { addDaysToTimelessDate, getTimelessDateYear } from '../../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import {
   calculateAssetYear,
   calculateDepreciation,
   computeDisposal,
+  naturalDepreciationEndDate,
   remainingAssetCost,
   validateAssetDisposals,
   validateDisposalKind,
@@ -13,28 +15,91 @@ import {
 
 const d = (date: string) => date as TimelessDateString;
 
+/** The expiration date the DB stores: activation + 100/rate × 365 days */
+const sqlExpirationDate = (rate: number, activationDate: TimelessDateString) =>
+  addDaysToTimelessDate(activationDate, Math.round((100 / rate) * 365));
+
 describe('calculateAssetYear without disposals', () => {
   const rates = [6, 7, 15, 25, 33, 33.33];
   const activationDates = ['2019-01-01', '2020-02-29', '2021-07-01', '2022-12-31', '2024-03-15'];
-  const years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2030];
+  const years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2030, 2040];
 
-  it('matches calculateDepreciation for every year (no change to filed years)', () => {
+  it('matches calculateDepreciation for every year, and is fully depreciated after the end year', () => {
     for (const rate of rates) {
       for (const activation of activationDates) {
-        for (const year of years) {
-          const asset: AssetDepreciationInput = {
-            cost: 123_457,
-            depreciationRate: rate,
-            activationDate: d(activation),
-          };
-          const expected = calculateDepreciation(rate, 123_457, d(activation), year);
-          const result = calculateAssetYear(asset, [], year);
-          expect(result.yearDepreciation).toBe(expected.yearlyDepreciationAmount);
-          expect(result.openingAccumulatedDepreciation).toBe(expected.pastDepreciationAmount);
-          expect(result.disposedCost).toBe(0);
+        for (const expirationDate of [undefined, sqlExpirationDate(rate, d(activation))]) {
+          const endYear = getTimelessDateYear(
+            expirationDate ?? naturalDepreciationEndDate(rate, d(activation)),
+          );
+          for (const year of years) {
+            const asset: AssetDepreciationInput = {
+              cost: 123_457,
+              depreciationRate: rate,
+              activationDate: d(activation),
+              expirationDate,
+            };
+            const expected = calculateDepreciation(
+              rate,
+              123_457,
+              d(activation),
+              year,
+              expirationDate,
+            );
+            const result = calculateAssetYear(asset, [], year);
+            expect(result.yearDepreciation).toBe(expected.yearlyDepreciationAmount);
+            expect(result.openingAccumulatedDepreciation).toBe(expected.pastDepreciationAmount);
+            expect(result.disposedCost).toBe(0);
+            if (year > endYear) {
+              // the accumulated depreciation carries over the end year's closing balance
+              expect(result.openingAccumulatedDepreciation).toBe(123_457);
+              expect(result.yearDepreciation).toBe(0);
+              expect(result.netBookValue).toBe(0);
+            }
+          }
         }
       }
     }
+  });
+
+  it('keeps the numbers of the years up to the end year (filed years)', () => {
+    // ₪100,000 at 25% from 2024-07-01, as calculated before the disposal engine changes
+    const activationDate = d('2024-07-01');
+    // [yearly depreciation, past depreciation] for each year from 2024 to the end year
+    const yearly = (endYear: number, expirationDate?: TimelessDateString) =>
+      Array.from({ length: endYear - 2023 }, (_, index) => {
+        const year = calculateDepreciation(
+          25,
+          100_000,
+          activationDate,
+          2024 + index,
+          expirationDate,
+        );
+        return [year.yearlyDepreciationAmount, year.pastDepreciationAmount];
+      });
+
+    // the expiration date the DB stores: 2028-06-30
+    expect(yearly(2028, d('2028-06-30'))).toEqual([
+      [12_568, 0],
+      [25_000, 12_568],
+      [25_000, 37_568],
+      [25_000, 62_568],
+      [12_432, 87_568],
+    ]);
+    // the derived end date (2027-12-31)
+    expect(yearly(2027)).toEqual([
+      [12_568, 0],
+      [25_000, 12_568],
+      [25_000, 37_568],
+      [37_432, 62_568],
+    ]);
+  });
+
+  it('carries the end-year balance when the end date is before the activation year', () => {
+    expect(calculateDepreciation(25, 100_000, d('2024-07-01'), 2026, d('2023-06-30'))).toEqual({
+      yearlyDepreciationAmount: 0,
+      yearlyDepreciationRate: 0,
+      pastDepreciationAmount: 0,
+    });
   });
 
   it('ignores disposals dated after the requested year', () => {
@@ -230,6 +295,307 @@ describe('calculateAssetYear with disposals', () => {
   });
 });
 
+describe('calculateAssetYear at and after the end of depreciation', () => {
+  // ₪100,000 at 25% from 2024-07-01, with the expiration date the DB stores (2028-06-30):
+  // 12,568 in 2024, 25,000 in 2025–2027, the remaining 12,432 in 2028
+  const asset: AssetDepreciationInput = {
+    cost: 100_000,
+    depreciationRate: 25,
+    activationDate: d('2024-07-01'),
+    expirationDate: d('2028-06-30'),
+  };
+  // The same asset with the end date derived from the rate (2027-12-31): 37,432 in 2027
+  const derivedAsset: AssetDepreciationInput = { ...asset, expirationDate: undefined };
+
+  const disposal = (
+    disposalDate: string,
+    disposedCost: number,
+    proceeds: number,
+  ): AssetDisposalInput => ({ id: 'd', disposalDate: d(disposalDate), disposedCost, proceeds });
+
+  describe('a year after the end year', () => {
+    it.each([
+      ['the stored expiration date', asset, 2029],
+      ['the derived end date', derivedAsset, 2028],
+    ])('reports the asset fully depreciated (%s)', (_label, input, year) => {
+      const result = calculateAssetYear(input, [], year);
+      expect(result.openingAccumulatedDepreciation).toBe(100_000);
+      expect(result.yearDepreciation).toBe(0);
+      expect(result.closingAccumulatedDepreciation).toBe(100_000);
+      expect(result.netBookValue).toBe(0);
+    });
+
+    it.each([
+      ['the stored expiration date', asset, '2029-03-01'],
+      ['the derived end date', derivedAsset, '2028-03-01'],
+      [
+        'an asset activated on January 1st',
+        { cost: 100_000, depreciationRate: 25, activationDate: d('2020-01-01') },
+        '2025-03-01',
+      ],
+    ])('writes off a fully depreciated asset with no gain or loss (%s)', (_label, input, date) => {
+      const writeOff = disposal(date, 100_000, 0);
+      const result = calculateAssetYear(input, [writeOff], getTimelessDateYear(d(date)));
+      expect(result.openingAccumulatedDepreciation).toBe(100_000);
+      expect(result.yearDepreciation).toBe(0);
+      expect(result.disposals[0]).toMatchObject({
+        accumulatedDepreciation: 100_000,
+        netBookValue: 0,
+        gainLoss: 0,
+      });
+      expect(result.closingCost).toBe(0);
+      expect(result.netBookValue).toBe(0);
+    });
+  });
+
+  describe('a disposal in the end year', () => {
+    it.each([
+      ['on the stored expiration date', asset, '2028-06-30', 12_432, 2028],
+      ['after the stored (mid-year) expiration date', asset, '2028-09-30', 12_432, 2028],
+      ['on the derived end date', derivedAsset, '2027-12-31', 37_432, 2027],
+    ])(
+      'depreciates the remaining value on a partial sale %s',
+      (_label, input, date, endYearDepreciation, year) => {
+        const sale = disposal(date, 50_000, 10_000);
+        const result = calculateAssetYear(input, [sale], year);
+        // as in the same year without a disposal
+        expect(result.yearDepreciation).toBe(endYearDepreciation);
+        expect(result.disposals[0]).toMatchObject({
+          disposedCost: 50_000,
+          accumulatedDepreciation: 50_000,
+          netBookValue: 0,
+          gainLoss: 10_000,
+        });
+        expect(result.closingCost).toBe(50_000);
+        expect(result.closingAccumulatedDepreciation).toBe(50_000);
+        expect(result.netBookValue).toBe(0);
+
+        // nothing is left on the books afterwards
+        const later = calculateAssetYear(input, [sale], 2035);
+        expect(later.openingAccumulatedDepreciation).toBe(50_000);
+        expect(later.yearDepreciation).toBe(0);
+        expect(later.netBookValue).toBe(0);
+      },
+    );
+
+    it.each([
+      ['on the stored expiration date', asset, '2028-06-30', 12_432, 2028],
+      ['after the stored (mid-year) expiration date', asset, '2028-09-30', 12_432, 2028],
+      ['on the derived end date', derivedAsset, '2027-12-31', 37_432, 2027],
+    ])(
+      'books the proceeds as gain on a full sale %s',
+      (_label, input, date, endYearDepreciation, year) => {
+        const sale = disposal(date, 100_000, 10_000);
+        const result = calculateAssetYear(input, [sale], year);
+        expect(result.yearDepreciation).toBe(endYearDepreciation);
+        expect(result.disposals[0]).toMatchObject({
+          accumulatedDepreciation: 100_000,
+          netBookValue: 0,
+          gainLoss: 10_000,
+        });
+        expect(result.closingCost).toBe(0);
+        expect(result.closingAccumulatedDepreciation).toBe(0);
+      },
+    );
+
+    describe('when the days to the end date fall short of the remaining value', () => {
+      // ₪100,000 at 10% from 2020-01-01; the DB stores 2029-12-29 as the expiration date.
+      // 2020–2028 depreciate 90,000, so 2029 takes the remaining 10,000, although
+      // Jan 1 – Dec 29 is only 363/365 of a year (9,945)
+      const tenPercent: AssetDepreciationInput = {
+        cost: 100_000,
+        depreciationRate: 10,
+        activationDate: d('2020-01-01'),
+        expirationDate: sqlExpirationDate(10, d('2020-01-01')),
+      };
+
+      it('has the expected end date and end-year depreciation', () => {
+        expect(tenPercent.expirationDate).toBe('2029-12-29');
+        expect(calculateAssetYear(tenPercent, [], 2029).yearDepreciation).toBe(10_000);
+      });
+
+      it.each(['2029-12-29', '2029-12-30'])(
+        'books no loss on a write-off on or after the end date (%s)',
+        date => {
+          const result = calculateAssetYear(tenPercent, [disposal(date, 100_000, 0)], 2029);
+          expect(result.yearDepreciation).toBe(10_000);
+          expect(result.disposals[0]).toMatchObject({
+            accumulatedDepreciation: 100_000,
+            netBookValue: 0,
+            gainLoss: 0,
+          });
+        },
+      );
+
+      it('leaves nothing on the books after a partial sale on the end date', () => {
+        const sale = disposal('2029-12-29', 40_000, 1000);
+        const result = calculateAssetYear(tenPercent, [sale], 2029);
+        expect(result.yearDepreciation).toBe(10_000);
+        expect(result.disposals[0]).toMatchObject({ netBookValue: 0, gainLoss: 1000 });
+        expect(result.netBookValue).toBe(0);
+        expect(calculateAssetYear(tenPercent, [sale], 2032).netBookValue).toBe(0);
+      });
+    });
+
+    it('depreciates the rest of a partial sale before the end date in full', () => {
+      const sale = disposal('2028-03-31', 50_000, 10_000);
+      const result = calculateAssetYear(asset, [sale], 2028);
+      // Jan 1 – Mar 31 = 91 days: 25,000 × 91/366 = 6,216 before the sale; the remaining half
+      // then takes its whole remaining value
+      expect(result.disposals[0]).toMatchObject({
+        accumulatedDepreciation: 46_892,
+        netBookValue: 3108,
+        gainLoss: 6892,
+      });
+      expect(result.yearDepreciation).toBe(9324);
+      expect(result.closingAccumulatedDepreciation).toBe(50_000);
+      expect(result.netBookValue).toBe(0);
+    });
+  });
+});
+
+describe('disposal amounts with agorot', () => {
+  const asset = (cost: number): AssetDepreciationInput => ({
+    cost,
+    depreciationRate: 25,
+    activationDate: d('2024-07-01'),
+  });
+
+  it('fully disposes of an asset whose cost rounds down', () => {
+    const full = { id: 'f', disposalDate: d('2025-12-31'), disposedCost: 100_000.4, proceeds: 0 };
+    expect(validateAssetDisposals(asset(100_000.4), [full])).toEqual([]);
+    expect(remainingAssetCost(asset(100_000.4), [full])).toBe(0);
+    const result = calculateAssetYear(asset(100_000.4), [full], 2025);
+    expect(result.disposedCost).toBe(100_000);
+    expect(result.closingCost).toBe(0);
+  });
+
+  it('fully disposes of an asset whose cost rounds up', () => {
+    const full = { id: 'f', disposalDate: d('2025-12-31'), disposedCost: 100_000.6, proceeds: 0 };
+    expect(validateAssetDisposals(asset(100_000.6), [full])).toEqual([]);
+    expect(remainingAssetCost(asset(100_000.6), [full])).toBe(0);
+    const result = calculateAssetYear(asset(100_000.6), [full], 2025);
+    expect(result.disposedCost).toBe(100_001);
+    expect(result.closingCost).toBe(0);
+    expect(result.netBookValue).toBe(0);
+    // nothing can be disposed of afterwards
+    expect(
+      validateAssetDisposals(asset(100_000.6), [
+        full,
+        { id: 'g', disposalDate: d('2026-01-31'), disposedCost: 0.4, proceeds: 0 },
+      ]),
+    ).toContain('Disposed cost must be at least 1 (amounts are rounded to whole shekels)');
+  });
+
+  it('rounds the disposed cost of a partial refund, and keeps the agorot of its proceeds', () => {
+    const refund = {
+      id: 'r',
+      disposalDate: d('2025-07-01'),
+      disposedCost: 33_333.33,
+      proceeds: 33_333.33,
+    };
+    const result = computeDisposal(asset(100_000), [refund], 'r');
+    // accumulated at the refund: 12,568 + 12,466 = 25,034; the slice takes 25,034 × 33,333/100,000
+    expect(result).toMatchObject({
+      disposedCost: 33_333,
+      accumulatedDepreciation: 8345,
+      netBookValue: 24_988,
+      proceeds: 33_333.33,
+    });
+    // the agorot of the proceeds carry into the gain: 33,333.33 − 24,988
+    expect(result?.gainLoss).toBeCloseTo(8345.33, 2);
+    const year = calculateAssetYear(asset(100_000), [refund], 2025);
+    expect(year.closingCost).toBe(66_667);
+    expect(Number.isInteger(year.netBookValue)).toBe(true);
+    expect(remainingAssetCost(asset(100_000), [refund])).toBe(66_667);
+  });
+
+  it('keeps the agorot of a sale price in the proceeds and the gain', () => {
+    const sale = {
+      id: 's',
+      disposalDate: d('2025-12-31'),
+      disposedCost: 100_000,
+      proceeds: 70_000.45,
+    };
+    const result = computeDisposal(asset(100_000), [sale], 's');
+    expect(result).toMatchObject({
+      disposedCost: 100_000,
+      accumulatedDepreciation: 37_568,
+      netBookValue: 62_432,
+      proceeds: 70_000.45,
+    });
+    expect(result?.gainLoss).toBeCloseTo(7568.45, 2);
+    expect(validateAssetDisposals(asset(100_000), [sale])).toEqual([]);
+  });
+
+  it('says that the totals are rounded when they exceed the cost', () => {
+    expect(
+      validateAssetDisposals(asset(100_000.4), [
+        { id: 'a', disposalDate: d('2025-01-01'), disposedCost: 60_000.4, proceeds: 0 },
+        { id: 'b', disposalDate: d('2025-02-01'), disposedCost: 40_000.6, proceeds: 0 },
+      ]),
+    ).toEqual([
+      "Disposed cost (100001) exceeds the asset's cost (100000), both rounded to whole shekels",
+    ]);
+  });
+
+  describe('several disposals (rounded cumulatively)', () => {
+    const refund = (id: string, disposalDate: string, amount: number): AssetDisposalInput => ({
+      id,
+      disposalDate: d(disposalDate),
+      disposedCost: amount,
+      proceeds: amount,
+    });
+
+    it('closes an asset refunded in thirds at 0', () => {
+      const thirds = [
+        refund('a', '2025-03-01', 33_333.33),
+        refund('b', '2025-06-01', 33_333.33),
+        refund('c', '2025-09-01', 33_333.34),
+      ];
+      expect(validateAssetDisposals(asset(100_000), thirds)).toEqual([]);
+      const result = calculateAssetYear(asset(100_000), thirds, 2025);
+      // round(33,333.33) = 33,333; round(66,666.66) − 33,333 = 33,334; 100,000 − 66,667 = 33,333
+      expect(result.disposals.map(disposal => disposal.disposedCost)).toEqual([
+        33_333, 33_334, 33_333,
+      ]);
+      expect(result.disposedCost).toBe(100_000);
+      expect(result.closingCost).toBe(0);
+      expect(result.closingAccumulatedDepreciation).toBe(0);
+      expect(result.netBookValue).toBe(0);
+      expect(remainingAssetCost(asset(100_000), thirds)).toBe(0);
+      // proceeds are kept as given
+      expect(result.disposals.map(disposal => disposal.proceeds)).toEqual([
+        33_333.33, 33_333.33, 33_333.34,
+      ]);
+    });
+
+    it('accepts a split whose halves round up and down, and closes at 0', () => {
+      const halves = [refund('a', '2025-03-01', 50_000.5), refund('b', '2025-09-01', 49_999.5)];
+      expect(validateAssetDisposals(asset(100_000), halves)).toEqual([]);
+      const result = calculateAssetYear(asset(100_000), halves, 2025);
+      expect(result.disposals.map(disposal => disposal.disposedCost)).toEqual([50_001, 49_999]);
+      expect(result.closingCost).toBe(0);
+      expect(result.netBookValue).toBe(0);
+      expect(remainingAssetCost(asset(100_000), halves)).toBe(0);
+    });
+
+    it('does not change an earlier disposal or its year when a later one is added', () => {
+      const first = refund('a', '2025-07-01', 33_333.33);
+      const later = refund('b', '2026-03-01', 50_000.5);
+      expect(computeDisposal(asset(100_000), [first, later], 'a')).toEqual(
+        computeDisposal(asset(100_000), [first], 'a'),
+      );
+      expect(calculateAssetYear(asset(100_000), [first, later], 2025)).toEqual(
+        calculateAssetYear(asset(100_000), [first], 2025),
+      );
+      // 83,333.83 rounds to 83,334, so the later slice is 50,001
+      expect(computeDisposal(asset(100_000), [first, later], 'b')?.disposedCost).toBe(50_001);
+      expect(remainingAssetCost(asset(100_000), [first, later])).toBe(16_666);
+    });
+  });
+});
+
 describe('validateAssetDisposals', () => {
   const asset = { cost: 100_000, activationDate: d('2024-07-01') };
 
@@ -265,7 +631,27 @@ describe('validateAssetDisposals', () => {
         { id: 'a', disposalDate: d('2025-01-01'), disposedCost: 0, proceeds: -1 },
       ]),
     ).toHaveLength(2);
+    expect(
+      validateAssetDisposals(asset, [
+        { id: 'a', disposalDate: d('2025-01-01'), disposedCost: -5, proceeds: 0 },
+        { id: 'b', disposalDate: d('2025-01-02'), disposedCost: Number.NaN, proceeds: 0 },
+      ]),
+    ).toEqual(['Disposed cost must be positive', 'Disposed cost must be positive']);
     expect(validateAssetDisposals({ ...asset, cost: 0 }, [])).toHaveLength(1);
+  });
+
+  it('does not let an invalid amount shift the slices of later disposals', () => {
+    // without the NaN taking a slice, 0.4 + 0.4 = 0.8 rounds to a 1-shekel slice
+    expect(
+      validateAssetDisposals(asset, [
+        { id: 'a', disposalDate: d('2025-01-01'), disposedCost: 0.4, proceeds: 0 },
+        { id: 'b', disposalDate: d('2025-01-02'), disposedCost: Number.NaN, proceeds: 0 },
+        { id: 'c', disposalDate: d('2025-01-03'), disposedCost: 0.4, proceeds: 0 },
+      ]),
+    ).toEqual([
+      'Disposed cost must be at least 1 (amounts are rounded to whole shekels)',
+      'Disposed cost must be positive',
+    ]);
   });
 });
 
