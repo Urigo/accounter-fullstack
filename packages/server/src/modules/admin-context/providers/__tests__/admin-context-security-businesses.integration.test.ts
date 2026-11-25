@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { LedgerRecordsLockProvider } from '../../../ledger/providers/ledger-records-lock.provider.js';
 import { AuditLogsProvider } from '../../../common/providers/audit-logs.provider.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { connectTestDb } from '../../../../__tests__/helpers/db-connection.js';
@@ -42,7 +43,7 @@ function createProvider() {
   return new AdminContextProvider(
     createMockAuthContextProvider(ownerId),
     dbClient,
-    new AuditLogsProvider(dbClient),
+    new AuditLogsProvider(dbClient), new LedgerRecordsLockProvider(dbClient),
   );
 }
 

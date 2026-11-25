@@ -8,6 +8,7 @@ import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
+import { LedgerRecordsLockProvider } from '../../ledger/providers/ledger-records-lock.provider.js';
 import {
   mergeSecuritiesContext,
   parseStoredSecuritiesContext,
@@ -359,6 +360,7 @@ export class AdminContextProvider {
     private authContextProvider: AuthContextProvider,
     private db: TenantAwareDBClient,
     private auditLogsProvider: AuditLogsProvider,
+    private ledgerRecordsLockProvider: LedgerRecordsLockProvider,
   ) {}
 
   public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
@@ -643,7 +645,9 @@ export class AdminContextProvider {
    * transaction. The current lock is re-read with `FOR UPDATE`, so concurrent lock/unlock calls
    * are checked against the stored value rather than the request cache.
    * - `LOCK` moves the lock forward only; locking to the current date is a no-op.
-   * - `UNLOCK` moves it back to an earlier date and requires a reason.
+   * - `LOCK` also flags the owner's records dated on or before `date` as locked.
+   * - `UNLOCK` moves the date back to an earlier date and requires a reason. Flagged records stay
+   *   locked: reopening allows new entries (adjustments), not changes to reported records.
    * Returns whether the lock moved.
    */
   public async moveLedgerLock({
@@ -694,6 +698,10 @@ export class AdminContextProvider {
       }
 
       await updateLedgerLock.run({ ownerId, ledgerLock: date }, client);
+      if (action === 'LOCK') {
+        // per-record lock: reported records stay locked even if the date is moved back later
+        await this.ledgerRecordsLockProvider.lockRecordsUpTo({ ownerId, date }, client);
+      }
       await this.auditLogsProvider.log(
         {
           ownerId,

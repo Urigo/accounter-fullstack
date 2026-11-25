@@ -4,6 +4,7 @@ import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import type { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
+import type { LedgerRecordsLockProvider } from '../../ledger/providers/ledger-records-lock.provider.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 
 const OWNER_ID = '00000000-0000-0000-0000-000000000001';
@@ -15,6 +16,7 @@ describe('AdminContextProvider.moveLedgerLock', () => {
   let clientQuery: ReturnType<typeof vi.fn>;
   let transaction: ReturnType<typeof vi.fn>;
   let auditLog: ReturnType<typeof vi.fn>;
+  let lockRecordsUpTo: ReturnType<typeof vi.fn>;
   let provider: AdminContextProvider;
 
   beforeEach(() => {
@@ -32,6 +34,7 @@ describe('AdminContextProvider.moveLedgerLock', () => {
     const client = { query: clientQuery };
     transaction = vi.fn(async (fn: (c: typeof client) => Promise<unknown>) => fn(client));
     auditLog = vi.fn().mockResolvedValue(undefined);
+    lockRecordsUpTo = vi.fn().mockResolvedValue(undefined);
 
     const authContextProvider = {
       getAuthContext: vi.fn().mockResolvedValue({
@@ -44,6 +47,7 @@ describe('AdminContextProvider.moveLedgerLock', () => {
       authContextProvider,
       { query: vi.fn(), transaction } as unknown as TenantAwareDBClient,
       { log: auditLog } as unknown as AuditLogsProvider,
+      { lockRecordsUpTo } as unknown as LedgerRecordsLockProvider,
     );
   });
 
@@ -69,6 +73,19 @@ describe('AdminContextProvider.moveLedgerLock', () => {
     );
   });
 
+  it('flags the reported records on the transaction client when locking', async () => {
+    await provider.moveLedgerLock({ action: 'LOCK', date: d('2026-12-31') });
+    expect(lockRecordsUpTo).toHaveBeenCalledWith(
+      { ownerId: OWNER_ID, date: '2026-12-31' },
+      expect.objectContaining({ query: clientQuery }),
+    );
+  });
+
+  it('does not touch the record flags when reopening', async () => {
+    await provider.moveLedgerLock({ action: 'UNLOCK', date: d('2025-11-30'), reason: 'x' });
+    expect(lockRecordsUpTo).not.toHaveBeenCalled();
+  });
+
   it('locks a never-locked ledger', async () => {
     storedLock = null;
     await provider.moveLedgerLock({ action: 'LOCK', date: d('2025-12-31') });
@@ -91,6 +108,7 @@ describe('AdminContextProvider.moveLedgerLock', () => {
     const moved = await provider.moveLedgerLock({ action: 'LOCK', date: d('2025-12-31') });
     expect(moved).toBe(false);
     expect(clientQuery).toHaveBeenCalledTimes(1); // only the FOR UPDATE read
+    expect(lockRecordsUpTo).not.toHaveBeenCalled();
     expect(auditLog).not.toHaveBeenCalled();
   });
 
@@ -147,6 +165,7 @@ describe('AdminContextProvider.moveLedgerLock', () => {
     await expect(
       provider.moveLedgerLock({ action: 'LOCK', date: d('2026-12-31') }),
     ).rejects.toThrow('connection lost');
+    expect(lockRecordsUpTo).not.toHaveBeenCalled();
     expect(auditLog).not.toHaveBeenCalled();
   });
 });

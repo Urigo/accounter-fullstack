@@ -402,8 +402,10 @@ export class LedgerProvider {
   }
 
   /**
-   * The ledger lock date of a record's owner. "Locked" is derived from this date (not from the
-   * per-record `locked` column), so moving the lock date back reopens the period.
+   * The ledger lock date of a record's owner. The ledger lock has two parts:
+   * - this date: nothing may be written on or before it (moving it back reopens the period);
+   * - the per-record `locked` flag, set when locking: reported records never change, even after
+   *   the date is moved back (see `assertNotFlagged`).
    */
   private async getLockDate(ownerId?: string | null): Promise<TimelessDateString | undefined> {
     if (!ownerId) {
@@ -412,6 +414,13 @@ export class LedgerProvider {
     }
     const ownerContext = await this.adminContextProvider.adminContextByOwnerIdLoader.load(ownerId);
     return ownerContext?.ledgerLock;
+  }
+
+  /** Throws if any existing record carries the per-record lock flag. */
+  private assertNotFlagged(records: readonly ({ locked?: boolean | null } | undefined)[]) {
+    if (records.some(record => record?.locked)) {
+      throw new LedgerLockError();
+    }
   }
 
   /** Throws if any of the records is dated on or before its owner's ledger lock. */
@@ -433,10 +442,11 @@ export class LedgerProvider {
   }
 
   public async updateLedgerRecord(params: IUpdateLedgerRecordParams) {
-    // validate the record isn't locked, and isn't moved into the locked period
+    // validate the record isn't locked (flag or date), and isn't moved into the locked period
     if (params.ledgerId) {
       const record = await this.getLedgerRecordsByIdLoader.load(params.ledgerId);
       if (record) {
+        this.assertNotFlagged([record]);
         await this.assertNotLocked([
           {
             ownerId: record.owner_id,
@@ -475,6 +485,7 @@ export class LedgerProvider {
         if (record instanceof Error) {
           throw record;
         }
+        this.assertNotFlagged([record]);
         return {
           ownerId: record?.owner_id,
           invoiceDate: record?.invoice_date,
@@ -508,6 +519,7 @@ export class LedgerProvider {
         if (record instanceof Error) {
           throw record;
         }
+        this.assertNotFlagged(record);
         return record.map(r => ({
           ownerId: r.owner_id,
           invoiceDate: r.invoice_date,

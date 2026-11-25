@@ -101,10 +101,10 @@ describe('LedgerProvider — ledger lock', () => {
 
   describe('updateLedgerRecord', () => {
     const LEDGER_ID = '00000000-0000-0000-0000-0000000000r1';
-    let storedRecord: { invoice_date: string; value_date: string };
+    let storedRecord: { invoice_date: string; value_date: string; locked: boolean };
 
     beforeEach(() => {
-      storedRecord = { invoice_date: '2026-01-15', value_date: '2026-01-15' };
+      storedRecord = { invoice_date: '2026-01-15', value_date: '2026-01-15', locked: false };
       query.mockImplementation(async (text: string) => {
         if (text.includes('WHERE id IN')) {
           return { rows: [{ id: LEDGER_ID, owner_id: OWNER_ID, ...storedRecord }], rowCount: 1 };
@@ -132,6 +132,48 @@ describe('LedgerProvider — ledger lock', () => {
         }),
       ).rejects.toBeInstanceOf(LedgerLockError);
       expect(updateCalls()).toHaveLength(0);
+    });
+
+    it('rejects updating a flagged record even when it is dated after the lock date', async () => {
+      // e.g. a reported record, after the lock date was moved back to reopen the period
+      storedRecord.locked = true;
+      await expect(
+        provider.updateLedgerRecord({ ledgerId: LEDGER_ID, description: 'x' }),
+      ).rejects.toBeInstanceOf(LedgerLockError);
+      expect(updateCalls()).toHaveLength(0);
+    });
+
+    it('rejects deleting a flagged record even when it is dated after the lock date', async () => {
+      storedRecord.locked = true;
+      await expect(provider.deleteLedgerRecordsByIdLoader.load(LEDGER_ID)).rejects.toBeInstanceOf(
+        LedgerLockError,
+      );
+      expect(
+        query.mock.calls.filter(([text]) => String(text).includes('DELETE FROM')),
+      ).toHaveLength(0);
+    });
+
+    it('allows deleting an unflagged record within the open period', async () => {
+      await provider.deleteLedgerRecordsByIdLoader.load(LEDGER_ID);
+      expect(
+        query.mock.calls.filter(([text]) => String(text).includes('DELETE FROM')),
+      ).toHaveLength(1);
+    });
+
+    it('after reopening, allows new entries in the reopened window but not edits to flagged records', async () => {
+      ledgerLocks[OWNER_ID] = '2025-11-30';
+      storedRecord = { invoice_date: '2025-12-15', value_date: '2025-12-15', locked: true };
+
+      await provider.insertLedgerRecords({
+        ledgerRecords: [makeRecord({ invoiceDate: '2025-12-20' as TimelessDateString })],
+      });
+      expect(
+        query.mock.calls.filter(([text]) => String(text).includes('INSERT INTO')),
+      ).toHaveLength(1);
+
+      await expect(
+        provider.updateLedgerRecord({ ledgerId: LEDGER_ID, description: 'x' }),
+      ).rejects.toBeInstanceOf(LedgerLockError);
     });
 
     it('allows updating an unlocked record within the open period', async () => {

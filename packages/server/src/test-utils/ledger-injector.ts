@@ -21,6 +21,7 @@ import { FinancialEntitiesProvider } from '../modules/financial-entities/provide
 import { TaxCategoriesProvider } from '../modules/financial-entities/providers/tax-categories.provider.js';
 import { SecurityBusinessesProvider } from '../modules/foreign-securities/providers/security-businesses.provider.js';
 import { BalanceCancellationProvider } from '../modules/ledger/providers/balance-cancellation.provider.js';
+import { LedgerRecordsLockProvider } from '../modules/ledger/providers/ledger-records-lock.provider.js';
 import { LedgerProvider } from '../modules/ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
@@ -95,6 +96,7 @@ export function createLedgerTestContext(options: {
     authContextProvider,
     tenantAwareDB,
     new AuditLogsProvider(tenantAwareDB),
+    new LedgerRecordsLockProvider(tenantAwareDB),
   );
 
   const injector = new SimpleInjector(token => {

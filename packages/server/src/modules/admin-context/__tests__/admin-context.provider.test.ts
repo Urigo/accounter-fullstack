@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
+import { LedgerRecordsLockProvider } from '../../ledger/providers/ledger-records-lock.provider.js';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import { QueryResult, QueryResultRow } from 'pg';
@@ -40,7 +41,7 @@ describe('AdminContextProvider', () => {
     provider = new AdminContextProvider(
       authContextProvider,
       dbProvider,
-      new AuditLogsProvider(dbProvider),
+      new AuditLogsProvider(dbProvider), new LedgerRecordsLockProvider(dbProvider),
     );
   });
 

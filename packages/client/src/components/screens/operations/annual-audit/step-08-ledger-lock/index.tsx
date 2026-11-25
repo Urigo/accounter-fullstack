@@ -129,8 +129,9 @@ export function Step08LedgerLock(props: Step08Props): ReactElement {
           <DialogHeader>
             <DialogTitle>Reopen ledger</DialogTitle>
             <DialogDescription>
-              The ledger is locked until {currentLockDate}. Move the lock back to an earlier date to
-              post adjustments. This action is logged.
+              The ledger is locked until {currentLockDate}. Move the lock date back to post new
+              entries, such as audit adjustments, in the reopened period. Records that were already
+              locked stay locked. This action is logged.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
