@@ -505,6 +505,14 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
       dbAdminContext.financialAccounts.etanaBusinessId
         ? fetchBusiness(injector, 'etanaBusiness', dbAdminContext.financialAccounts.etanaBusinessId)
         : null,
+    payoneerBusiness: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.financialAccounts.payoneerBusinessId
+        ? fetchBusiness(
+            injector,
+            'payoneerBusiness',
+            dbAdminContext.financialAccounts.payoneerBusinessId,
+          )
+        : null,
     krakenBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.financialAccounts.krakenBusinessId
         ? fetchBusiness(

@@ -24,3 +24,11 @@ export type {
   IUploadOtsarHahayalCreditCardTransactionsResult,
   IUploadOtsarHahayalCreditCardTransactionsQuery,
 } from './__generated__/otsar-hahayal-scraper-ingestion.types.js';
+export type {
+  IFetchPayoneerTransactionsByKeysParams,
+  IFetchPayoneerTransactionsByKeysResult,
+  IFetchPayoneerTransactionsByKeysQuery,
+  IUploadPayoneerTransactionsParams,
+  IUploadPayoneerTransactionsResult,
+  IUploadPayoneerTransactionsQuery,
+} from './__generated__/payoneer-scraper-ingestion.types.js';

@@ -258,6 +258,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $etanaBusinessId,
       etana_business_id
     ),
+    payoneer_business_id = COALESCE(
+      $payoneerBusinessId,
+      payoneer_business_id
+    ),
     kraken_business_id = COALESCE(
       $krakenBusinessId,
       kraken_business_id
@@ -437,6 +441,7 @@ export class AdminContextProvider {
         calBusinessId: rawContext.cal_business_id,
         otsarHahayalCreditCardBusinessId: rawContext.otsar_hahayal_credit_card_business_id,
         etanaBusinessId: rawContext.etana_business_id,
+        payoneerBusinessId: rawContext.payoneer_business_id,
         krakenBusinessId: rawContext.kraken_business_id,
         etherScanBusinessId: rawContext.etherscan_business_id,
         foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,
@@ -446,6 +451,7 @@ export class AdminContextProvider {
           ...bankAccountIds,
           ...creditCardIds,
           rawContext.etana_business_id,
+          rawContext.payoneer_business_id,
           rawContext.kraken_business_id,
           rawContext.etherscan_business_id,
           securities.foreignSecuritiesBusinessId,

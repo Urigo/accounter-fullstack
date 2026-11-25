@@ -127,6 +127,7 @@ export default gql`
     calBusinessId: UUID
     otsarHahayalCreditCardBusinessId: UUID
     etanaBusinessId: UUID
+    payoneerBusinessId: UUID
     krakenBusinessId: UUID
     etherscanBusinessId: UUID
     swiftBusinessId: UUID
@@ -205,6 +206,7 @@ export default gql`
     calBusiness: Business
     otsarHahayalCreditCardBusiness: Business
     etanaBusiness: Business
+    payoneerBusiness: Business
     krakenBusiness: Business
     etherscanBusiness: Business
     swiftBusiness: Business
