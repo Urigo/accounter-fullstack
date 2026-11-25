@@ -69,7 +69,7 @@ describe('runPipeline', () => {
     });
 
     it('does not stop the other stages', () => {
-      const input = minimalInput({ taxYear: 2025, company: { registeredName: undefined } });
+      const input = minimalInput({ taxYear: 2025, company: { registeredName: '' } });
       expect(runPipeline(input, OPTIONS).issues.map(issue => issue.ruleId)).toEqual([
         'struct.taxYear.provisionalLayout',
         'field.required',
@@ -78,6 +78,51 @@ describe('runPipeline', () => {
 
     it('does not warn for a year with its own layout', () => {
       expect(runPipeline(minimalInput({ taxYear: 2024 }), OPTIONS).issues).toEqual([]);
+    });
+
+    it('is reported even when the shape stage stops the pipeline', () => {
+      const input = { ...minimalInput({ taxYear: 2025 }), meta: null };
+      expect(runPipeline(input, OPTIONS)).toEqual({
+        issues: [
+          expect.objectContaining({ ruleId: 'input.shape', path: 'meta' }),
+          expect.objectContaining({ ruleId: 'struct.taxYear.provisionalLayout', path: 'taxYear' }),
+        ],
+      });
+    });
+  });
+
+  describe('shape stage (input.shape)', () => {
+    it('stops after the shape stage with only its issues', () => {
+      // Two shape defects and a field defect: the field rules must not run.
+      const base = minimalInput({ company: { registeredName: '' } });
+      const input = { ...base, meta: null, company: { ...base.company, faxx: '1' } };
+      expect(runPipeline(input, OPTIONS)).toEqual({
+        issues: [
+          expect.objectContaining({ ruleId: 'input.shape', severity: 'error', path: 'meta' }),
+          expect.objectContaining({ ruleId: 'input.shape', path: 'company.faxx' }),
+        ],
+      });
+    });
+
+    it('runs after the year stage', () => {
+      const input = { ...minimalInput(), taxYear: 2023, faxx: 1 };
+      expect(runPipeline(input, OPTIONS).issues.map(issue => issue.ruleId)).toEqual([
+        'struct.taxYear.unsupported',
+      ]);
+    });
+
+    it.each([
+      ['null', null],
+      ['an array', []],
+      ['a string', 'x'],
+      ['a number', 42],
+      ['an empty object', {}],
+      ['an object with only a tax year', { taxYear: 2024 }],
+      ['wrongly typed members', { taxYear: 2024, company: [], amounts: 'x', shareholders: [null] }],
+    ])('never throws for %s', (_, input) => {
+      const result = runPipeline(input, OPTIONS);
+      expect(result.report).toBeUndefined();
+      expect(result.issues.length).toBeGreaterThan(0);
     });
   });
 });

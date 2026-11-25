@@ -32,6 +32,14 @@ export const RULES = [
       "taxYear has no SHAAM layout of its own yet and reuses an earlier year's layout (2025 → 2024, SPEC §14): the report is provisional.",
   },
   {
+    id: 'input.shape',
+    severity: 'error',
+    source: 'derived',
+    scope: 'input',
+    description:
+      'Wrong JavaScript type, missing required property, unknown property, null, array too long, or a date not in YYYY-MM-DD form.',
+  },
+  {
     id: 'field.required',
     severity: 'error',
     source: 'spec',
@@ -93,7 +101,7 @@ export const RULES = [
     severity: 'error',
     source: 'spec',
     scope: 'report',
-    description: 'A date is not a real calendar date in ISO YYYY-MM-DD form.',
+    description: 'A YYYY-MM-DD date is not a real calendar date (other forms are input.shape).',
   },
   {
     id: 'field.percentRange',
