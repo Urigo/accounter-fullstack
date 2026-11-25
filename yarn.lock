@@ -285,6 +285,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@accounter/opcn1214-generator@workspace:packages/opcn1214-generator":
+  version: 0.0.0-use.local
+  resolution: "@accounter/opcn1214-generator@workspace:packages/opcn1214-generator"
+  dependencies:
+    bob-the-bundler: "npm:7.0.1"
+    eslint: "npm:10.15.0"
+    vitest: "npm:5.1.1"
+    zod: "npm:4.6.7"
+  languageName: unknown
+  linkType: soft
+
 "@accounter/pcn874-generator@workspace:^, @accounter/pcn874-generator@workspace:packages/pcn874-generator":
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
