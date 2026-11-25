@@ -30,7 +30,6 @@ import {
 } from '../../helpers/common-charge-ledger.helper.js';
 import { handleCrossYearLedgerEntries } from '../../helpers/cross-year-ledger.helper.js';
 import {
-  checkDirectRefunds,
   checkDisposalProceeds,
   generateDepreciationDisposalsLedger,
 } from '../../helpers/depreciation-disposal-ledger.helper.js';
@@ -303,8 +302,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     await Promise.all(entriesPromises);
 
+    // whether the charge carries cost refunds entered in an asset's foreign currency and booked by
+    // their record against the counterparty: they convert at the asset's cost-basis rate, so the
+    // counterparty's local gap to the payment's rate is an exchange-rate difference
+    let foreignCounterpartyRefunds = false;
+
     // generate ledger for disposals of depreciated assets this charge carries the money for, once
-    // the charge's own entries are in: they tell where the charge booked each refund
+    // the charge's own entries are in: they tell how the charge booked each refund
     const disposals = await injector
       .get(DepreciationDisposalsProvider)
       .getDisposalsByChargeIdLoader.load(chargeId);
@@ -322,14 +326,16 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         errors: disposalErrors,
         expectedProceeds,
         proceedsDisposals,
-        directRefunds,
+        counterpartyRefunds,
       } = await generateDepreciationDisposalsLedger(
         disposals,
         charge,
         injector,
         proceedsAccountId,
         chargeEntries,
+        mainBusinessId,
       );
+      foreignCounterpartyRefunds = hasForeignCurrencyRefunds(counterpartyRefunds);
       for (const error of disposalErrors) {
         errors.add(error);
       }
@@ -371,27 +377,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           if (error) {
             errors.add(error);
           }
-        }
-      }
-
-      // and credit at least the refunds booked straight to their asset's account to it
-      if (directRefunds.length > 0) {
-        const accountIds = [...new Set(directRefunds.map(refund => refund.assetAccountId))];
-        const accountNames = new Map(
-          await Promise.all(
-            accountIds.map(
-              async accountId =>
-                [accountId, await getLedgerAccountName(injector, accountId)] as const,
-            ),
-          ),
-        );
-        for (const error of checkDirectRefunds({
-          directRefunds,
-          chargeEntries,
-          localCurrency: defaultLocalCurrency,
-          accountNames,
-        })) {
-          errors.add(error);
         }
       }
     }
@@ -520,7 +505,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       const foreignCurrencyCount = currencies.size - (currencies.has(defaultLocalCurrency) ? 1 : 0);
 
       const mightRequireExchangeRateRecord =
-        (hasMultipleDates && !!foreignCurrencyCount) || foreignCurrencyCount >= 2;
+        (hasMultipleDates && !!foreignCurrencyCount) ||
+        foreignCurrencyCount >= 2 ||
+        (foreignCounterpartyRefunds && financialAccountLedgerEntries.length > 0);
       const unbalancedBusinesses = unbalancedEntities.filter(
         ({ entityId }) =>
           financialEntities.some(fe => fe.id === entityId && fe.type === 'business') &&
@@ -592,6 +579,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
           }
         } else if (charge.documents_optional_flag) {
+          exchangeRateTaxCategory = exchangeRateTaxCategoryId;
+        }
+
+        // the counterparty of cost refunds booked by their record, at the assets' cost-basis rate:
+        // its gap to the payment's rate goes to exchange rates, as a credit note's would
+        if (foreignCounterpartyRefunds && entityId === mainBusinessId) {
           exchangeRateTaxCategory = exchangeRateTaxCategoryId;
         }
 

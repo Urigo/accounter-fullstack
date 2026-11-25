@@ -37,8 +37,9 @@ export type DisposalLedgerAccounts = {
   accumulatedDepreciationAccountId: string;
   /**
    * Where the event's charge booked the money (its tax category): a sale's proceeds, or the refund
-   * of a cost refund. When it is not the asset account, the money is moved from it to the asset
-   * account.
+   * of a cost refund. For a cost refund the charge has no credit note for, the charge's counterparty
+   * instead: the refund record itself books the refund against it. When it is not the asset
+   * account, the money is moved from it to the asset account.
    */
   proceedsAccountId?: string | null;
   gainAccountId?: string | null;
@@ -76,10 +77,12 @@ export function correctedYears(
  * Together they credit the asset with exactly the disposed cost beyond the proceeds, so the asset
  * account keeps the remaining cost and accumulated depreciation the remaining depreciation.
  *
- * A cost refund corrects the cost: it is ordinary income, never a gain or loss. The refund charge's
- * own entries credit the refund to `proceedsAccountId`. On top of those:
- * - the cost reduction is moved from there to the asset account (Dr proceeds account / Cr asset),
- *   unless the refund was booked to the asset account already;
+ * A cost refund corrects the cost: it is ordinary income, never a gain or loss. Either the refund
+ * charge's own entries (a credit note) credit the refund to `proceedsAccountId`, or, without one,
+ * `proceedsAccountId` is the charge's counterparty and the refund record is the refund document.
+ * On top of those:
+ * - the cost reduction is moved from there to the asset account (Dr proceeds account or
+ *   counterparty / Cr asset), unless the refund was booked to the asset account already;
  * - the depreciation the refund reverses (the recapture, or the excess over book value) is released
  *   as income (Dr AD / Cr depreciation correction).
  *
@@ -232,17 +235,6 @@ export async function getAssetAccountId(
   return record.asset_tax_category_id ?? getChargeTaxCategoryId(record.charge_id, injector);
 }
 
-/**
- * Cost refunds the charge booked straight to their asset's account, per account and currency: the
- * amounts entered in the asset's foreign currency, or the cost reductions of refunds entered in the
- * local currency
- */
-export type DirectRefund = {
-  assetAccountId: string;
-  currency: Currency;
-  amount: number;
-};
-
 export type DisposalsLedger = {
   entries: LedgerProto[];
   errors: string[];
@@ -254,10 +246,16 @@ export type DisposalsLedger = {
    * exchange row acts on money that was never moved out of the proceeds account.
    */
   expectedProceeds: number | null;
-  /** The events whose money the charge books to its tax category, which `expectedProceeds` covers */
+  /**
+   * The events whose money the charge books to its tax category (the sales, and the cost refunds
+   * of a credit note), which `expectedProceeds` covers
+   */
   proceedsDisposals: IGetDepreciationDisposalsByIdsResult[];
-  /** The cost refunds booked to their asset's account instead (see `checkDirectRefunds`) */
-  directRefunds: DirectRefund[];
+  /**
+   * The cost refunds whose record books them against the charge's counterparty (no credit note to
+   * the tax category): nothing to check here, the counterparty's balance checks them
+   */
+  counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[];
 };
 
 /**
@@ -268,13 +266,23 @@ export type DisposalsLedger = {
  * for events without money booked by the charge.
  *
  * `chargeEntries` are the charge's own document, transaction, fee and misc-expense entries, without
- * the disposal rows. A cost refund whose asset account they net-credit, in the refund's currency
- * (its foreign currency when entered in one, else the local currency), was booked straight to the
- * asset's account, e.g. by misc expenses crediting it: the refund already reduced the asset
- * account, so its rows take the money from there (no cost-reduction row, only the depreciation
- * correction), and it is returned in `directRefunds` rather than in `expectedProceeds`. Sales and
- * the other refunds keep the charge's tax category. Without `chargeEntries` (the yearly
- * depreciation charge), every event keeps it.
+ * the disposal rows. With them, a cost refund is booked one of two ways:
+ * - by a credit note: the entries net-credit the charge's tax category in the refund's currency (its
+ *   foreign currency when entered in one, else the local currency). The cost reduction is moved
+ *   from there (Dr tax category / Cr asset), and the refund is checked with the sales in
+ *   `expectedProceeds` (`checkDisposalProceeds`, or the in-currency check and exchange entry of
+ *   `generateCostRefundExchangeLedger`);
+ * - by the refund record itself, without such a credit note: the cost reduction is booked against
+ *   `counterpartyAccountId`, the charge's main business (Dr counterparty / Cr asset, in the refund's
+ *   currency), and settles against the money the charge receives from it. The refund is left out of
+ *   `expectedProceeds`; the charge's business balance checks it, and books the exchange-rate
+ *   difference to the payment's rate. A refund with neither a credit note nor a counterparty is an
+ *   error.
+ * Booking both (a credit note crediting the asset account, and the record) counts the refund twice;
+ * the counterparty is then left unbalanced, which the charge's business balance reports.
+ *
+ * Sales always take the charge's tax category. Without `chargeEntries` (the yearly depreciation
+ * charge), every event takes it.
  */
 export async function generateDepreciationDisposalsLedger(
   disposals: readonly IGetDepreciationDisposalsByIdsResult[],
@@ -282,6 +290,7 @@ export async function generateDepreciationDisposalsLedger(
   injector: Injector,
   chargeProceedsAccountId?: string | null,
   chargeEntries?: readonly LedgerProto[],
+  counterpartyAccountId?: string | null,
 ): Promise<DisposalsLedger> {
   if (disposals.length === 0) {
     return {
@@ -289,7 +298,7 @@ export async function generateDepreciationDisposalsLedger(
       errors: [],
       expectedProceeds: null,
       proceedsDisposals: [],
-      directRefunds: [],
+      counterpartyRefunds: [],
     };
   }
   const {
@@ -308,7 +317,7 @@ export async function generateDepreciationDisposalsLedger(
       errors: ['Accumulated depreciation tax category is not defined'],
       expectedProceeds: null,
       proceedsDisposals: [],
-      directRefunds: [],
+      counterpartyRefunds: [],
     };
   }
 
@@ -318,7 +327,7 @@ export async function generateDepreciationDisposalsLedger(
   let carriesMoney = false;
   let rowsMissing = false;
   const proceedsDisposals: IGetDepreciationDisposalsByIdsResult[] = [];
-  const directRefunds = new Map<string, DirectRefund>();
+  const counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[] = [];
   const creditsToAccounts = new Map<string, ReturnType<typeof netCreditToAccount>>();
   /** What the charge's own entries net-credit to an account: in `currency`, else locally */
   const creditedTo = (accountId: string, currency: Currency | null): number => {
@@ -365,17 +374,23 @@ export async function generateDepreciationDisposalsLedger(
         continue;
       }
 
-      // a cost refund the charge's own entries credit to its asset's account was booked there
-      const isForeignRefund = disposal.original_amount != null;
-      const refundCurrency = isForeignRefund
-        ? (disposal.original_currency as Currency | null)
-        : null;
-      const bookedToAsset =
+      // a cost refund without a credit note to the charge's tax category, in its currency, is
+      // booked by its record, against the charge's counterparty
+      const byRecord =
         !!chargeEntries &&
         disposal.type === 'COST_REFUND' &&
-        (!isForeignRefund || !!refundCurrency) &&
-        creditedTo(assetAccountId, refundCurrency) >= 0.005;
-      const proceedsAccountId = bookedToAsset ? assetAccountId : chargeProceedsAccountId;
+        !(
+          chargeProceedsAccountId &&
+          creditedTo(chargeProceedsAccountId, foreign?.currency ?? null) >= 0.005
+        );
+      if (byRecord && !counterpartyAccountId) {
+        rowsMissing = true;
+        errors.push(
+          `Asset cost refund ${disposal.id}: the refund charge has no counterparty, nor a credit note to its tax category, to take the refund from`,
+        );
+        continue;
+      }
+      const proceedsAccountId = byRecord ? counterpartyAccountId : chargeProceedsAccountId;
 
       const built = buildDisposalLedgerEntries({
         disposal: {
@@ -402,16 +417,8 @@ export async function generateDepreciationDisposalsLedger(
       });
       entries.push(...built.entries);
       errors.push(...built.errors);
-      if (bookedToAsset) {
-        const currency = refundCurrency ?? defaultLocalCurrency;
-        const amount = refundCurrency ? Number(disposal.original_amount) : result.costReduction;
-        const key = `${assetAccountId}|${currency}`;
-        const direct = directRefunds.get(key);
-        if (direct) {
-          direct.amount += amount;
-        } else {
-          directRefunds.set(key, { assetAccountId, currency, amount });
-        }
+      if (byRecord) {
+        counterpartyRefunds.push(disposal);
         continue;
       }
       proceedsDisposals.push(disposal);
@@ -432,7 +439,7 @@ export async function generateDepreciationDisposalsLedger(
     errors,
     expectedProceeds: carriesMoney && !rowsMissing ? expectedProceeds : null,
     proceedsDisposals,
-    directRefunds: [...directRefunds.values()],
+    counterpartyRefunds,
   };
 }
 
@@ -463,7 +470,7 @@ function netLocalCredit(entries: readonly LedgerProto[], accountId: string): num
  * proceeds account is left with a balance. Returns a ledger error, or `null` when they match.
  *
  * `expectedProceeds` covers only the events booked to the proceeds account, not the cost refunds
- * booked straight to their asset's account (see `checkDirectRefunds`).
+ * booked by their record against the charge's counterparty.
  */
 export function checkDisposalProceeds(params: {
   expectedProceeds: number;
@@ -478,46 +485,4 @@ export function checkDisposalProceeds(params: {
     return null;
   }
   return `Sales and cost refunds of depreciated assets come to ${formatStringifyAmount(params.expectedProceeds)}, but the charge credits ${formatStringifyAmount(credited)} to its tax category "${params.proceedsAccountName ?? params.proceedsAccountId}" (${formatStringifyAmount(diff)} diff): ${REFUND_ACCOUNT_HINT}`;
-}
-
-/**
- * Checks the cost refunds a charge booked straight to their asset's account (`directRefunds` of
- * `generateDepreciationDisposalsLedger`): its own entries (not the disposal rows) must credit each
- * asset account with at least the refunded amount, in the refunds' currency (the asset's foreign
- * currency for refunds entered in it, else the local currency). At least, not exactly: the asset
- * account may carry other movements of the charge too, such as the refund of an asset that is not
- * depreciated. Returns one ledger error per account and currency that falls short.
- *
- * No exchange entry is booked for these refunds. A refund entered in a foreign currency reduces the
- * asset account at the rate the charge booked it, while the depreciation corrects the asset's cost
- * at its cost-basis rate: any gap between the two stays in the asset account, as the difference
- * between the asset's book cost and its cost for tax purposes.
- *
- * `accountNames` names the asset accounts in the errors; an account missing from it is named by its
- * id.
- */
-export function checkDirectRefunds(params: {
-  directRefunds: readonly DirectRefund[];
-  chargeEntries: readonly LedgerProto[];
-  localCurrency: Currency;
-  accountNames?: ReadonlyMap<string, string>;
-}): string[] {
-  const errors: string[] = [];
-  const credits = new Map<string, ReturnType<typeof netCreditToAccount>>();
-  for (const { assetAccountId, currency, amount } of params.directRefunds) {
-    let credit = credits.get(assetAccountId);
-    if (!credit) {
-      credit = netCreditToAccount(params.chargeEntries, assetAccountId);
-      credits.set(assetAccountId, credit);
-    }
-    const credited =
-      currency === params.localCurrency ? credit.local : (credit.foreign.get(currency) ?? 0);
-    if (credited < amount - 0.005) {
-      const name = params.accountNames?.get(assetAccountId) ?? assetAccountId;
-      errors.push(
-        `Cost refunds booked to the asset account "${name}" come to ${formatStringifyAmount(amount)} ${currency}, but the charge credits it only ${formatStringifyAmount(credited)} ${currency}: ${REFUND_ACCOUNT_HINT}`,
-      );
-    }
-  }
-  return errors;
 }

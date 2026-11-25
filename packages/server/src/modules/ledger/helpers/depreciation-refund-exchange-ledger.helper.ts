@@ -18,7 +18,7 @@ import { FinancialEntitiesProvider } from '../../financial-entities/providers/fi
 
 /** What a ledger error about a refund booked to the wrong account suggests */
 export const REFUND_ACCOUNT_HINT =
-  "book the refund to the asset's account, or set the charge's tax category to the account it is credited to";
+  "book the refund with a credit note to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty";
 
 /** An account's name for a ledger error: its financial entity's name, else its id */
 export async function getLedgerAccountName(injector: Injector, accountId: string): Promise<string> {
@@ -184,8 +184,8 @@ export function buildCostRefundExchangeEntries(params: {
  * Such a charge may carry no other events (sales, or refunds entered in the local currency): their
  * proceeds would be checked in the local currency, where the exchange difference would hide a
  * mismatch. A mix is a ledger error. Only the events booked to P count: pass the
- * `proceedsDisposals` of `generateDepreciationDisposalsLedger`, without the refunds the charge
- * booked straight to their asset's account (`directRefunds`, see `checkDirectRefunds`).
+ * `proceedsDisposals` of `generateDepreciationDisposalsLedger`, without the refunds whose record
+ * books them against the charge's counterparty (`counterpartyRefunds`).
  */
 export async function generateCostRefundExchangeLedger(params: {
   disposals: readonly IGetDepreciationDisposalsByIdsResult[];

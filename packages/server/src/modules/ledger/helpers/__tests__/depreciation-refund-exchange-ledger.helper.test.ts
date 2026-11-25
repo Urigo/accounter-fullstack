@@ -27,7 +27,7 @@ const CLEARING_ID = 'tax-category-refund-clearing';
 const EXCHANGE_RATES_ID = 'tax-category-exchange-rates';
 const DATE = '2024-04-14';
 const HINT =
-  "book the refund to the asset's account, or set the charge's tax category to the account it is credited to";
+  "book the refund with a credit note to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty";
 
 function entry(
   overrides: Partial<LedgerProto> &
