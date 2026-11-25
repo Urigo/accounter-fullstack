@@ -6,12 +6,14 @@ import {
   Link,
   ListPlus,
   MoreVertical,
+  PackageMinus,
   Trash,
 } from 'lucide-react';
 import type { ChargeType } from '@/helpers/index.js';
 import { ROUTES } from '@/router/routes.js';
 import { writeToClipboard } from '../../helpers/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
+import { DepreciationDisposalModal } from '../common/depreciation/depreciation-disposal-modal.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {
   ConfirmationModal,
@@ -58,6 +60,7 @@ export function ChargeActionsMenu({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [depreciationOpened, setDepreciationOpened] = useState(false);
   const closeDepreciation = useCallback((): void => setDepreciationOpened(false), []);
+  const [disposalOpened, setDisposalOpened] = useState(false);
   const [miscExpensesOpened, setMiscExpensesOpened] = useState(false);
   const [uploadSalariesOpened, setUploadSalariesOpened] = useState(false);
   const closeUploadSalaries = useCallback((): void => setUploadSalariesOpened(false), []);
@@ -153,6 +156,10 @@ export function ChargeActionsMenu({
                 <ArrowDownWideNarrow className="size-4" />
                 Depreciation
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setDisposalOpened(true)}>
+                <PackageMinus className="size-4" />
+                Record asset disposal / refund
+              </DropdownMenuItem>
             </>
           )}
           {chargeType === 'SalaryCharge' && (
@@ -189,6 +196,14 @@ export function ChargeActionsMenu({
           }}
         />
       </PopUpModal>
+      {disposalOpened && (
+        <DepreciationDisposalModal
+          opened={disposalOpened}
+          close={() => setDisposalOpened(false)}
+          onDone={onChange}
+          chargeId={chargeId}
+        />
+      )}
       <Dialog open={miscExpensesOpened} onOpenChange={setMiscExpensesOpened}>
         <DialogContent className="sm:max-w-[425px]" onClick={event => event.stopPropagation()}>
           <InsertMiscExpense

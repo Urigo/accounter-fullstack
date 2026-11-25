@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { LoadingOverlay } from '../../ui/overlay.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { PopUpModal } from '../modals/modal.js';
+import { depreciationCategoryLabel } from './depreciation-category-label.js';
 import { depreciationTypes } from './index.js';
 
 export function AddDepreciationRecord(props: {
@@ -80,7 +81,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
   const categories =
     data?.depreciationCategories?.map(category => ({
       value: category.id,
-      label: category.name,
+      label: depreciationCategoryLabel(category),
     })) ?? [];
 
   useEffect(() => {
