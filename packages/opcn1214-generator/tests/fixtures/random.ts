@@ -433,13 +433,10 @@ function randomWallets(rng: Rng): [string] | [string, string] {
 }
 
 function randomImprovement(rng: Rng): Improvement {
-  const expense = maybe(rng, () => randomPositiveAmountX100(rng, 12), 0.7);
-  // cg.improvements.code50Amount: a code-50 amount needs an expense or a depreciation, and every
-  // improvement needs its code-50 amount.
-  const accumulatedDepreciation =
-    expense === undefined
-      ? randomPositiveAmountX100(rng, 12)
-      : maybe(rng, () => randomAmountX100(rng, 12));
+  // cg.improvements.expense: every improvement has an expense > 0 and a depreciation of at most
+  // that expense; cg.improvements.code50Amount: every improvement needs its code-50 amount.
+  const expense = randomPositiveAmountX100(rng, 12);
+  const accumulatedDepreciation = maybe(rng, () => Math.min(expense, randomAmountX100(rng, 12)));
   return compact({
     expense,
     accumulatedDepreciation,
@@ -614,7 +611,10 @@ export function randomValidInput(seed: number): Report1214Input {
     form1343Attached: optional() ? chance(rng, 0.5) : undefined,
     form1344Attached: optional() ? chance(rng, 0.5) : undefined,
     preferredEnterprise: optional() ? chance(rng, 0.5) : undefined,
-    beneficiaryEnterprise: optional(0.2) ? { noticeDate: randomDate(rng) } : undefined,
+    // main.beneficiaryEnterprise.noticeDateBeforeTaxYear: not before the tax year (A-33).
+    beneficiaryEnterprise: optional(0.2)
+      ? { noticeDate: randomDate(rng, taxYear, taxYear) }
+      : undefined,
     dividendDistributed: optional() ? chance(rng, 0.5) : undefined,
     specialYear: optional(0.2)
       ? { balanceSheetDate: randomDate(rng, taxYear, taxYear) }

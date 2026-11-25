@@ -10,6 +10,7 @@ import type { RecordType } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import { walletAddressKey } from '../normalize/capital-gains/assets.js';
 import {
+  IMPROVEMENT_COUNT_KEY,
   IMPROVEMENT_HEADER_MEMBERS,
   IMPROVEMENT_SLOTS,
   improvementCode,
@@ -136,6 +137,60 @@ function improvementCode50Amount(report: NormalizedReport): Issue[] {
 }
 
 /**
+ * cg.improvements.expense: SHAAM's structure checker counts an improvement against 3077@245 only
+ * when it has an expense (SPEC §15 A-32), so every improvement slot in use (within the count, or
+ * any header member or its code 501–505 has a value) needs an expense greater than 0, and its
+ * accumulated depreciation, when present, may not exceed that expense. Located at the expense, or
+ * at the accumulated depreciation when that is what is wrong.
+ */
+function improvementExpense(report: NormalizedReport): Issue[] {
+  return otherTransactionsRecords(report).flatMap(record =>
+    Array.from({ length: IMPROVEMENT_SLOTS }, (_, slot): Issue[] => {
+      const code = improvementCode(slot);
+      const member = (name: (typeof IMPROVEMENT_HEADER_MEMBERS)[number]) =>
+        record.values[improvementKey(slot, name)];
+      const count = record.values[IMPROVEMENT_COUNT_KEY];
+      const used =
+        (typeof count === 'number' && slot < count) ||
+        record.codes.get(code) !== undefined ||
+        IMPROVEMENT_HEADER_MEMBERS.some(name => member(name) !== undefined);
+      if (!used) {
+        return [];
+      }
+      const expense = member('expense');
+      const depreciation = member('accumulatedDepreciation');
+      const location = (name: (typeof IMPROVEMENT_HEADER_MEMBERS)[number]) => ({
+        path: pathFor(record.recordType, inputIndexOf(record), improvementKey(slot, name)),
+        recordType: record.recordType,
+        recordIndex: record.index,
+        specRef: { page: 58 },
+      });
+      if (typeof expense !== 'number' || !hasAmount(expense)) {
+        return [
+          makeIssue('cg.improvements.expense', {
+            message: `Improvement ${slot + 1} has no expense; SHAAM counts an improvement (3077@245) only when it has an expense greater than 0.`,
+            ...location('expense'),
+            ...(expense === undefined ? {} : { value: expense }),
+            expected: 'an expense greater than 0',
+          }),
+        ];
+      }
+      if (typeof depreciation === 'number' && depreciation > expense) {
+        return [
+          makeIssue('cg.improvements.expense', {
+            message: `Improvement ${slot + 1} has an accumulated depreciation (${depreciation}) above its expense (${expense}).`,
+            ...location('accumulatedDepreciation'),
+            value: depreciation,
+            expected: `at most ${expense}`,
+          }),
+        ];
+      }
+      return [];
+    }).flat(),
+  );
+}
+
+/**
  * cg.virtualCurrency.wallet: a 3077 appendix with code 071 = 1 needs a virtual wallet address
  * in its first slot, 489 ("יש להכניס כתובת הארנק", p.57); the second slot, 639, is only for
  * "another one" and does not satisfy it. Located at `walletAddresses`.
@@ -190,5 +245,6 @@ export const CAPITAL_GAINS_RULES: readonly ReportRule[] = [
   investmentFundValue,
   codePairsMax,
   improvementCode50Amount,
+  improvementExpense,
   virtualCurrencyWallet,
 ];
