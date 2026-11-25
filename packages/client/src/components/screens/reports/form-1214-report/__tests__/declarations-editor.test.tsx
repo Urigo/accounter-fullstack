@@ -6,18 +6,16 @@ import type { DeclarationsValue } from '../profile-forms.js';
 type UpdateVariables = {
   year: number;
   input: { declarations?: Record<string, unknown> | null };
-  blockName: string;
 };
 
 const { updateMock } = vi.hoisted(() => ({
-  updateMock: vi.fn<(variables: UpdateVariables) => Promise<boolean>>(),
+  updateMock: vi.fn<(variables: UpdateVariables, blockName: string) => Promise<boolean>>(),
 }));
 
 vi.mock('../../../../../hooks/use-update-report-1214-profile.js', () => ({
   useUpdateReport1214Profile: () => ({
     updateReport1214Profile: updateMock,
     fetching: false,
-    errorMessage: undefined,
   }),
 }));
 vi.mock('../../../../common/index.js', () => ({
@@ -61,7 +59,7 @@ function button(text: string, scope: ParentNode = container): HTMLButtonElement 
 }
 
 function answer(label: string, option: 'Yes' | 'No' | 'Not answered'): void {
-  const group = container.querySelector(`[role="group"][aria-label="${label}"]`);
+  const group = container.querySelector(`[role="radiogroup"][aria-label="${label}"]`);
   if (!group) {
     throw new Error(`no "${label}" group`);
   }
@@ -122,18 +120,20 @@ describe('Form1214DeclarationsEditor', () => {
     await act(async () => button('Save').click());
 
     expect(updateMock).toHaveBeenCalledTimes(1);
-    expect(updateMock.mock.calls[0][0]).toEqual({
-      year: YEAR,
-      input: {
-        declarations: {
-          hasTaxPlanningAction: true,
-          hadRelatedPartyTransactions: false,
-          isKibbutz: true,
-          reportablePositions: [12],
+    expect(updateMock.mock.calls[0]).toEqual([
+      {
+        year: YEAR,
+        input: {
+          declarations: {
+            hasTaxPlanningAction: true,
+            hadRelatedPartyTransactions: false,
+            isKibbutz: true,
+            reportablePositions: [12],
+          },
         },
       },
-      blockName: 'declarations',
-    });
+      'declarations',
+    ]);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(hasText('Unsaved changes')).toBe(false);
     expect(setDirty).toHaveBeenLastCalledWith('declarations', false);
@@ -153,8 +153,9 @@ describe('Form1214DeclarationsEditor', () => {
     render({ hasTaxPlanningAction: false });
     answer(TAX_PLANNING, 'Not answered');
     act(() => button('Cancel').click());
-    const group = container.querySelector(`[role="group"][aria-label="${TAX_PLANNING}"]`)!;
-    expect(button('No', group).getAttribute('aria-pressed')).toBe('true');
+    const group = container.querySelector(`[role="radiogroup"][aria-label="${TAX_PLANNING}"]`)!;
+    expect(button('No', group).getAttribute('data-state')).toBe('on');
+    expect(button('Not answered', group).getAttribute('data-state')).toBe('off');
     expect(hasText('Unsaved changes')).toBe(false);
   });
 

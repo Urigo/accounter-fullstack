@@ -75,7 +75,7 @@ describe('company form', () => {
     });
   });
 
-  it('checks phones, digits and email', () => {
+  it('checks phones and digits, and leaves the email to the report validation', () => {
     const valid = companyToForm({ phone: { prefix: '03', number: '1234567' } });
     expect(companyFormSchema.safeParse(valid).success).toBe(true);
 
@@ -88,8 +88,9 @@ describe('company form', () => {
     expect(result.success).toBe(false);
     const paths = result.error?.issues.map(issue => issue.path.join('.'));
     expect(paths).toEqual(
-      expect.arrayContaining(['phone.prefix', 'phone.number', 'withholdingFileNumber', 'email']),
+      expect.arrayContaining(['phone.prefix', 'phone.number', 'withholdingFileNumber']),
     );
+    expect(paths).not.toContain('email');
   });
 });
 

@@ -124,10 +124,8 @@ export const companyFormSchema = z.object({
   registeredName: optionalText,
   phone: phoneSchema,
   fax: phoneSchema,
-  email: optionalText.refine(
-    value => value.trim() === '' || z.email().safeParse(value.trim()).success,
-    { message: 'Not a valid email address' },
-  ),
+  // Not checked as an address here: the report validation flags an email the form rejects
+  email: optionalText,
   occupationDescription: optionalText,
   mailingAddress: optionalText,
   businessAddress: optionalText,
@@ -239,8 +237,20 @@ export function triStateToBoolean(value: TriState): boolean | null {
   return value === 'yes';
 }
 
+/** `true` when type `T` is `never`; for compile-time coverage checks. */
+type AssertNever<T extends never> = T;
+
+/** The yes/no and flag members of the declarations input. */
+type BooleanDeclarationKey = {
+  [K in keyof Report1214DeclarationsInput]-?: NonNullable<
+    Report1214DeclarationsInput[K]
+  > extends boolean
+    ? K
+    : never;
+}[keyof Report1214DeclarationsInput];
+
 type DeclarationField = {
-  key: string;
+  key: BooleanDeclarationKey;
   /** Field number(s) on the form (record 1000 positions). */
   field: string;
   label: string;
@@ -402,6 +412,8 @@ export const OPTIONAL_FLAG_DECLARATIONS = [
     label: 'The company has no bank account',
     labelHe: 'סימון – לא קיים חשבון בנק',
   },
+  // 833 only forces "yes": a stored `false` reads back unchecked and is then left out, which lets
+  // the report derive the answer from the appendices, as `false` would
   {
     key: 'hasCapitalGainsAppendix',
     field: '833',
@@ -414,7 +426,34 @@ export const OPTIONAL_FLAG_DECLARATIONS = [
 export type RequiredDeclarationKey = (typeof REQUIRED_DECLARATIONS)[number]['key'];
 export type OptionalYesNoDeclarationKey = (typeof OPTIONAL_YES_NO_DECLARATIONS)[number]['key'];
 export type FlagDeclarationKey = (typeof OPTIONAL_FLAG_DECLARATIONS)[number]['key'];
-type TriStateKey = RequiredDeclarationKey | OptionalYesNoDeclarationKey;
+export type TriStateKey = RequiredDeclarationKey | OptionalYesNoDeclarationKey;
+
+/**
+ * Every member of the declarations input has a control: the catalogues above, plus the selects,
+ * the nested toggles and the reportable positions. A new input member fails to compile here.
+ */
+export type _DeclarationsInputCovered = AssertNever<
+  Exclude<
+    keyof Report1214DeclarationsInput,
+    | TriStateKey
+    | FlagDeclarationKey
+    | 'reportablePositions'
+    | 'form6111Obligation'
+    | 'consolidatedReport'
+    | 'familyCompany'
+    | 'beneficiaryEnterprise'
+    | 'specialYear'
+  >
+>;
+
+const TRI_STATE_KEYS = [
+  ...REQUIRED_DECLARATIONS.map(item => item.key),
+  ...OPTIONAL_YES_NO_DECLARATIONS.map(item => item.key),
+] as [TriStateKey, ...TriStateKey[]];
+const FLAG_KEYS = OPTIONAL_FLAG_DECLARATIONS.map(item => item.key) as [
+  FlagDeclarationKey,
+  ...FlagDeclarationKey[],
+];
 
 export const FORM_6111_OBLIGATION_OPTIONS = [
   {
@@ -457,8 +496,8 @@ const dateSchema = z.string();
 
 export const declarationsFormSchema = z
   .object({
-    answers: z.record(z.string(), triStateSchema),
-    flags: z.record(z.string(), z.boolean()),
+    answers: z.record(z.enum(TRI_STATE_KEYS), triStateSchema),
+    flags: z.record(z.enum(FLAG_KEYS), z.boolean()),
     form6111Obligation: z.union([z.enum(Report1214Form6111Obligation), z.literal('')]),
     consolidatedReport: z.union([z.enum(Report1214ConsolidatedReport), z.literal('')]),
     isFamilyCompany: z.boolean(),
@@ -509,20 +548,17 @@ function isIsoDate(value: string): value is TimelessDateString {
   return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 }
 
-const TRI_STATE_KEYS: readonly TriStateKey[] = [
-  ...REQUIRED_DECLARATIONS.map(item => item.key),
-  ...OPTIONAL_YES_NO_DECLARATIONS.map(item => item.key),
-];
-const FLAG_KEYS: readonly FlagDeclarationKey[] = OPTIONAL_FLAG_DECLARATIONS.map(item => item.key);
-
 export function declarationsToForm(
   declarations: DeclarationsValue | null | undefined,
 ): DeclarationsFormState {
   return {
     answers: Object.fromEntries(
       TRI_STATE_KEYS.map(key => [key, booleanToTriState(declarations?.[key])]),
-    ),
-    flags: Object.fromEntries(FLAG_KEYS.map(key => [key, declarations?.[key] === true])),
+    ) as Record<TriStateKey, TriState>,
+    flags: Object.fromEntries(FLAG_KEYS.map(key => [key, declarations?.[key] === true])) as Record<
+      FlagDeclarationKey,
+      boolean
+    >,
     form6111Obligation: declarations?.form6111Obligation ?? '',
     consolidatedReport: declarations?.consolidatedReport ?? '',
     isFamilyCompany: !!declarations?.familyCompany,

@@ -45,12 +45,14 @@ import {
   REQUIRED_DECLARATIONS,
   type DeclarationsFormState,
   type DeclarationsValue,
+  type FlagDeclarationKey,
   type TriState,
+  type TriStateKey,
 } from './profile-forms.js';
 import { useForm1214Report } from './report-context.js';
 
-type DeclarationItem = {
-  key: string;
+type DeclarationItem<K extends string = string> = {
+  key: K;
   field: string;
   label: string;
   labelHe: string;
@@ -74,7 +76,7 @@ function TriStateRow({
   item,
 }: {
   control: Control<DeclarationsFormState>;
-  item: DeclarationItem;
+  item: DeclarationItem<TriStateKey>;
 }): ReactElement {
   return (
     <FormField
@@ -103,7 +105,7 @@ function FlagRow({
   item,
 }: {
   control: Control<DeclarationsFormState>;
-  item: DeclarationItem;
+  item: DeclarationItem<FlagDeclarationKey>;
 }): ReactElement {
   return (
     <FormField
@@ -327,7 +329,7 @@ export function Form1214DeclarationsEditor({
     defaultValues: defaults,
   });
   const { markSaved, cancel } = useResetAfterSave(form, defaults);
-  const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  const { updateReport1214Profile, fetching } = useUpdateReport1214Profile();
   useReportDirtyState('declarations', form.formState.isDirty);
 
   const { control } = form;
@@ -337,11 +339,13 @@ export function Form1214DeclarationsEditor({
   });
 
   const onSubmit = async (values: DeclarationsFormState): Promise<void> => {
-    const saved = await updateReport1214Profile({
-      year,
-      input: { declarations: declarationsFormToInput(values) },
-      blockName: 'declarations',
-    });
+    const saved = await updateReport1214Profile(
+      {
+        year,
+        input: { declarations: declarationsFormToInput(values) },
+      },
+      'declarations',
+    );
     if (saved) {
       markSaved(values);
       refresh();
@@ -351,83 +355,80 @@ export function Form1214DeclarationsEditor({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <h3 className="font-semibold">Required declarations</h3>
-          <p className="text-sm text-muted-foreground">
-            The report needs an answer to each of these.
-          </p>
-        </div>
-        <div className="divide-y">
-          {REQUIRED_DECLARATIONS.map(item => (
-            <TriStateRow key={item.key} control={control} item={item} />
-          ))}
-        </div>
+        {/* No edits while a save is in flight: they would be lost when the saved block lands */}
+        <fieldset disabled={fetching} className="min-w-0 space-y-4">
+          <div>
+            <h3 className="font-semibold">Required declarations</h3>
+            <p className="text-sm text-muted-foreground">
+              The report needs an answer to each of these.
+            </p>
+          </div>
+          <div className="divide-y">
+            {REQUIRED_DECLARATIONS.map(item => (
+              <TriStateRow key={item.key} control={control} item={item} />
+            ))}
+          </div>
 
-        <Separator />
-        <h3 className="font-semibold">Optional declarations</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <EnumSelect
-            control={control}
-            name="form6111Obligation"
-            label="Form 6111 obligation (834)"
-            options={FORM_6111_OBLIGATION_OPTIONS}
-          />
-          <EnumSelect
-            control={control}
-            name="consolidatedReport"
-            label="Consolidated report (875)"
-            options={CONSOLIDATED_REPORT_OPTIONS}
-          />
-        </div>
-        <div className="divide-y">
-          {OPTIONAL_YES_NO_DECLARATIONS.map(item => (
-            <TriStateRow key={item.key} control={control} item={item} />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-x-6 md:grid-cols-2">
-          {OPTIONAL_FLAG_DECLARATIONS.map(item => (
-            <FlagRow key={item.key} control={control} item={item} />
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <ToggleField control={control} name="isFamilyCompany" item={FAMILY_COMPANY} />
-          {isFamilyCompany && (
-            <TextField
+          <Separator />
+          <h3 className="font-semibold">Optional declarations</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <EnumSelect
               control={control}
-              name="representativeFileNumber"
-              label="Representative's file number (837)"
-              placeholder="Up to 9 digits"
-              inputMode="numeric"
-              className="ml-7 max-w-xs"
+              name="form6111Obligation"
+              label="Form 6111 obligation (834)"
+              options={FORM_6111_OBLIGATION_OPTIONS}
             />
-          )}
-          <ToggleField
-            control={control}
-            name="isBeneficiaryEnterprise"
-            item={BENEFICIARY_ENTERPRISE}
-          />
-          {isBeneficiaryEnterprise && (
-            <DateField control={control} name="beneficiaryNoticeDate" label="Notice date (852)" />
-          )}
-          <ToggleField control={control} name="isSpecialYear" item={SPECIAL_YEAR} />
-          {isSpecialYear && (
-            <DateField
+            <EnumSelect
               control={control}
-              name="specialYearBalanceSheetDate"
-              label="Balance sheet date (864)"
+              name="consolidatedReport"
+              label="Consolidated report (875)"
+              options={CONSOLIDATED_REPORT_OPTIONS}
             />
-          )}
-        </div>
+          </div>
+          <div className="divide-y">
+            {OPTIONAL_YES_NO_DECLARATIONS.map(item => (
+              <TriStateRow key={item.key} control={control} item={item} />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-x-6 md:grid-cols-2">
+            {OPTIONAL_FLAG_DECLARATIONS.map(item => (
+              <FlagRow key={item.key} control={control} item={item} />
+            ))}
+          </div>
 
-        <ReportablePositions control={control} />
+          <div className="space-y-2">
+            <ToggleField control={control} name="isFamilyCompany" item={FAMILY_COMPANY} />
+            {isFamilyCompany && (
+              <TextField
+                control={control}
+                name="representativeFileNumber"
+                label="Representative's file number (837)"
+                placeholder="Up to 9 digits"
+                inputMode="numeric"
+                className="ml-7 max-w-xs"
+              />
+            )}
+            <ToggleField
+              control={control}
+              name="isBeneficiaryEnterprise"
+              item={BENEFICIARY_ENTERPRISE}
+            />
+            {isBeneficiaryEnterprise && (
+              <DateField control={control} name="beneficiaryNoticeDate" label="Notice date (852)" />
+            )}
+            <ToggleField control={control} name="isSpecialYear" item={SPECIAL_YEAR} />
+            {isSpecialYear && (
+              <DateField
+                control={control}
+                name="specialYearBalanceSheetDate"
+                label="Balance sheet date (864)"
+              />
+            )}
+          </div>
 
-        <EditorActions
-          isDirty={form.formState.isDirty}
-          saving={fetching}
-          errorMessage={errorMessage}
-          onCancel={cancel}
-        />
+          <ReportablePositions control={control} />
+        </fieldset>
+        <EditorActions isDirty={form.formState.isDirty} saving={fetching} onCancel={cancel} />
       </form>
     </Form>
   );
