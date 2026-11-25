@@ -31,6 +31,7 @@ export type {
   IsoDate,
   Phone,
   PhonePrefix,
+  PreparerDetails,
   Report1214Input,
   Shareholder,
   SupportedTaxYear,

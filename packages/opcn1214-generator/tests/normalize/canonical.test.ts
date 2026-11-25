@@ -1,6 +1,6 @@
 import type { PhonePrefix, Report1214Input } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
 
 const TODAY = '2025-03-31';
 const OPTIONS = { today: () => TODAY };
@@ -155,6 +155,69 @@ describe('canonicalize', () => {
     expect(result.amounts['081']).toBe(1001);
     expect(result.amounts).not.toHaveProperty('010');
     expect(result.shareholders[0]?.salaryMonths1To9).toBe(11);
+  });
+
+  it('keeps every declaration and the preparer of the full declarations input', () => {
+    const input = fullDeclarationsInput();
+    const result = canonicalize(input, OPTIONS);
+    expect(result.declarations).toEqual(input.declarations);
+    expect(result.preparer).toEqual(input.preparer);
+  });
+
+  it('removes false flags, empty preparer members and an absent or false 833 override', () => {
+    const result = canonicalize(
+      minimalInput({
+        preparer: { name: '  ', licensedDealerNumber: '000000000', phone: { number: '6543210' } },
+        declarations: {
+          isHouseCompany: false,
+          noBankAccount: false,
+          hasCapitalGainsAppendix: false,
+          requestsAdvancePayments: false,
+          reportablePositions: [],
+        },
+      }),
+      OPTIONS,
+    );
+    expect(result.preparer).toEqual({ phone: { number: '6543210' } });
+    expect(result.declarations).toEqual({
+      ...minimalInput().declarations,
+      requestsAdvancePayments: false,
+    });
+  });
+
+  it('pads the digit strings of the preparer and the family company', () => {
+    const result = canonicalize(
+      minimalInput({
+        preparer: { licensedDealerNumber: '1234' },
+        declarations: { familyCompany: { representativeFileNumber: '77' } },
+      }),
+      OPTIONS,
+    );
+    expect(result.preparer?.licensedDealerNumber).toBe('000001234');
+    expect(result.declarations.familyCompany).toEqual({ representativeFileNumber: '000000077' });
+  });
+
+  it('keeps a declaration object whose member is written as absent, as the parser reads it', () => {
+    const result = canonicalize(
+      minimalInput({ declarations: { familyCompany: { representativeFileNumber: '000000000' } } }),
+      OPTIONS,
+    );
+    expect(result.declarations.familyCompany).toEqual({});
+  });
+
+  it('keeps only the first five reportable positions', () => {
+    const result = canonicalize(
+      minimalInput({ declarations: { reportablePositions: [1, 2, 3, 4, 5, 6] } }),
+      OPTIONS,
+    );
+    expect(result.declarations.reportablePositions).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('drops a preparer phone prefix the normalizer drops', () => {
+    const input = minimalInput({
+      preparer: { phone: { prefix: '01' as PhonePrefix, number: '7654321' } },
+    });
+    expect(canonicalize(input, OPTIONS).preparer).toEqual({ phone: { number: '7654321' } });
   });
 
   it('does not change its input', () => {

@@ -23,6 +23,7 @@ import type {
   ParseResult,
   Phone,
   PhonePrefix,
+  PreparerDetails,
   RecordDef,
   RecordType,
   Report1214Input,
@@ -65,6 +66,7 @@ describe('public API', () => {
   it('exports the public types (a missing one fails the typecheck)', () => {
     expectTypeOf<Report1214Input['company']>().toEqualTypeOf<CompanyDetails>();
     expectTypeOf<Report1214Input['declarations']>().toEqualTypeOf<Declarations>();
+    expectTypeOf<Report1214Input['preparer']>().toEqualTypeOf<PreparerDetails | undefined>();
     expectTypeOf<Report1214Input['shareholders']>().toEqualTypeOf<Shareholder[]>();
     expectTypeOf<Report1214Input['taxYear']>().toEqualTypeOf<SupportedTaxYear>();
     expectTypeOf<CompanyDetails['phone']>().toEqualTypeOf<Phone>();

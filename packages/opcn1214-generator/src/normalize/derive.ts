@@ -24,3 +24,14 @@ export function deriveCode008(
 ): 1 | undefined {
   return declarations.appliesAccountingStandards ? 1 : undefined;
 }
+
+/**
+ * 1000@833, has a capital-gains appendix: yes when `hasCapitalGainsAppendix` is true. The input
+ * model has no capital-gains appendices or untransmitted count yet (steps D2, G1), so it is
+ * otherwise no.
+ */
+export function deriveHasCapitalGainsAppendix(
+  declarations: Pick<Declarations, 'hasCapitalGainsAppendix'>,
+): boolean {
+  return declarations.hasCapitalGainsAppendix === true;
+}

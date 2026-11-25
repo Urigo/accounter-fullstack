@@ -57,6 +57,8 @@ export interface Report1214Input {
     saveDate?: IsoDate;
   };
   company: CompanyDetails;
+  /** "המסייע/ת במילוי הדו"ח", 1000@563–831. */
+  preparer?: PreparerDetails;
   declarations: Declarations;
   /** Record 1000 code-amount section. */
   amounts: Partial<Record<MainFormInputCode, number>>;
@@ -90,7 +92,30 @@ export interface CompanyDetails {
   fax?: Phone;
 }
 
-/** Declarations of record 1000 (SPEC §7.2): the required yes/no members. */
+/** The person or office that helped fill in the report (SPEC §7.2), 1000@563–831. */
+export interface PreparerDetails {
+  /** 1000@563, ≤ 50 characters. */
+  officeName?: string;
+  /** 1000@613, ≤ 50 characters. */
+  contactName?: string;
+  /** 1000@663, ≤ 50 characters. */
+  name?: string;
+  /** 1000@713, ≤ 50 characters. */
+  profession?: string;
+  /** 1000@763 "מספר עוסק מורשה (מסייע)": up to 9 digits, written zero-padded to 9. */
+  licensedDealerNumber?: string;
+  /** 1000@772, ≤ 50 characters. */
+  address?: string;
+  /** 1000@822/825. */
+  phone?: Phone;
+}
+
+/**
+ * Declarations of record 1000 (SPEC §7.2). The required members and those marked (yes/no) are
+ * yes/no fields: `true` writes 1, `false` writes 2 and an absent optional one writes 0. The other
+ * optional booleans, except `hasCapitalGainsAppendix`, are flags: `true` writes 1, while `false`
+ * and absent both write 0 (a parsed file reads them back as absent).
+ */
 export interface Declarations {
   /** 878. */
   hasTaxPlanningAction: boolean;
@@ -106,6 +131,58 @@ export interface Declarations {
   directorsReceivedOpinion: boolean;
   /** 1030 (→ code 273). */
   tookReportablePosition: boolean;
+  /** 1034–1046: up to 5 position numbers (form 1346), 1–999. */
+  reportablePositions?: number[];
+  /** 834 (→ code 297 = 8 / 9). */
+  form6111Obligation?: 'obliged' | 'notObliged' | 'notRelevant';
+  /** 835. */
+  financialStatementsAttached?: boolean;
+  /**
+   * 836 + 837 (+ code 080 required). `representativeFileNumber`: up to 9 digits, written
+   * zero-padded to 9.
+   */
+  familyCompany?: { representativeFileNumber: string };
+  /** 846 (+ code 084 required). */
+  isHouseCompany?: boolean;
+  /** 847. */
+  form1343Attached?: boolean;
+  /** 848. */
+  form1344Attached?: boolean;
+  /** 849 (required when code 101 or 102 is filled). */
+  claimsCapitalInvestmentLawBenefits?: boolean;
+  /** 850. */
+  preferredEnterprise?: boolean;
+  /** 851 + 852. */
+  beneficiaryEnterprise?: { noticeDate: IsoDate };
+  /** 862. */
+  dividendDistributed?: boolean;
+  /** 863 + 864. */
+  specialYear?: { balanceSheetDate: IsoDate };
+  /** 874. */
+  foreignInvestors?: boolean;
+  /** 875 → 1/2/3. */
+  consolidatedReport?: 'consolidatedUnderSection23' | 'consolidatesWithParent' | 'notRelevant';
+  /** 876. */
+  partnerInPartnership?: boolean;
+  /** 877 (+ code 226 required; the only case where `shareholders` may be empty). */
+  isKibbutz?: boolean;
+  /** 883 (yes/no). */
+  requestsAdvancePayments?: boolean;
+  /** 884 (yes/no; → code 259 required). */
+  hasBuildingIncome?: boolean;
+  /** 886. */
+  isTrustBeneficiary?: boolean;
+  /** 1031. */
+  nonDeductibleSalaryExpenses?: boolean;
+  /** 1032. */
+  fewMembersCompany62A?: boolean;
+  /** 1033 (yes/no). */
+  partOfMultinationalGroup?: boolean;
+  /** 1064. */
+  noBankAccount?: boolean;
+  /** 833: forces "yes" when capital-gains appendices exist but none are transmitted (otherwise
+   *  derived, SPEC §7.4). */
+  hasCapitalGainsAppendix?: boolean;
 }
 
 /** One shareholder, record 1020 (SPEC §7.2). */

@@ -1032,6 +1032,11 @@ a test asserts that every non-filler key in `fields.csv` is produced (§13.3).
 | `improvements[0..4].*` (3077)                        | `improvements[i].expense / accumulatedDepreciation / date`           |
 | `walletAddresses[0..1]` (3051/3077)                  | `walletAddresses[i]`                                                 |
 
+The input path of a presence flag (836, 851, 863) is the object it stands for
+(`declarations.familyCompany`); its member keeps its own path. When parsing, the object exists
+exactly when its flag is marked (a member value without the flag is not carried into the report),
+and the reportable positions are the non-zero values of 1034–1046 in field order.
+
 ### 7.4 Derived values (never taken from the caller)
 
 | Output                                                          | Derivation                                                                                                               | Enforces (spec)                            |
