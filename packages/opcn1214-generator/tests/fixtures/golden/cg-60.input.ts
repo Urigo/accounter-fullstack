@@ -1,7 +1,8 @@
 /**
  * Golden `cg-60` (SPEC §13.5): record 1000, one shareholder and one capital-gains appendix for
  * securities (record 3060) with every header member filled, four withholding agents included, and
- * every code of record 3060; 833 and code 028 are derived from it. A frozen literal: never import
+ * 20 of the 21 codes of record 3060, the most SHAAM accepts in one appendix (cg.codePairs.max;
+ * code 099 left out in FIX-2); 833 and code 028 are derived from it. A frozen literal: never import
  * builders here.
  */
 import type { GenerateOptions, Report1214Input } from '../../../src/index.js';
@@ -68,7 +69,6 @@ export const input: Report1214Input = {
         '087': 650,
         '089': 5400,
         '093': 2100,
-        '099': 300,
       },
     },
   ],

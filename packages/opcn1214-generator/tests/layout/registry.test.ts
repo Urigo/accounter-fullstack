@@ -77,3 +77,29 @@ describe('layout registry', () => {
     expect(Object.isFrozen(supportedTaxYears())).toBe(true);
   });
 });
+
+describe('2024 layout: shopcn findings of FIX-2 (SPEC §15 A-29, A-31)', () => {
+  const records = getLayout(2024).records;
+  const field = (record: '1010' | '1030', key: string) =>
+    records[record].fields.find(def => def.key === key);
+
+  it.each([
+    ['1010', 139],
+    ['1030', 138],
+  ] as const)('%s company name is hebrewText', (record, position) => {
+    expect(field(record, 'companyName')).toMatchObject({ position, kind: 'hebrewText' });
+  });
+
+  it('3077 code 092 is an enum whose only value is 1', () => {
+    expect(records['3077'].codes.find(def => def.code === '092')).toMatchObject({
+      kind: 'enum',
+      values: [{ value: 1 }],
+    });
+  });
+
+  it('1000@225 (withholding file) stays an id9', () => {
+    expect(
+      records['1000'].fields.find(def => def.key === 'company.withholdingFileNumber'),
+    ).toMatchObject({ position: 225, kind: 'id9' });
+  });
+});

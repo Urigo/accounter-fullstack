@@ -14,6 +14,7 @@ import {
   REPORTABLE_POSITION_KEYS,
   REPORTABLE_POSITIONS,
 } from '../normalize/paths.js';
+import { isValidIsraeliCheckDigit } from './check-digit.js';
 import { makeIssue, type Issue } from './issue.js';
 import type { RuleId } from './rules.js';
 
@@ -139,6 +140,80 @@ function requiresCode(ruleId: RuleId, condition: string, code: string, why: stri
     mainRecords(report)
       .filter(record => record.values[condition] === true && !record.codes.has(code))
       .map(record => codeIssue(ruleId, report, record, code, `${why}: code ${code} is required.`));
+}
+
+const COMPANY_FILE_NUMBER = 'company.fileNumber';
+const WITHHOLDING_FILE_NUMBER = 'company.withholdingFileNumber';
+/** Width of the company and withholding file numbers (1000@137, 1000@225). */
+const FILE_NUMBER_WIDTH = 9;
+/** A withholding file number starts with 9 (SPEC §15 A-28). */
+const WITHHOLDING_FILE_LEAD = '9';
+/** Digits of the company file number a withholding file number repeats after its lead 9. */
+const COMPANY_DIGITS_IN_WITHHOLDING_FILE = 7;
+const DIGITS = /^\d+$/;
+
+/** The first 8 digits of the withholding file number of company `fileNumber` (SPEC §15 A-28). */
+function withholdingFilePrefix(fileNumber: string): string {
+  return (
+    WITHHOLDING_FILE_LEAD +
+    fileNumber.padStart(FILE_NUMBER_WIDTH, '0').slice(0, COMPANY_DIGITS_IN_WITHHOLDING_FILE)
+  );
+}
+
+/**
+ * The withholding file number (תיק ניכויים) of company `fileNumber` (digits, left-padded to 9): 9,
+ * the first 7 digits of the company file number and the Israeli check digit over all 9 digits
+ * (SPEC §15 A-28; 514000009 → 951400001).
+ */
+export function expectedWithholdingFileNumber(fileNumber: string): string {
+  const prefix = withholdingFilePrefix(fileNumber);
+  for (let check = 0; check <= 9; check++) {
+    if (isValidIsraeliCheckDigit(`${prefix}${check}`)) {
+      return `${prefix}${check}`;
+    }
+  }
+  // Unreachable: exactly one check digit completes any 8 digits.
+  throw new Opcn1214InternalError(`No check digit completes ${prefix}`);
+}
+
+/**
+ * main.withholdingFile.companyNumber: the first 8 digits of the withholding file number (1000@225)
+ * must be 9 and the first 7 digits of the company file number (SPEC §15 A-28, found on shopcn).
+ * The 9th digit is left to field.checkDigit, and values that are not digit strings to
+ * field.numeric.
+ */
+function withholdingFileCompanyNumber(report: NormalizedReport): Issue[] {
+  return mainRecords(report).flatMap(record => {
+    const withholding = record.values[WITHHOLDING_FILE_NUMBER];
+    const fileNumber = record.values[COMPANY_FILE_NUMBER];
+    if (
+      typeof withholding !== 'string' ||
+      typeof fileNumber !== 'string' ||
+      !DIGITS.test(withholding) ||
+      !DIGITS.test(fileNumber) ||
+      withholding.length > FILE_NUMBER_WIDTH ||
+      fileNumber.length > FILE_NUMBER_WIDTH ||
+      withholding.padStart(FILE_NUMBER_WIDTH, '0').startsWith(withholdingFilePrefix(fileNumber))
+    ) {
+      return [];
+    }
+    const expected = expectedWithholdingFileNumber(fileNumber);
+    const field = mainField(report, WITHHOLDING_FILE_NUMBER);
+    return [
+      makeIssue('main.withholdingFile.companyNumber', {
+        message: `${WITHHOLDING_FILE_NUMBER} (1000@${field.position}) ${withholding} does not match the company file number ${fileNumber}: a withholding file number is 9, the first 7 digits of the company file number and a check digit, here ${expected}.`,
+        path:
+          record.paths[WITHHOLDING_FILE_NUMBER] ??
+          pathFor(record.recordType, record.index, WITHHOLDING_FILE_NUMBER),
+        recordType: record.recordType,
+        recordIndex: record.index,
+        field: { position: field.position, length: field.length, nameHe: field.nameHe },
+        value: withholding,
+        expected,
+        specRef: { page: field.specPage },
+      }),
+    ];
+  });
 }
 
 /** main.familyCompany.fileNumber: 836 marked without 837 (p.7). */
@@ -519,6 +594,7 @@ const attachmentsCode010 = countRequiresCode(
  * notices).
  */
 export const MAIN_RULES: readonly ReportRule[] = [
+  withholdingFileCompanyNumber,
   familyCompanyFileNumber,
   familyCompanyCode080,
   houseCompanyCode084,

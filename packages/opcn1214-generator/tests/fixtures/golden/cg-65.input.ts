@@ -1,8 +1,9 @@
 /**
  * Golden `cg-65` (SPEC §13.5): record 1000, one shareholder and one capital-gains appendix for
  * securities without withholding, form 1322 (record 3065) with every header member filled, the
- * withholding status and four withholding agents included, and every code of record 3065; 833,
- * code 028 and the "מספר בתל"ם" sequence are derived from it. A frozen literal: never import
+ * withholding status and four withholding agents included, and 20 of the 21 codes of record 3065,
+ * the most SHAAM accepts in one appendix (cg.codePairs.max; code 099 left out in FIX-2); 833, code
+ * 028 and the "מספר בתל"ם" sequence are derived from it. A frozen literal: never import
  * builders here.
  */
 import type { GenerateOptions, Report1214Input } from '../../../src/index.js';
@@ -70,7 +71,6 @@ export const input: Report1214Input = {
         '087': 400,
         '089': 3600,
         '093': 1500,
-        '099': 250,
       },
     },
   ],

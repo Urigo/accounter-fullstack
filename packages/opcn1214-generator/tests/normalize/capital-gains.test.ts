@@ -1646,7 +1646,7 @@ describe('normalizeReport: record 3077 (other transactions)', () => {
     const [line] = linesOfType(
       minimalInput({
         capitalGains: [
-          otherTransactionsAppendix({ improvements: improvements(5), amounts: { '092': 7 } }),
+          otherTransactionsAppendix({ improvements: improvements(5), amounts: { '092': 1 } }),
         ],
       }),
       '3077',
@@ -1655,7 +1655,7 @@ describe('normalizeReport: record 3077 (other transactions)', () => {
       '0150003000000' +
         '020000150000050' +
         '0711' +
-        '0927' +
+        '0921' +
         '501000000900050' +
         '502000001800050' +
         '503000002700050' +
@@ -1719,21 +1719,21 @@ describe('normalizeReport: record 3077 (other transactions)', () => {
     ]);
   });
 
-  it('accepts code 092 as a single digit 0–9 (SPEC §15 A-11)', () => {
-    for (const value of [1, 9]) {
+  it('accepts only 1 in code 092 (SPEC §15 A-11, A-31: shopcn rejected 2)', () => {
+    expect(
+      errorsOf(
+        minimalInput({ capitalGains: [otherTransactionsAppendix({ amounts: { '092': 1 } })] }),
+      ),
+    ).toEqual([]);
+    for (const value of [2, 9]) {
       expect(
         errorsOf(
           minimalInput({
             capitalGains: [otherTransactionsAppendix({ amounts: { '092': value } })],
           }),
         ),
-      ).toEqual([]);
+      ).toEqual([['field.enum', 'capitalGains[0].amounts["092"]', '3077']]);
     }
-    expect(
-      errorsOf(
-        minimalInput({ capitalGains: [otherTransactionsAppendix({ amounts: { '092': 10 } })] }),
-      ),
-    ).toEqual([['field.length', 'capitalGains[0].amounts["092"]', '3077']]);
   });
 
   it('requires dates.code15 and dates.code20: input.shape for typed input, field.required in the model', () => {
@@ -1826,7 +1826,7 @@ describe('normalizeReport: record 3077 (other transactions)', () => {
     const appendix = otherTransactionsAppendix({
       improvements: improvements(5),
       walletAddresses: ['0x1', '0x2'],
-      amounts: { '092': 3 },
+      amounts: { '092': 1 },
     });
     const input = minimalInput({ capitalGains: [appendix] });
     expect(validate1214(input, OPTIONS)).toEqual({ valid: true, errors: [], warnings: [] });

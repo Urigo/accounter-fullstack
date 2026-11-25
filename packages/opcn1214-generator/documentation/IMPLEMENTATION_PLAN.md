@@ -1550,6 +1550,9 @@ Done when
 **Outcome CP-2 (2026-11-17):** `main-full` and `kibbutz` rejected (identifier check digits, SPEC §15
 A-25) → FIX-1.
 
+**Outcome CP-2 re-check (2026-11-18):** `kibbutz` passed; `main-full` rejected (withholding file
+number not derived from the company file number, SPEC §15 A-28) → FIX-2.
+
 ---
 
 ### Part E — Related companies and R&D investments
@@ -1744,6 +1747,9 @@ Done when
 
 **Outcome CP-3 (2026-11-17):** `foreign` passed (A-4, A-9, A-14 verified); `related-and-rd` rejected
 (identifier check digits, SPEC §15 A-25) → FIX-1.
+
+**Outcome CP-3 re-check (2026-11-18):** `related-and-rd` rejected (Latin related-company name, SPEC
+§15 A-29) → FIX-2.
 
 ---
 
@@ -1998,6 +2004,11 @@ Done when
 > **Human checkpoint CP-4 (after G5).** Verify every `cg-*` golden and `capital-gains-max` on shopcn
 > (A-7, A-8, A-11 in SPEC §15).
 
+**Outcome CP-4 (2026-11-18):** `cg-27`, `cg-50`, `cg-51`, `cg-54`, `cg-63`, `cg-64`, `cg-66` and
+`cg-77` passed; `cg-60` and `cg-65` rejected (more than 20 code-amount pairs in one appendix, SPEC
+§15 A-30) and `capital-gains-max` rejected (3077 code 092 = 2, SPEC §15 A-31, superseding A-11) →
+FIX-2.
+
 ---
 
 ### Part H — Completion
@@ -2202,6 +2213,9 @@ Done when
 > **Human checkpoint CP-5 (after H4).** Every golden file in `VERIFICATION.md` is marked verified
 > (or its rejection resolved). Then the package can be released and the server integration (SPEC
 > Appendix B) planned.
+
+**Outcome CP-5 (2026-11-18):** `hebrew-edge` and `batch-50` passed; the five files rejected at the
+CP-2 to CP-4 re-checks were regenerated in FIX-2 and are PENDING.
 
 ---
 

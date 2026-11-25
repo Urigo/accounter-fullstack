@@ -37,7 +37,7 @@ export const input: Report1214Input = {
       relationType: 'subsidiary',
       assessingOfficeCode: 34,
     },
-    { companyName: 'Foreign Affiliate Ltd', relationType: 'jointlyControlled' },
+    { companyName: 'פורין אפיליאייט לימיטד', relationType: 'jointlyControlled' },
   ],
   shareholders: [
     {
@@ -52,7 +52,7 @@ export const input: Report1214Input = {
     { companyName: 'מו"פ שנייה בע"מ', companyFileNumber: '520000019', investmentAmount: 400_000 },
     { companyName: 'מו"פ שלישית בע"מ', companyFileNumber: '520000027', investmentAmount: 350_000 },
     { companyName: 'מו"פ רביעית בע"מ', companyFileNumber: '520000035', investmentAmount: 300_000 },
-    { companyName: 'R&D Start-up Ltd', investmentAmount: 200_000 },
+    { companyName: 'סטארט-אפ מחקר ופיתוח בע"מ', investmentAmount: 200_000 },
   ],
 };
 
