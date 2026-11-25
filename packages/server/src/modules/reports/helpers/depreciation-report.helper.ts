@@ -1,13 +1,26 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { endOfTimelessYear, startOfTimelessYear } from '../../../shared/helpers/index.js';
-import { calculateDepreciation } from '../../depreciation/helpers/asset-depreciation.helper.js';
+import {
+  calculateAssetYear,
+  calculateDepreciation,
+} from '../../depreciation/helpers/asset-depreciation.helper.js';
+import {
+  loadAssetInput,
+  loadDisposalInputs,
+} from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
 
 export { calculateDepreciation };
 
-export async function calculateDepreciationAmount(injector: Injector, year: number) {
+/** The yearly depreciation of `ownerId`'s assets, split by depreciation type */
+export async function calculateDepreciationAmount(
+  injector: Injector,
+  year: number,
+  ownerId: string,
+) {
   const depreciationRecords = await injector
     .get(DepreciationProvider)
     .getDepreciationRecordsByDates({
@@ -21,6 +34,9 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
 
   await Promise.all(
     depreciationRecords.map(async record => {
+      if (record.owner_id !== ownerId) {
+        return;
+      }
       const depreciationCategory = await injector
         .get(DepreciationCategoriesProvider)
         .getDepreciationCategoriesByIdLoader.load(record.category);
@@ -29,13 +45,21 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
         return;
       }
 
-      const { yearlyDepreciationAmount } = calculateDepreciation(
-        Number(depreciationCategory.percentage),
-        Number(record.amount),
-        record.activation_date,
+      const [disposals, asset] = await Promise.all([
+        injector
+          .get(DepreciationDisposalsProvider)
+          .getDisposalsByDepreciationIdLoader.load(record.id),
+        loadAssetInput(injector, record, depreciationCategory),
+      ]);
+      const { yearDepreciation: yearlyDepreciationAmount } = calculateAssetYear(
+        asset,
+        await loadDisposalInputs(injector, record, disposals),
         year,
-        record.expiration_date ?? undefined,
       );
+      // nothing to add: fully depreciated or disposed of, or in a category that is not depreciated (0%)
+      if (yearlyDepreciationAmount === 0) {
+        return;
+      }
 
       switch (record.type) {
         case 'RESEARCH_AND_DEVELOPMENT':

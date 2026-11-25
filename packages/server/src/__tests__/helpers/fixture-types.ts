@@ -184,6 +184,119 @@ export interface FixtureDocuments {
 }
 
 /**
+ * Misc expenses in a fixture
+ *
+ * A misc expense books an amount between two financial entities (a business or a tax category) on
+ * a charge, without a document or a transaction: Dr `debtorId` / Cr `creditorId`.
+ */
+export interface FixtureMiscExpenses {
+  expenses: Array<{
+    id: string;
+    /** Must exist in the charges array (or have been inserted by an earlier fixture) */
+    chargeId: string;
+    ownerId: string;
+    /** PostgreSQL numeric: a positive amount; a negative one swaps the sides */
+    amount: string;
+    currency: string;
+    creditorId: string;
+    debtorId: string;
+    description?: string | null;
+    invoiceDate: string;
+    /** A `timestamp without time zone`, e.g. `2024-01-20 00:00:00`; the ledger keeps its day */
+    valueDate: string;
+  }>;
+}
+
+/**
+ * Exchange rates in a fixture: one `exchange_rates` row per date, ILS per unit of each currency
+ *
+ * The table is global (not tenant-scoped) and has one row per date, so a fixture row is upserted:
+ * only the currencies it gives are written, over whatever the row already holds. Insert fixtures
+ * in a test transaction that is rolled back, so the rates never outlive the test.
+ */
+export interface FixtureExchangeRates {
+  rates: Array<{
+    date: string;
+    usd?: number;
+    eur?: number;
+    gbp?: number;
+    cad?: number;
+    jpy?: number;
+    aud?: number;
+    sek?: number;
+  }>;
+}
+
+/**
+ * Depreciation categories in a fixture
+ *
+ * The table is global (not tenant-scoped). A 0% category holds assets that are not depreciated.
+ */
+export interface FixtureDepreciationCategories {
+  categories: Array<{
+    id: string;
+    name: string;
+    /** Yearly rate, 0-100 */
+    percentage: number;
+  }>;
+}
+
+/**
+ * Depreciation records (assets) in a fixture
+ */
+export interface FixtureDepreciationRecords {
+  records: Array<{
+    id: string;
+    /** The charge that bought the asset */
+    chargeId: string;
+    ownerId: string;
+    categoryId: string;
+    /** PostgreSQL numeric, in `currency` (the local currency when `currency` is unset) */
+    amount: string | null;
+    currency?: string | null;
+    /** The cost basis in the local currency, overriding the conversion of `amount` */
+    localAmount?: string | null;
+    activationDate: string;
+    type?: 'RESEARCH_AND_DEVELOPMENT' | 'GENERAL_AND_MANAGEMENT' | 'MARKETING' | null;
+    /**
+     * The asset's cost account, for an asset bought on a charge with several assets; unset, it is
+     * the tax category of the charge that bought it
+     */
+    assetTaxCategoryId?: string | null;
+  }>;
+}
+
+/**
+ * Depreciation disposals (sales, write-offs and cost refunds) in a fixture
+ *
+ * Stored as the API stores them: a cost refund of an asset recorded in a foreign currency holds
+ * `originalAmount` in that currency and no `disposedCost`; any other event holds its local
+ * `disposedCost`.
+ */
+export interface FixtureDepreciationDisposals {
+  disposals: Array<{
+    id: string;
+    ownerId: string;
+    /** Must exist in the depreciation records (of this fixture or an earlier one) */
+    depreciationId: string;
+    /** The charge carrying the money: a sale's proceeds or a cost refund */
+    chargeId?: string | null;
+    type: 'SALE' | 'WRITE_OFF' | 'COST_REFUND';
+    /** Cost refunds only; unset (NULL) means `FROM_ACTIVATION` */
+    refundMode?: 'FROM_ACTIVATION' | 'FROM_REFUND_DATE' | null;
+    disposalDate: string;
+    /** PostgreSQL numeric: the local cost of the event */
+    disposedCost?: string | null;
+    /** PostgreSQL numeric: a cost refund in the asset's foreign currency */
+    originalAmount?: string | null;
+    originalCurrency?: string | null;
+    /** PostgreSQL numeric; defaults to 0 */
+    proceeds?: string | null;
+    description?: string | null;
+  }>;
+}
+
+/**
  * Expected ledger entries for a fixture scenario
  *
  * Used to validate that ledger generation produces the expected results.
@@ -338,6 +451,31 @@ export interface Fixture {
    * Documents in this fixture
    */
   documents?: FixtureDocuments;
+
+  /**
+   * Misc expenses in this fixture
+   */
+  miscExpenses?: FixtureMiscExpenses;
+
+  /**
+   * Exchange rates in this fixture (global rows, upserted by date)
+   */
+  exchangeRates?: FixtureExchangeRates;
+
+  /**
+   * Depreciation categories in this fixture (global rows)
+   */
+  depreciationCategories?: FixtureDepreciationCategories;
+
+  /**
+   * Depreciation records (assets) in this fixture
+   */
+  depreciationRecords?: FixtureDepreciationRecords;
+
+  /**
+   * Depreciation disposals (sales, write-offs, cost refunds) in this fixture
+   */
+  depreciationDisposals?: FixtureDepreciationDisposals;
 
   /**
    * Expected outcomes for assertions

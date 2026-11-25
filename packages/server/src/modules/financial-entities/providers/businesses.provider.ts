@@ -262,6 +262,12 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
     WHERE business_id = $businessIdToReplace
     RETURNING id
   ),
+  shareholders AS (
+    UPDATE accounter_schema.shareholders
+    SET business_id = $targetBusinessId
+    WHERE business_id = $businessIdToReplace
+    RETURNING id
+  ),
   corporate_tax_variables as (
     UPDATE accounter_schema.corporate_tax_variables
     SET corporate_id = $targetBusinessId
@@ -461,7 +467,7 @@ export class BusinessesProvider {
     this.invalidateBusinessById(businessIdToReplace);
     this.invalidateBusinessById(targetBusinessId);
 
-    // convert transactions, ledger, documents, employees, funds, business trips attendees, business trips employee payments, charge unbalanced ledger businesses, charge balance cancellation, dividends, corporate tax variables, businesses green invoice match
+    // convert transactions, ledger, documents, employees, funds, business trips attendees, business trips employee payments, charge unbalanced ledger businesses, charge balance cancellation, dividends, shareholders, corporate tax variables, businesses green invoice match
     await replaceBusinesses.run(
       {
         targetBusinessId,
