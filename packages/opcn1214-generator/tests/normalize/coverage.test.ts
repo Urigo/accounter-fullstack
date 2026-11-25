@@ -1,6 +1,7 @@
 import { getLayout } from '../../src/layout/registry.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import {
+  foreignAppendix,
   fullDeclarationsInput,
   fullMainInput,
   rdInvestments,
@@ -55,5 +56,11 @@ describe('normalizer coverage (SPEC §13.3)', () => {
     const input = fullMainInput({ rdInvestments: rdInvestments(1) });
     const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
     expect(unmappedHeaderKeys(LAYOUT.records['1030'], report.records)).toEqual([]);
+  });
+
+  it('record 2000: every non-filler header key is mapped', () => {
+    const input = fullMainInput({ foreignAppendix: foreignAppendix() });
+    const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
+    expect(unmappedHeaderKeys(LAYOUT.records['2000'], report.records)).toEqual([]);
   });
 });

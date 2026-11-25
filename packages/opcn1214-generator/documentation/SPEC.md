@@ -1039,6 +1039,9 @@ and the reportable positions are the non-zero values of 1034–1046 in field ord
 back as `declarations.hasCapitalGainsAppendix: true` only when the derivation of §7.4 does not
 already explain it (no `untransmittedCount > 0`, no capital-gains appendix in the file).
 
+When parsing, `foreignAppendix` exists exactly when the file has a 2000 record; 1000@832 is not read
+back (a disagreeing 832 is `parse.derivedMismatch`).
+
 Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
 notice at `declarations.reportablePositions[5]` (the first position not written), and the first five
 are still written.
@@ -1160,8 +1163,8 @@ included, is `parse.order`, and the 9999 counts are compared with the records be
 
 - text normalized (§4.3); optional properties that encode to the empty/zero value removed (`false`
   flags, absent yes/no, empty strings, empty `relatedCompanies` and `rdInvestments` lists);
-  `amounts` entries with value `0` for non `zeroAllowed` codes removed; derived values not present
-  in the input;
+  `amounts` and `foreignAppendix.amounts` entries with value `0` for non `zeroAllowed` codes
+  removed; derived values not present in the input;
 - `meta.saveDate` and `meta.softwareName` set to the values actually written
   (`canonicalize(input, options)` takes the same options as generation, for `today`);
 - digit-string inputs of numeric fields (`id9`, `shareholderId`, `digits`) zero-padded to the field
@@ -1368,7 +1371,7 @@ and `values` columns.)
 | Rule ID                                       | Sev | Source  | Condition (violation)                                                                 | Ref         |
 | --------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------------- | ----------- |
 | `foreign.otherIncome.description`             | E   | spec    | `otherTaxableIncome` > 0 without `otherTaxableIncomeDescription`                      | p.26        |
-| `foreign.refund.amount`                       | W   | derived | `taxRefundDeclaration` true without `taxRefundDeclarationAmount`                      | p.26        |
+| `foreign.refund.amount`                       | W   | derived | `taxRefundDeclaration` true without `taxRefundDeclarationAmount` > 0                  | p.26        |
 | `foreign.breakdown.required`                  | E   | spec    | a `perCountryBreakdown` code has a value in `amounts` but no `countryBreakdown` entry | p.27        |
 | `foreign.breakdown.orphan`                    | E   | spec    | a `countryBreakdown` entry for a code with no value in `amounts`                      | p.30        |
 | `foreign.breakdown.countries.min`             | E   | derived | a breakdown with no countries                                                         | p.31        |

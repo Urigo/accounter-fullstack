@@ -68,15 +68,16 @@ export function codeKey(code: string): string {
  * - Record 1010: a header key maps to `relatedCompanies[i].<key>`.
  * - Record 1020: a header key maps to `shareholders[i].<key>`.
  * - Record 1030: a header key maps to `rdInvestments[i].<key>`.
+ * - Record 2000 (at most one): a header key maps to `foreignAppendix.<key>`, a code to
+ *   `foreignAppendix.amounts["420"]`. Nothing of record 2000 is derived.
  * - Derived values have no input path and map to `''` (report level): derived header keys
  *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`, 1030@137
  *   `affiliation`) and derived codes (SPEC §7.4: 008,
  *   028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
  *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
  *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
- * - Records whose input is not modelled yet (2000, 2200, 30xx) map to `''`, so the parser can
- *   report issues on them; steps F1 (2000), F2 (2200) and G1–G5 (30xx) replace this with their
- *   input paths.
+ * - Records whose input is not modelled yet (2200, 30xx) map to `''`, so the parser can report
+ *   issues on them; steps F2 (2200) and G1–G5 (30xx) replace this with their input paths.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -95,8 +96,9 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
       return `shareholders[${inputIndex}].${key}`;
     case '1030':
       return `rdInvestments[${inputIndex}].${key}`;
-    // No input mapping yet: replaced by steps F1, F2 and G1–G5.
     case '2000':
+      return isCode ? `foreignAppendix.amounts["${code}"]` : `foreignAppendix.${key}`;
+    // No input mapping yet: replaced by steps F2 and G1–G5.
     case '2200':
     case '3027':
     case '3050':

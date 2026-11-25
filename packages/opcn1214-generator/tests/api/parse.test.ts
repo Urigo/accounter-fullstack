@@ -2,6 +2,7 @@ import { encodeWindows1255 } from '../../src/codec/windows1255.js';
 import { generate1214, Opcn1214ParseError, parse1214, type Issue } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  foreignAppendix,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -372,6 +373,64 @@ describe('parse1214', () => {
     it('reports 1030 records the 9999 record does not count (9999@149)', () => {
       expect(parseErrorIssues(() => parse1214(tamper(rd, 5, 149, '01')))).toEqual([
         expect.objectContaining({ ruleId: 'parse.control.counts', line: 5, column: 149 }),
+      ]);
+    });
+  });
+
+  describe('foreign appendix (2000)', () => {
+    const appendix = foreignAppendix({ amounts: { '420': 50_000, '442': 0 } });
+    const foreign = generate1214(
+      minimalInput({
+        rdInvestments: rdInvestments(1),
+        amounts: { '165': rdInvestmentsTotal(1) },
+        foreignAppendix: appendix,
+      }),
+      OPTIONS,
+    ).text;
+
+    it('reads a 2000 record after 1030 back as foreignAppendix', () => {
+      const result = parse1214(foreign);
+      expect(result.report.foreignAppendix).toEqual(appendix);
+      expect(result.issues).toEqual([]);
+    });
+
+    it('reads no foreignAppendix from a file without a 2000 record', () => {
+      expect(parse1214(text).report).not.toHaveProperty('foreignAppendix');
+    });
+
+    it.each([
+      ['a 2000 record before 1030', [0, 1, 3, 2, 4], '1030', 4],
+      ['a 2000 record before 1020', [0, 3, 1, 2, 4], '1020', 3],
+    ])('reports %s as parse.order', (_, order, recordType, line) => {
+      const lines = foreign.split(CRLF);
+      const reordered = [...order.map(index => lines[index]), ''].join(CRLF);
+      expect(parseErrorIssues(() => parse1214(reordered))).toContainEqual(
+        expect.objectContaining({ ruleId: 'parse.order', recordType, line }),
+      );
+    });
+
+    it('locates issues of the 2000 record at foreignAppendix paths', () => {
+      // 2000@247: the required refund declaration written as absent.
+      const result = parse1214(tamper(foreign, 4, 247, '0'));
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'field.required',
+          path: 'foreignAppendix.taxRefundDeclaration',
+          recordType: '2000',
+          recordIndex: 0,
+        }),
+      ]);
+    });
+
+    it('reports a 2000 record the 9999 record does not count (9999@143)', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(foreign, 5, 143, '00')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 5, column: 143 }),
+      ]);
+    });
+
+    it('reports a 9999@143 of 01 without a 2000 record', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(text, 3, 143, '01')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 3, column: 143 }),
       ]);
     });
   });

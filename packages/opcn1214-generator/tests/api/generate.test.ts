@@ -9,6 +9,7 @@ import {
 } from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
 import {
+  foreignAppendix,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -183,6 +184,75 @@ describe('generate1214', () => {
     const lines = generate1214(minimalInput({ rdInvestments: [] }), OPTIONS).text.split(CRLF);
     expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', '9999', '']);
     expect(slice(lines[2], 149, 2)).toBe('00');
+  });
+
+  it('writes the foreign appendix as a 2000 record after 1030, with 832 = 1 and 9999@143 = 01', () => {
+    const input = minimalInput({
+      rdInvestments: rdInvestments(1),
+      amounts: { '165': rdInvestmentsTotal(1) },
+      foreignAppendix: foreignAppendix({ amounts: { '420': 50_000, '442': 0 } }),
+    });
+    const { summary, text } = generate1214(input, OPTIONS);
+    const lines = text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1020',
+      '1030',
+      '2000',
+      '9999',
+      '',
+    ]);
+    expect(summary.records).toEqual({ '1000': 1, '1020': 1, '1030': 1, '2000': 1, '9999': 1 });
+    const [main, , , foreign, control] = lines;
+    expect(foreign?.length).toBe(2184);
+    expect(slice(main, 832, 1)).toBe('1');
+    // 2000@137 description, @187–246 five amounts, @247 yes/no, @248 amount, @260 filler.
+    expect(slice(foreign, 137, 50)).toBe('תמלוגים מחו"ל'.padStart(50, ' '));
+    expect(slice(foreign, 187, 12)).toBe('000000040000');
+    expect(slice(foreign, 199, 12)).toBe('000000006000');
+    expect(slice(foreign, 211, 12)).toBe('000000120000');
+    expect(slice(foreign, 223, 12)).toBe('000000015000');
+    expect(slice(foreign, 235, 12)).toBe('000000007000');
+    expect(slice(foreign, 247, 1)).toBe('1');
+    expect(slice(foreign, 248, 12)).toBe('000000002500');
+    expect(slice(foreign, 260, 901)).toBe('0'.repeat(901));
+    // The section starts at 1161 (SPEC §15 A-9); every value has 12 digits (A-4); 442 = 0 is kept.
+    const entries = [
+      '401000000080000',
+      '420000000050000',
+      '425000000012345',
+      '442000000000000',
+      '494000000000001',
+    ].join('');
+    expect(slice(foreign, 1161, entries.length)).toBe(entries);
+    expect(slice(foreign, 1161 + entries.length, 1024 - entries.length)).toBe(
+      '0'.repeat(1024 - entries.length),
+    );
+    expect(slice(control, 143, 2)).toBe('01');
+  });
+
+  it('writes 832 = 2 and 00 at 9999@143 without a foreign appendix', () => {
+    const lines = generate1214(minimalInput(), OPTIONS).text.split(CRLF);
+    expect(slice(lines[0], 832, 1)).toBe('2');
+    expect(slice(lines[2], 143, 2)).toBe('00');
+  });
+
+  it('writes 2 at 2000@247 for a "no" refund declaration and an empty section as zeros', () => {
+    const input = minimalInput({ foreignAppendix: { taxRefundDeclaration: false, amounts: {} } });
+    const foreign = generate1214(input, OPTIONS).text.split(CRLF)[2];
+    expect(slice(foreign, 137, 50)).toBe(' '.repeat(50));
+    expect(slice(foreign, 187, 60)).toBe('0'.repeat(60));
+    expect(slice(foreign, 247, 13)).toBe('2000000000000');
+    expect(slice(foreign, 1161, 1024)).toBe('0'.repeat(1024));
+  });
+
+  it('lists omitted zero codes of the foreign appendix', () => {
+    const input = minimalInput({
+      foreignAppendix: { taxRefundDeclaration: false, amounts: { '401': 0, '442': 0 } },
+    });
+    const { summary, text } = generate1214(input, OPTIONS);
+    expect(summary.omittedZeroCodes).toEqual([{ record: '2000', recordIndex: 0, code: '401' }]);
+    expect(slice(text.split(CRLF)[2], 1161, 15)).toBe('442000000000000');
   });
 
   it('lists omitted zero codes', () => {

@@ -253,6 +253,13 @@ describe('normalizeReport: record 1000 (skeleton)', () => {
       expect(record.values['declarations.hasCapitalGainsAppendix']).toBe(false);
     });
 
+    it('832 is "yes" when a foreign appendix exists', () => {
+      const record = mainRecord(
+        minimalInput({ foreignAppendix: { taxRefundDeclaration: false, amounts: {} } }),
+      );
+      expect(record.values.hasForeignAppendix).toBe(true);
+    });
+
     it.each([
       [true, false, 1],
       [false, true, 2],
