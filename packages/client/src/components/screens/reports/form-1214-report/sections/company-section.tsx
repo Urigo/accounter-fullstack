@@ -59,8 +59,8 @@ export function Form1214CompanySection({ data }: Props): ReactElement {
   return (
     <Section id="company" title="Company details">
       <div className="space-y-6">
-        <Form1214CompanyEditor key={year} company={company} />
-        <Form1214PreparerEditor key={year} preparer={preparer} />
+        <Form1214CompanyEditor key={`company-${year}`} company={company} />
+        <Form1214PreparerEditor key={`preparer-${year}`} preparer={preparer} />
       </div>
     </Section>
   );
