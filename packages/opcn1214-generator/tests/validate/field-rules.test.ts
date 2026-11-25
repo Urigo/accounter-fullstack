@@ -355,18 +355,20 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
       ).toEqual(['shareholders[0].dividendRightsPercent']);
     });
 
-    it.each([1, 10.23, 100])('accepts %s', dividendRightsPercent => {
-      const issues = runPipeline(withShareholder({ dividendRightsPercent }), OPTIONS).issues;
+    // votingRightsPercent: a lone shareholder's dividend rights must total 100.
+    it.each([1, 10.23, 100])('accepts %s', votingRightsPercent => {
+      const issues = runPipeline(withShareholder({ votingRightsPercent }), OPTIONS).issues;
       expect(issues).toEqual([]);
     });
 
     // Float noise: compared as written (hundredths), like field.decimals and the encoder.
+    // votingRightsPercent, as above: a lone shareholder's dividend rights must total 100.
     it.each([
       ['14.46 + 49.59 + 35.95', 14.46 + 49.59 + 35.95, 100.00000000000001],
       ['0.7 + 0.2 + 0.1', 0.7 + 0.2 + 0.1, 0.9999999999999999],
-    ])('accepts %s, written as an in-range value', (_, dividendRightsPercent, raw) => {
-      expect(dividendRightsPercent).toBe(raw);
-      const issues = runPipeline(withShareholder({ dividendRightsPercent }), OPTIONS).issues;
+    ])('accepts %s, written as an in-range value', (_, votingRightsPercent, raw) => {
+      expect(votingRightsPercent).toBe(raw);
+      const issues = runPipeline(withShareholder({ votingRightsPercent }), OPTIONS).issues;
       expect(issues).toEqual([]);
     });
 
@@ -643,6 +645,7 @@ describe('fieldRules on synthetic records', () => {
     });
 
     it('field.decimals and field.negative: amountX100 code values', () => {
+      // Field rules only: the synthetic report also lacks the shareholders (struct.shareholders.min).
       const issues = runRules(
         report3077(
           {},
@@ -653,7 +656,7 @@ describe('fieldRules on synthetic records', () => {
             ['027', -1],
           ]),
         ),
-      );
+      ).filter(issue => issue.ruleId.startsWith('field.'));
       expect(issues.map(issue => [issue.ruleId, issue.path])).toEqual([
         ['field.negative', 'capitalGains[0].amounts["027"]'],
         ['field.decimals', 'capitalGains[0].amounts["040"]'],
@@ -747,6 +750,7 @@ describe('fieldRules on synthetic records', () => {
   });
 
   it('is sorted by the engine', () => {
+    // The synthetic report has no shareholders, which struct.shareholders.min reports too.
     const issues = runRules(
       report3077(
         { 'improvements[1].expense': 100, assetDetails: 'נכס\r' },
@@ -755,7 +759,7 @@ describe('fieldRules on synthetic records', () => {
           assetDetails: 'capitalGains[0].assetDetails',
         },
       ),
-    );
+    ).filter(issue => issue.ruleId.startsWith('field.'));
     expect(issues.map(issue => [issue.ruleId, issue.field?.position])).toEqual([
       ['field.charset', 143],
       ['field.required', 305],

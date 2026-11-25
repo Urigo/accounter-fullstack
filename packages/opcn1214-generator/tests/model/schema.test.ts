@@ -19,6 +19,14 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(shapeIssues(minimalInput())).toEqual([]);
   });
 
+  it('accepts any number of shareholders, none included (struct.shareholders.* count them)', () => {
+    const shareholder = minimalInput().shareholders[0]!;
+    expect(shapeIssues(minimalInput({ shareholders: [] }))).toEqual([]);
+    expect(
+      shapeIssues(minimalInput({ shareholders: Array.from({ length: 100 }, () => shareholder) })),
+    ).toEqual([]);
+  });
+
   it('shares one schema between the supported years', () => {
     expect(schemaFor(2025)).toBe(schemaFor(2024));
     expect(schemaFor(2024)).toBe(report1214InputSchema);

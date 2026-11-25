@@ -27,6 +27,19 @@ function withShareholder(overrides: Partial<Shareholder>) {
   return minimalInput({ shareholders });
 }
 
+/** A shareholder of `minimalInput()` with `idNumber` and `dividendRightsPercent` replaced. */
+function shareholder(idNumber: string, dividendRightsPercent?: number): Shareholder {
+  return { ...minimalInput().shareholders[0]!, idNumber, dividendRightsPercent };
+}
+
+/** minimalInput() with `count` shareholders, distinct IDs, none stating dividend rights. */
+function withShareholderCount(count: number) {
+  const shareholders = Array.from({ length: count }, (_, index) =>
+    shareholder(String(100_000_000 + index)),
+  );
+  return minimalInput({ shareholders });
+}
+
 /** Input codes whose presence calls for other data in later rules (D4/D5); kept out of padding. */
 const CONDITIONAL_CODES: ReadonlySet<string> = new Set(['010', '070', '080', '084', '165']);
 
@@ -324,6 +337,118 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
         declarations: { tookReportablePosition: true, reportablePositions: [1, 2, 3, 4, 5] },
       }),
     path: 'declarations.reportablePositions[5]',
+  },
+  'main.kibbutz.code226Other': {
+    kind: 'input',
+    fail: () => minimalInput({ declarations: { isKibbutz: true }, amounts: { '226': 9 } }),
+    pass: () => minimalInput({ declarations: { isKibbutz: true }, amounts: { '226': 4 } }),
+    path: 'amounts["226"]',
+  },
+  'main.reportablePositions.unexpected': {
+    kind: 'input',
+    fail: () => minimalInput({ declarations: { reportablePositions: [12] } }),
+    pass: () =>
+      minimalInput({ declarations: { tookReportablePosition: true, reportablePositions: [12] } }),
+    path: 'declarations.reportablePositions',
+  },
+  'main.cgUntransmitted.reason': {
+    kind: 'input',
+    fail: () => minimalInput({ capitalGainsSummary: { untransmittedCount: 2 } }),
+    pass: () =>
+      minimalInput({
+        capitalGainsSummary: { untransmittedCount: 2, reasons: { over14Appendices: true } },
+      }),
+    path: 'capitalGainsSummary.reasons',
+  },
+  'main.cgUntransmitted.reasonWithoutCount': {
+    kind: 'input',
+    fail: () => minimalInput({ capitalGainsSummary: { reasons: { lossOrNoGain: true } } }),
+    pass: () =>
+      minimalInput({
+        capitalGainsSummary: { untransmittedCount: 1, reasons: { lossOrNoGain: true } },
+      }),
+    path: 'capitalGainsSummary.untransmittedCount',
+  },
+  'main.bankAccount.withNoBank': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        declarations: { noBankAccount: true },
+        bankAccount: { bank: '12', branch: '345', account: '678' },
+      }),
+    pass: () => minimalInput({ bankAccount: { bank: '12', branch: '345', account: '678' } }),
+    path: 'declarations.noBankAccount',
+  },
+  'main.qualifyingCompany.purchaseAmounts': {
+    kind: 'input',
+    fail: () => minimalInput({ qualifyingCompany: { purchased: true } }),
+    pass: () => minimalInput({ qualifyingCompany: { purchased: true, foreignPurchaseAmount: 5 } }),
+    path: 'qualifyingCompany.israeliPurchaseAmount',
+  },
+  'main.qualifyingCompany.amortizationAmount': {
+    kind: 'input',
+    fail: () => minimalInput({ qualifyingCompany: { amortizationClaimed: true } }),
+    pass: () =>
+      minimalInput({ qualifyingCompany: { amortizationClaimed: true, amortizationAmount: 0 } }),
+    path: 'qualifyingCompany.amortizationAmount',
+  },
+  'main.attachments.code070': {
+    kind: 'input',
+    fail: () => minimalInput({ attachments: { donationReceiptsCount: 2 } }),
+    pass: () =>
+      minimalInput({ attachments: { donationReceiptsCount: 2 }, amounts: { '070': 500 } }),
+    path: 'amounts["070"]',
+  },
+  'main.attachments.code010': {
+    kind: 'input',
+    fail: () => minimalInput({ attachments: { withholdingCertificatesCount: 3 } }),
+    pass: () =>
+      minimalInput({ attachments: { withholdingCertificatesCount: 3 }, amounts: { '010': 1200 } }),
+    path: 'amounts["010"]',
+  },
+  'shareholders.dividendRights.total': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        shareholders: [shareholder('123456782', 50), shareholder('234567891', 49.99)],
+      }),
+    pass: () =>
+      minimalInput({
+        shareholders: [
+          shareholder('123456782', 33.33),
+          shareholder('234567891', 33.33),
+          shareholder('345678917', 33.34),
+        ],
+      }),
+    path: 'shareholders',
+  },
+  'shareholders.duplicateId': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({ shareholders: [shareholder('123456782', 50), shareholder('123456782', 50)] }),
+    pass: () =>
+      minimalInput({
+        shareholders: [
+          shareholder('999999964', 25),
+          shareholder('999999964', 25),
+          shareholder('999999998', 25),
+          shareholder('999999998', 25),
+        ],
+      }),
+    path: 'shareholders[1].idNumber',
+  },
+  'struct.shareholders.min': {
+    kind: 'input',
+    fail: () => minimalInput({ shareholders: [] }),
+    pass: () =>
+      minimalInput({ declarations: { isKibbutz: true }, amounts: { '226': 1 }, shareholders: [] }),
+    path: 'shareholders',
+  },
+  'struct.shareholders.max': {
+    kind: 'input',
+    fail: () => withShareholderCount(100),
+    pass: () => withShareholderCount(99),
+    path: 'shareholders',
   },
   'main.bankAccount.format': {
     kind: 'input',

@@ -61,6 +61,22 @@ export const RULES = deepFreeze([
       'A derived code (008, 028, 273, 277, 278, 280, 297) passed in a code map; the message names the input property that controls it.',
   },
   {
+    id: 'struct.shareholders.min',
+    severity: 'error',
+    source: 'spec',
+    scope: '1020',
+    description: 'No shareholders while declarations.isKibbutz is not true.',
+    specRef: { page: 21 },
+  },
+  {
+    id: 'struct.shareholders.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '1020',
+    description: 'More than 99 shareholders.',
+    specRef: { page: 21 },
+  },
+  {
     id: 'struct.mainCodePairs.max',
     severity: 'error',
     source: 'spec',
@@ -234,6 +250,14 @@ export const RULES = deepFreeze([
     specRef: { page: 9 },
   },
   {
+    id: 'main.kibbutz.code226Other',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description: 'Code 226 = 9 ("other cooperative, not kibbutz") while isKibbutz (877 marked).',
+    specRef: { page: 18 },
+  },
+  {
     id: 'main.buildingIncome.code259',
     severity: 'error',
     source: 'spec',
@@ -267,6 +291,41 @@ export const RULES = deepFreeze([
     specRef: { page: 11 },
   },
   {
+    id: 'main.reportablePositions.unexpected',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'Non-zero reportable positions (1034–1046) given while tookReportablePosition (1030) is no.',
+    specRef: { page: 11 },
+  },
+  {
+    id: 'main.cgUntransmitted.reason',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'capitalGainsSummary.untransmittedCount (962) > 0 and none of the reasons 964–967 marked.',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'main.cgUntransmitted.reasonWithoutCount',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'A reason 964–967 marked while capitalGainsSummary.untransmittedCount (962) is 0 or absent.',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'main.bankAccount.withNoBank',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description: 'noBankAccount (1064) marked while a bank account (codes 277/278/280) is given.',
+    specRef: { page: 12 },
+  },
+  {
     id: 'main.bankAccount.format',
     severity: 'error',
     source: 'spec',
@@ -274,6 +333,57 @@ export const RULES = deepFreeze([
     description:
       'bankAccount.bank is not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits.',
     specRef: { page: 19 },
+  },
+  {
+    id: 'main.qualifyingCompany.purchaseAmounts',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'qualifyingCompany.purchased (1065 = yes) but neither purchase amount (1066, 1078) given.',
+    specRef: { page: 12 },
+  },
+  {
+    id: 'main.qualifyingCompany.amortizationAmount',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description:
+      'qualifyingCompany.amortizationClaimed (1090 = yes) but no amortization amount (1091; 0 counts as given).',
+    specRef: { page: 12 },
+  },
+  {
+    id: 'main.attachments.code070',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description: 'attachments.donationReceiptsCount (954) > 0 but code 070 absent.',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'main.attachments.code010',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1000',
+    description: 'attachments.withholdingCertificatesCount (957) > 0 but code 010 absent.',
+    specRef: { page: 10 },
+  },
+  {
+    id: 'shareholders.dividendRights.total',
+    severity: 'error',
+    source: 'spec',
+    scope: '1020',
+    description:
+      'At least one shareholder states dividendRightsPercent and the total is not 100.00 (computed in hundredths; SPEC §15 A-15).',
+    specRef: { page: 23 },
+  },
+  {
+    id: 'shareholders.duplicateId',
+    severity: 'warning',
+    source: 'derived',
+    scope: '1020',
+    description:
+      'The same shareholder idNumber twice, compared zero-padded to 9 digits (999999964 and 999999998 excluded).',
   },
   {
     id: 'parse.empty',
