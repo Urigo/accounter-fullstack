@@ -19,6 +19,7 @@ import {
   relatedCompanies,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
 } from '../fixtures/builders.js';
 import {
   dropLine,
@@ -633,6 +634,14 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalInput({ bankAccount: { bank: '1', branch: '345', account: '678' } }),
     pass: () => minimalInput({ bankAccount: { bank: '12', branch: '345', account: '678' } }),
     path: 'bankAccount.bank',
+  },
+  'cg.investmentFund.value': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({ capitalGains: [securitiesAppendix({ gainFromInvestmentFund: true })] }),
+    pass: () =>
+      minimalInput({ capitalGains: [securitiesAppendix({ gainFromInvestmentFund: false })] }),
+    path: 'capitalGains[0].gainFromInvestmentFund',
   },
   'parse.empty': {
     kind: 'file',

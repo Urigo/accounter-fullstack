@@ -1,4 +1,5 @@
 import { renderReport } from '../../src/file/assemble.js';
+import { generate1214, parse1214, validate1214 } from '../../src/index.js';
 import {
   capitalGainsRecordType,
   isCapitalGainsRecordType,
@@ -14,8 +15,11 @@ import {
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
+  reitAppendix,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
+  withholders,
 } from '../fixtures/builders.js';
 import { unmappedHeaderKeys } from '../helpers/coverage.js';
 
@@ -336,5 +340,260 @@ describe('1000@833, code 028 and 9999@145 from the appendices (SPEC §7.4)', () 
         capitalGains: [section6Appendix()],
       }),
     ).toEqual([]);
+  });
+});
+
+/** The lines of record type `type` in the file of `input`. */
+function linesOfType(input: Report1214Input, type: string): string[] {
+  return linesOf(input).filter(text => text.slice(4, 8) === type);
+}
+
+describe.each([
+  ['3060', 'securities', securitiesAppendix],
+  ['3064', 'REIT', reitAppendix],
+] as const)('normalizeReport: record %s (%s, with withholders)', (type, _name, build) => {
+  const def = LAYOUT.records[type];
+
+  it('has the shared securities header, the same keys at the same positions as the other type', () => {
+    const other = LAYOUT.records[type === '3060' ? '3064' : '3060'];
+    const shape = (fields: typeof def.fields) =>
+      fields.filter(f => f.kind !== 'filler').map(f => [f.key, f.position, f.length, f.kind]);
+    expect(shape(def.fields)).toEqual(shape(other.fields));
+    // No "מספר בתל"ם" sequence field: the header is symbol, appendix number, members only.
+    expect(def.fields.filter(f => f.kind !== 'filler').map(f => f.key)).toEqual([
+      'transactionSymbol',
+      'appendixNumber',
+      'foreignAsset',
+      'soldToRelatedParty',
+      'boughtFromRelatedParty',
+      'gainFromInvestmentFund',
+      ...[0, 1, 2, 3].flatMap(i => [
+        `withholders[${i}].name`,
+        `withholders[${i}].branch`,
+        `withholders[${i}].account`,
+      ]),
+      'lossesCarriedForward',
+    ]);
+  });
+
+  it('maps the header, withholders[j] to keys withholders[j].<member>, with input paths', () => {
+    const appendix = build({ withholders: withholders(2) });
+    const [record] = capitalGainsRecords(minimalInput({ capitalGains: [appendix] }));
+    expect(record?.recordType).toBe(type);
+    expect(record?.inputIndex).toBe(0);
+    expect(record?.values).toEqual({
+      transactionSymbol: Number(type.slice(2)),
+      appendixNumber: 1,
+      foreignAsset: appendix.foreignAsset,
+      soldToRelatedParty: appendix.soldToRelatedParty,
+      boughtFromRelatedParty: appendix.boughtFromRelatedParty,
+      gainFromInvestmentFund: appendix.gainFromInvestmentFund,
+      'withholders[0].name': 'בנק הפועלים',
+      'withholders[0].branch': '011',
+      'withholders[0].account': '000123450',
+      'withholders[1].name': 'בנק לאומי',
+      'withholders[1].branch': '012',
+      'withholders[1].account': '000123451',
+      lossesCarriedForward: appendix.lossesCarriedForward,
+    });
+    expect(record?.paths).toMatchObject({
+      transactionSymbol: '',
+      appendixNumber: '',
+      foreignAsset: 'capitalGains[0].foreignAsset',
+      gainFromInvestmentFund: 'capitalGains[0].gainFromInvestmentFund',
+      'withholders[1].name': 'capitalGains[0].withholders[1].name',
+      'withholders[1].branch': 'capitalGains[0].withholders[1].branch',
+      'withholders[1].account': 'capitalGains[0].withholders[1].account',
+      lossesCarriedForward: 'capitalGains[0].lossesCarriedForward',
+      'code:056': 'capitalGains[0].amounts["056"]',
+    });
+  });
+
+  it('sets every non-filler header field with four withholders', () => {
+    const report = reportOf(
+      minimalInput({ capitalGains: [build({ withholders: withholders(4) })] }),
+    );
+    expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+  });
+
+  it('writes the header at its layout positions', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [
+          build({
+            foreignAsset: true,
+            soldToRelatedParty: false,
+            boughtFromRelatedParty: true,
+            gainFromInvestmentFund: false,
+            withholders: [{}, { name: 'בנק', branch: '12', account: '345' }],
+            lossesCarriedForward: 777,
+          }),
+        ],
+      }),
+      type,
+    );
+    expect(at(line, 137, 2)).toBe(type.slice(2));
+    expect(at(line, 139, 3)).toBe('001');
+    expect(at(line, 142, 4)).toBe('1212');
+    // Slot 0 is empty; slot 1 at 188 (name, padded on the left), 218 (branch), 221 (account).
+    expect(at(line, 146, 42)).toBe(' '.repeat(30) + '0'.repeat(12));
+    expect(at(line, 188, 30)).toBe('בנק'.padStart(30, ' '));
+    expect(at(line, 218, 3)).toBe('012');
+    expect(at(line, 221, 9)).toBe('000000345');
+    expect(at(line, 230, 84)).toBe((' '.repeat(30) + '0'.repeat(12)).repeat(2));
+    expect(at(line, 314, 10)).toBe('0000000777');
+  });
+
+  it('writes gainFromInvestmentFund as yes/no {1, 2} (SPEC §15 A-8)', () => {
+    const flag = (gainFromInvestmentFund: boolean | undefined) =>
+      at(
+        linesOfType(minimalInput({ capitalGains: [build({ gainFromInvestmentFund })] }), type)[0],
+        145,
+        1,
+      );
+    expect(flag(true)).toBe('1');
+    expect(flag(false)).toBe('2');
+    expect(flag(undefined)).toBe('0');
+    expect(def.fields.find(f => f.key === 'gainFromInvestmentFund')?.kind).toBe('yesNo');
+  });
+
+  it('reports a withholder name that does not start with a Hebrew letter at its input path', () => {
+    const input = minimalInput({
+      capitalGains: [
+        build({ withholders: [...withholders(2), { name: 'Bank Hapoalim', branch: '1' }] }),
+      ],
+    });
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'field.hebrewFirstLetter',
+        path: 'capitalGains[0].withholders[2].name',
+        recordType: type,
+        recordIndex: 0,
+      }),
+    ]);
+  });
+
+  it('accepts four withholders and empty slots without issues', () => {
+    expect(
+      validate1214(
+        minimalInput({ capitalGains: [build({ withholders: withholders(4) })] }),
+        OPTIONS,
+      ),
+    ).toEqual({ valid: true, errors: [], warnings: [] });
+    expect(
+      validate1214(
+        minimalInput({ capitalGains: [build({ withholders: [{}, {}, ...withholders(1)] })] }),
+        OPTIONS,
+      ),
+    ).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it('reports a fifth withholder as input.shape', () => {
+    const input = minimalInput({
+      capitalGains: [build({ withholders: [...withholders(4), { name: 'בנק' }] })],
+    });
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({ ruleId: 'input.shape', path: 'capitalGains[0].withholders' }),
+    ]);
+  });
+});
+
+describe('mixed appendices (SPEC §3.3, §15 A-7)', () => {
+  // Input order 64, 60, 63, 60: emitted 3060, 3060, 3063, 3064.
+  const appendices = [
+    reitAppendix(),
+    securitiesAppendix({ amounts: { '012': 1 } }),
+    section6Appendix(),
+    securitiesAppendix({ amounts: { '012': 2 } }),
+  ];
+  const input = minimalInput({ capitalGains: appendices });
+
+  it('groups the records by type ascending, numbers them per symbol, keeps the input index', () => {
+    expect(
+      capitalGainsRecords(input).map(r => [
+        r.recordType,
+        r.index,
+        r.inputIndex,
+        r.values.appendixNumber,
+      ]),
+    ).toEqual([
+      ['3060', 0, 1, 1],
+      ['3060', 1, 3, 2],
+      ['3063', 0, 2, 1],
+      ['3064', 0, 0, 1],
+    ]);
+    const lines = linesOf(input).filter(text =>
+      isCapitalGainsRecordType(text.slice(4, 8) as '3060'),
+    );
+    expect(lines.map(text => [text.slice(4, 8), at(text, 137, 5)])).toEqual([
+      ['3060', '60001'],
+      ['3060', '60002'],
+      ['3063', '63001'],
+      ['3064', '64001'],
+    ]);
+    // Code 028 and 9999@145 count all of them.
+    expect(mainOf(input).codes.get('028')).toBe(4);
+    expect(at(linesOf(input).at(-1), 145, 2)).toBe('04');
+  });
+
+  it('writes no sequence for these types: the header ends with the losses carried forward', () => {
+    for (const line of linesOf(input).slice(2, -1)) {
+      const type = line.slice(4, 8) as '3060' | '3063' | '3064';
+      const def = LAYOUT.records[type];
+      const filler = def.fields.find(f => f.kind === 'filler');
+      expect(filler).toBeDefined();
+      expect(at(line, filler?.position ?? 0, filler?.length ?? 0)).toMatch(/^0+$/);
+    }
+  });
+});
+
+describe('end to end: appendices [64, 60, 63]', () => {
+  const appendices = [
+    reitAppendix({ withholders: [{ name: 'Leumi' }] }),
+    securitiesAppendix(),
+    section6Appendix({ foreignAsset: false }),
+  ];
+  const input = minimalInput({ capitalGains: appendices });
+
+  it('reports an issue of the 3064 appendix at capitalGains[0], its input index', () => {
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'field.hebrewFirstLetter',
+        path: 'capitalGains[0].withholders[0].name',
+        recordType: '3064',
+        recordIndex: 0,
+      }),
+    ]);
+  });
+
+  it('reports an issue of the 3060 appendix at capitalGains[1] and of 3063 at capitalGains[2]', () => {
+    const errors = validate1214(
+      minimalInput({
+        capitalGains: [
+          reitAppendix(),
+          securitiesAppendix({ lossesCarriedForward: 1.5 }),
+          section6Appendix({ lossesCarriedForward: -1 }),
+        ],
+      }),
+      OPTIONS,
+    ).errors;
+    expect(errors.map(issue => [issue.ruleId, issue.path, issue.recordType])).toEqual([
+      ['field.integer', 'capitalGains[1].lossesCarriedForward', '3060'],
+      ['field.negative', 'capitalGains[2].lossesCarriedForward', '3063'],
+    ]);
+  });
+
+  it('generates 3060, 3063, 3064 and parses them back in file order', () => {
+    const valid = minimalInput({
+      capitalGains: [reitAppendix(), securitiesAppendix(), section6Appendix()],
+    });
+    const { text } = generate1214(valid, OPTIONS);
+    const parsed = parse1214(text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual([
+      securitiesAppendix(),
+      section6Appendix(),
+      reitAppendix(),
+    ]);
   });
 });

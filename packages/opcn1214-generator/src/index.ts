@@ -37,11 +37,14 @@ export type {
   PhonePrefix,
   PreparerDetails,
   RdInvestment,
+  ReitAppendix,
   RelatedCompany,
   Report1214Input,
   Section6SecuritiesAppendix,
+  SecuritiesAppendix,
   Shareholder,
   SupportedTaxYear,
+  Withholder,
 } from './model/input.js';
 export type {
   CapitalGainsCode,

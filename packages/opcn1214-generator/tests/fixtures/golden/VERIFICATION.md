@@ -13,4 +13,6 @@ the value below, so a golden cannot change without editing this table; a changed
 | kibbutz        | `fb59acc9b4d448b7766edac00e8f6d52ee12777664c01094fc3cb05926c6bc0b` | 2026-11-17   | PENDING       | Checkpoint CP-2 (after D5) |
 | related-and-rd | `68d1d649e89ae008e48833a1a14e88905fa036dd43b19029d3033037d2228690` | 2026-11-17   | PENDING       | Checkpoint CP-3            |
 | foreign        | `4ffc923fc10f39e21468c997911dda5cca4a4e257918655ae877ff0beaa7166e` | 2026-11-17   | PENDING       | Checkpoint CP-3            |
+| cg-60          | `2b9116e105d4c2251a6e14e3d71ca20aa9a48f589a04e053e8c9cd1594b38794` | 2026-11-17   | PENDING       | Checkpoint CP-4            |
 | cg-63          | `1261b55f1424cf354d9e6501327363f4406463966849992ecefbe9149b76f0bb` | 2026-11-17   | PENDING       | Checkpoint CP-4            |
+| cg-64          | `0db7f022d71df931b4802138e2efe9044a09b9d53420b570eba2c7f29c1a3413` | 2026-11-17   | PENDING       | Checkpoint CP-4            |
