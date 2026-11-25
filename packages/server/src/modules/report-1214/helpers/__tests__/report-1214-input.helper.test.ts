@@ -1,0 +1,408 @@
+import { describe, expect, it } from 'vitest';
+import {
+  generate1214,
+  getLayout,
+  parse1214,
+  validate1214,
+  type Report1214Input,
+} from '@accounter/opcn1214-generator';
+import type { Report1214ProfileProto, ShareholderProto } from '../../types.js';
+import {
+  assembleReport1214Input,
+  composeAddress,
+  parseIsraeliPhone,
+  REPORT_1214_MAPPING_RULES,
+  type AssembleReport1214InputParams,
+  type Report1214BusinessIdentity,
+} from '../report-1214-input.helper.js';
+
+const OWNER_ID = '00000000-0000-0000-0000-0000000000aa';
+const YEAR = 2024;
+
+describe('parseIsraeliPhone', () => {
+  it.each([
+    ['03-1234567', { prefix: '03', number: '1234567' }],
+    ['031234567', { prefix: '03', number: '1234567' }],
+    ['(03) 123 45 67', { prefix: '03', number: '1234567' }],
+    ['02.123.4567', { prefix: '02', number: '1234567' }],
+    ['054-1234567', { prefix: '054', number: '1234567' }],
+    ['054 123 4567', { prefix: '054', number: '1234567' }],
+    ['072-2345678', { prefix: '072', number: '2345678' }],
+    ['+972-54-1234567', { prefix: '054', number: '1234567' }],
+    ['+972 3 123 4567', { prefix: '03', number: '1234567' }],
+    ['972541234567', { prefix: '054', number: '1234567' }],
+    ['00972-9-1234567', { prefix: '09', number: '1234567' }],
+    ['+972 (0)3 1234567', { prefix: '03', number: '1234567' }],
+    ['  08-1234567  ', { prefix: '08', number: '1234567' }],
+  ])('parses %j', (raw, expected) => {
+    expect(parseIsraeliPhone(raw)).toEqual(expected);
+  });
+
+  it.each([
+    [null],
+    [undefined],
+    [''],
+    ['   '],
+    ['1234567'], // no prefix
+    ['03-123456'], // 6 digits
+    ['03-12345678'], // 8 digits
+    ['051-1234567'], // prefix form 1214 does not allow
+    ['05-1234567'], // incomplete mobile prefix
+    ['+1 212 555 1234'], // foreign
+    ['+44 20 7946 0958'],
+    ['03-1234567 ext. 12'], // extension
+    ['not a phone'],
+  ])('rejects %j', raw => {
+    expect(parseIsraeliPhone(raw)).toBeNull();
+  });
+});
+
+describe('composeAddress', () => {
+  it('joins street, city and zip, skipping empty parts', () => {
+    expect(composeAddress('רחוב הרצל 1', 'תל אביב', '6100000')).toBe(
+      'רחוב הרצל 1, תל אביב 6100000',
+    );
+    expect(composeAddress(' רחוב הרצל 1 ', ' ', null)).toBe('רחוב הרצל 1');
+    expect(composeAddress(null, 'תל אביב', '6100000')).toBe('תל אביב 6100000');
+    expect(composeAddress(null, '', undefined)).toBeUndefined();
+  });
+});
+
+const business: Report1214BusinessIdentity = {
+  name: 'Example Ltd',
+  hebrew_name: 'חברה לדוגמה בע"מ',
+  vat_number: '514000009',
+  address: 'Herzl 1',
+  address_hebrew: 'רחוב הרצל 1',
+  city: 'תל אביב',
+  zip_code: '6100000',
+  email: 'office@example.com',
+  phone_number: '+972-3-1234567',
+};
+
+const completeDeclarations = {
+  hasTaxPlanningAction: false,
+  hadRelatedPartyTransactions: false,
+  controlsBodyOfPersons: false,
+  holdsRightsInBodyOfPersons: false,
+  appliesAccountingStandards: false,
+  directorsReceivedOpinion: false,
+  tookReportablePosition: false,
+};
+
+function profile(overrides: Partial<Report1214ProfileProto> = {}): Report1214ProfileProto {
+  return {
+    ownerId: OWNER_ID,
+    year: YEAR,
+    company: {},
+    declarations: completeDeclarations,
+    preparer: {},
+    attachments: {},
+    bankAccount: {},
+    otherTaxableIncome: {},
+    capitalGainsSummary: {},
+    qualifyingCompany: {},
+    relatedCompanies: [],
+    rdInvestments: [],
+    amountOverrides: { '018': 4, '072': 0, '081': 1000, '094': 0, '263': 1 },
+    updatedAt: null,
+    ...overrides,
+  };
+}
+
+function shareholder(overrides: Partial<ShareholderProto> = {}): ShareholderProto {
+  return {
+    id: 'sh-1',
+    ownerId: OWNER_ID,
+    year: YEAR,
+    businessId: null,
+    idNumber: '123456782',
+    fullName: 'ישראל ישראלי',
+    isControllingShareholder: true,
+    dividendRightsPercent: 100,
+    votingRightsPercent: null,
+    otherRightsPercent: null,
+    isMaterialShareholder: null,
+    salaryMonths1To9: null,
+    salaryMonths10To12: null,
+    otherPayments: null,
+    sortOrder: 0,
+    ...overrides,
+  };
+}
+
+function assemble(overrides: Partial<AssembleReport1214InputParams> = {}) {
+  return assembleReport1214Input({
+    year: YEAR,
+    business,
+    adminBusiness: { company_tax_id: null },
+    profile: profile(),
+    shareholders: [shareholder()],
+    ...overrides,
+  });
+}
+
+const ruleIds = (issues: ReadonlyArray<{ ruleId: string }>) => issues.map(issue => issue.ruleId);
+
+describe('assembleReport1214Input', () => {
+  it('takes the company identity from the books', () => {
+    const { input, mappingIssues } = assemble({ adminBusiness: { company_tax_id: '951400001' } });
+    expect(mappingIssues).toEqual([]);
+    expect(input!.company).toEqual({
+      fileNumber: '514000009',
+      registeredName: 'חברה לדוגמה בע"מ',
+      withholdingFileNumber: '951400001',
+      vatFileNumber: '514000009',
+      mailingAddress: 'רחוב הרצל 1, תל אביב 6100000',
+      businessAddress: 'רחוב הרצל 1, תל אביב 6100000',
+      email: 'office@example.com',
+      phone: { prefix: '03', number: '1234567' },
+    });
+    expect(input!.taxYear).toBe(2024);
+  });
+
+  it('falls back to the English name and address', () => {
+    const { input } = assemble({
+      business: { ...business, hebrew_name: null, address_hebrew: null, city: null, zip_code: '' },
+    });
+    expect(input!.company.registeredName).toBe('Example Ltd');
+    expect(input!.company.mailingAddress).toBe('Herzl 1');
+  });
+
+  it('lets profile company overrides win', () => {
+    const { input, mappingIssues } = assemble({
+      adminBusiness: { company_tax_id: '951400001' },
+      profile: profile({
+        company: {
+          registeredName: 'שם אחר בע"מ',
+          phone: { prefix: '054', number: '7654321' },
+          fax: { prefix: '03', number: '7654321' },
+          email: 'tax@example.com',
+          occupationDescription: 'פיתוח תוכנה',
+          mailingAddress: 'ת.ד. 1, חיפה',
+          businessAddress: 'רחוב העצמאות 5, חיפה',
+          booksAddress: 'משרד רואה החשבון',
+          withholdingFileNumber: '951400002',
+        },
+      }),
+    });
+    expect(mappingIssues).toEqual([]);
+    expect(input!.company).toEqual({
+      fileNumber: '514000009',
+      vatFileNumber: '514000009',
+      registeredName: 'שם אחר בע"מ',
+      phone: { prefix: '054', number: '7654321' },
+      fax: { prefix: '03', number: '7654321' },
+      email: 'tax@example.com',
+      occupationDescription: 'פיתוח תוכנה',
+      mailingAddress: 'ת.ד. 1, חיפה',
+      businessAddress: 'רחוב העצמאות 5, חיפה',
+      booksAddress: 'משרד רואה החשבון',
+      withholdingFileNumber: '951400002',
+    });
+  });
+
+  it('reports missing identity data without inventing it', () => {
+    const { input, mappingIssues } = assemble({
+      business: {
+        ...business,
+        vat_number: null,
+        address: null,
+        address_hebrew: null,
+        city: null,
+        zip_code: null,
+        phone_number: null,
+      },
+    });
+    expect(mappingIssues.map(issue => [issue.ruleId, issue.path, issue.severity])).toEqual([
+      [REPORT_1214_MAPPING_RULES.fileNumberMissing, 'company.fileNumber', 'error'],
+      [REPORT_1214_MAPPING_RULES.addressMissing, 'company.mailingAddress', 'error'],
+      [REPORT_1214_MAPPING_RULES.addressMissing, 'company.businessAddress', 'error'],
+      [REPORT_1214_MAPPING_RULES.phoneMissing, 'company.phone', 'error'],
+    ]);
+    expect(input!.company).not.toHaveProperty('fileNumber');
+    expect(input!.company).not.toHaveProperty('phone');
+    expect(input!.company).not.toHaveProperty('mailingAddress');
+    // the best-effort input still validates, and the generator reports the shape too
+    const result = validate1214(input);
+    expect(result.valid).toBe(false);
+    expect(ruleIds(result.errors)).toContain('input.shape');
+  });
+
+  it('reports a business phone it cannot parse, and uses a profile phone instead', () => {
+    const bad = assemble({ business: { ...business, phone_number: '+1 212 555 1234' } });
+    expect(bad.mappingIssues).toMatchObject([
+      { ruleId: REPORT_1214_MAPPING_RULES.phoneUnparsable, path: 'company.phone' },
+    ]);
+    expect(bad.mappingIssues[0].message).toContain('1214 profile');
+
+    const fixed = assemble({
+      business: { ...business, phone_number: '+1 212 555 1234' },
+      profile: profile({ company: { phone: { prefix: '052', number: '1111111' } } }),
+    });
+    expect(fixed.mappingIssues).toEqual([]);
+    expect(fixed.input!.company.phone).toEqual({ prefix: '052', number: '1111111' });
+  });
+
+  it('drops empty profile blocks and lists', () => {
+    const { input } = assemble({ profile: profile({ bankAccount: { bank: '12' } }) });
+    for (const key of [
+      'preparer',
+      'attachments',
+      'bankAccount',
+      'otherTaxableIncome',
+      'capitalGainsSummary',
+      'qualifyingCompany',
+      'relatedCompanies',
+      'rdInvestments',
+    ]) {
+      expect(input).not.toHaveProperty(key);
+    }
+  });
+
+  it('passes set profile blocks through', () => {
+    const blocks = {
+      preparer: { officeName: 'משרד רו"ח', phone: { prefix: '03' as const, number: '2222222' } },
+      attachments: { donationReceiptsCount: 2 },
+      bankAccount: { bank: '12', branch: '345', account: '678' },
+      otherTaxableIncome: { source: 'ריבית', amount: 100 },
+      capitalGainsSummary: { totalAppendicesCount: 1 },
+      qualifyingCompany: { purchased: false },
+      relatedCompanies: [{ companyName: 'חברת בת', relationType: 'subsidiary' as const }],
+      rdInvestments: [{ companyName: 'מו"פ בע"מ', investmentAmount: 5000 }],
+    };
+    const { input } = assemble({ profile: profile(blocks) });
+    expect(input).toMatchObject(blocks);
+  });
+
+  it('reports each unanswered required declaration and fills it with false', () => {
+    const { input, mappingIssues } = assemble({
+      profile: profile({
+        declarations: { hasTaxPlanningAction: true, isHouseCompany: true, form6111Obligation: 'obliged' },
+      }),
+    });
+    expect(mappingIssues.map(issue => issue.path)).toEqual([
+      'declarations.hadRelatedPartyTransactions',
+      'declarations.controlsBodyOfPersons',
+      'declarations.holdsRightsInBodyOfPersons',
+      'declarations.appliesAccountingStandards',
+      'declarations.directorsReceivedOpinion',
+      'declarations.tookReportablePosition',
+    ]);
+    expect(new Set(ruleIds(mappingIssues))).toEqual(
+      new Set([REPORT_1214_MAPPING_RULES.declarationMissing]),
+    );
+    expect(mappingIssues.every(issue => issue.severity === 'error')).toBe(true);
+    expect(mappingIssues[0].message).toMatch(/^Answer /);
+    expect(input!.declarations).toEqual({
+      ...completeDeclarations,
+      hasTaxPlanningAction: true,
+      isHouseCompany: true,
+      form6111Obligation: 'obliged',
+    });
+  });
+
+  it('drops amount overrides of derived codes with a warning', () => {
+    const derived = getLayout(YEAR).records['1000'].codes.find(def => def.derived)!.code;
+    const { input, mappingIssues } = assemble({
+      profile: profile({
+        amountOverrides: { '081': 1000, [derived]: 5 } as Report1214ProfileProto['amountOverrides'],
+      }),
+    });
+    expect(input!.amounts).toEqual({ '081': 1000 });
+    expect(mappingIssues).toEqual([
+      expect.objectContaining({
+        ruleId: REPORT_1214_MAPPING_RULES.derivedOverrideDropped,
+        severity: 'warning',
+        path: `amounts["${derived}"]`,
+        code: derived,
+      }),
+    ]);
+  });
+
+  it('keeps an override of 0', () => {
+    const { input } = assemble();
+    expect(input!.amounts).toMatchObject({ '072': 0, '094': 0 });
+  });
+
+  it('maps shareholders to the generator shape', () => {
+    const { input } = assemble({
+      shareholders: [
+        shareholder({ dividendRightsPercent: 60, votingRightsPercent: 60, salaryMonths1To9: 9000 }),
+        shareholder({
+          id: 'sh-2',
+          idNumber: '000000018',
+          fullName: 'שרה כהן',
+          isControllingShareholder: false,
+          dividendRightsPercent: 40,
+          isMaterialShareholder: true,
+          businessId: '00000000-0000-0000-0000-0000000000bb',
+        }),
+      ],
+    });
+    expect(input!.shareholders).toEqual([
+      {
+        idNumber: '123456782',
+        fullName: 'ישראל ישראלי',
+        isControllingShareholder: true,
+        dividendRightsPercent: 60,
+        votingRightsPercent: 60,
+        salaryMonths1To9: 9000,
+      },
+      {
+        idNumber: '000000018',
+        fullName: 'שרה כהן',
+        isControllingShareholder: false,
+        dividendRightsPercent: 40,
+        isMaterialShareholder: true,
+      },
+    ]);
+  });
+
+  it('builds no input for a year the generator does not support', () => {
+    const { input, mappingIssues } = assemble({ year: 2023 });
+    expect(input).toBeNull();
+    expect(mappingIssues).toMatchObject([
+      { ruleId: REPORT_1214_MAPPING_RULES.taxYearUnsupported, severity: 'error', path: 'taxYear' },
+    ]);
+  });
+
+  it('builds a complete report that validates and round-trips through the file', () => {
+    const { input, mappingIssues } = assemble({
+      adminBusiness: { company_tax_id: '951400001' },
+      profile: profile({
+        company: { occupationDescription: 'פיתוח תוכנה', fax: { prefix: '03', number: '7654321' } },
+        preparer: { officeName: 'משרד רו"ח', phone: { prefix: '03', number: '2222222' } },
+      }),
+      shareholders: [
+        shareholder({ dividendRightsPercent: 60, votingRightsPercent: 60 }),
+        shareholder({
+          id: 'sh-2',
+          idNumber: '000000018',
+          fullName: 'שרה כהן',
+          isControllingShareholder: false,
+          dividendRightsPercent: 40,
+          votingRightsPercent: 40,
+        }),
+      ],
+    });
+    expect(mappingIssues).toEqual([]);
+    const validation = validate1214(input);
+    expect(validation.errors).toEqual([]);
+    expect(validation.valid).toBe(true);
+
+    const generated = generate1214(input!, { today: () => '2025-03-31' });
+    const { report } = parse1214(generated.bytes);
+    const expected: Partial<Report1214Input> = {
+      taxYear: input!.taxYear,
+      company: input!.company,
+      preparer: input!.preparer,
+      declarations: input!.declarations,
+      amounts: input!.amounts,
+      shareholders: input!.shareholders,
+    };
+    expect(report).toMatchObject(expected);
+    expect(report.shareholders).toEqual(input!.shareholders);
+    expect(report.company).toEqual(input!.company);
+  });
+});

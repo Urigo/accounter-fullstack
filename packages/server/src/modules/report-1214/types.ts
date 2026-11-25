@@ -91,3 +91,36 @@ export interface Report1214ProfileProto {
   /** `null` when no row is stored yet. */
   updatedAt: Date | null;
 }
+
+/**
+ * A finding about a form 1214 report: a generator `Issue` (`validate1214` / `generate1214`), or a
+ * mapping issue raised while building the generator input from the books and the profile (rule ID
+ * prefixed `accounter.`, no spec reference).
+ */
+export interface Report1214IssueProto {
+  ruleId: string;
+  severity: 'error' | 'warning';
+  message: string;
+  /** Input path (generator path grammar); `''` for report-level issues. */
+  path: string;
+  code?: string;
+  recordType?: string;
+  specRef?: { page: number; note?: string };
+}
+
+/** The generator input built for an owner and year, with the issues found while building it. */
+export interface Report1214BuildResult {
+  /** `null` when no input can be built at all (a tax year the generator has no layout for). */
+  input: Report1214Input | null;
+  mappingIssues: Report1214IssueProto[];
+}
+
+/**
+ * GraphQL `Report1214` parent. `build` runs the input build once per query and is shared by the
+ * `validation` and `file` fields; it starts on first use.
+ */
+export interface Report1214Proto {
+  ownerId: string;
+  year: number;
+  build: () => Promise<Report1214BuildResult>;
+}
