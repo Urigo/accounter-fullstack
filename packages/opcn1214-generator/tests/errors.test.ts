@@ -2,6 +2,7 @@ import {
   Opcn1214Error,
   Opcn1214InternalError,
   Opcn1214UnsupportedYearError,
+  Opcn1214ValidationError,
 } from '../src/errors.js';
 import type { Issue } from '../src/validate/issue.js';
 import type { RuleId } from '../src/validate/rules.js';
@@ -87,6 +88,31 @@ describe('errors', () => {
       );
       expect(error.issues[0]?.message).toBe(
         'Tax year "2024" is not supported (supported: 2024, 2025).',
+      );
+    });
+  });
+
+  describe('Opcn1214ValidationError', () => {
+    it('extends Opcn1214Error, sets name and counts errors and warnings in the message', () => {
+      const warning: Issue = {
+        ...issue('field.phonePrefix', 'company.phone.prefix'),
+        severity: 'warning',
+      };
+      const issues = [issue('field.required', 'company.phone.prefix'), warning];
+      const error = new Opcn1214ValidationError(issues);
+      expect(error).toBeInstanceOf(Opcn1214Error);
+      expect(error.name).toBe('Opcn1214ValidationError');
+      expect(error.issues).toEqual(issues);
+      expect(error.message).toBe(
+        '1214 report has 1 error and 1 warning: field.required at company.phone.prefix; ' +
+          'field.phonePrefix at company.phone.prefix',
+      );
+    });
+
+    it('pluralizes and leaves out a zero warning count', () => {
+      const issues = [issue('field.required', 'a'), issue('field.length', 'b')];
+      expect(new Opcn1214ValidationError(issues).message).toBe(
+        '1214 report has 2 errors: field.required at a; field.length at b',
       );
     });
   });

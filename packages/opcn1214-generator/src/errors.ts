@@ -76,6 +76,24 @@ export class Opcn1214UnsupportedYearError extends Opcn1214Error {
   }
 }
 
+function count(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
+/**
+ * Thrown by `generate1214` for a report with errors (SPEC §11.1): carries every error and
+ * warning, errors first.
+ */
+export class Opcn1214ValidationError extends Opcn1214Error {
+  constructor(issues: readonly Issue[], options?: ErrorOptions) {
+    const errors = issues.filter(issue => issue.severity === 'error').length;
+    const warnings = issues.length - errors;
+    const heading = `1214 report has ${count(errors, 'error')}`;
+    super(warnings > 0 ? `${heading} and ${count(warnings, 'warning')}` : heading, issues, options);
+    this.name = 'Opcn1214ValidationError';
+  }
+}
+
 /** An invariant of the package was violated: a bug, never expected in production. */
 export class Opcn1214InternalError extends Error {
   constructor(message: string, options?: ErrorOptions) {
