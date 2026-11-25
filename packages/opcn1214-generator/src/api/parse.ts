@@ -30,8 +30,8 @@ export interface ParseResult {
 
 /**
  * Parses a single-report file. Business-rule issues of the parsed content are returned as
- * `issues`, not thrown. Structural problems are not collected yet: undecodable content throws
- * CodecDecodeError, an unsupported tax year Opcn1214UnsupportedYearError.
+ * `issues`, not thrown. Structural problems (SPEC §8.2 steps 1–6, an unsupported tax year
+ * included) throw Opcn1214ParseError carrying every problem of the file.
  */
 export function parse1214(content: string | Uint8Array, options?: ParseOptions): ParseResult {
   const normalized = parseLines(splitFile(content, options));

@@ -2,7 +2,6 @@
  * Input paths of model keys (SPEC §7.3, §9.1 path grammar). Shared by the normalizer, which fills
  * NormalizedRecord.paths, and the parser, which reports issues against the reconstructed input.
  */
-import { Opcn1214InternalError } from '../errors.js';
 import type { RecordType } from '../layout/types.js';
 import { DERIVED_MAIN_CODES } from '../model/codes.generated.js';
 
@@ -36,8 +35,10 @@ export function codeKey(code: string): string {
  *   (1000@832 `hasForeignAppendix`, 1020@137 `serialNumber`) and derived codes (SPEC §7.4: 008,
  *   028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
  *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
- *
- * Throws Opcn1214InternalError for a record type without a mapping.
+ *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
+ * - Records whose input is not modelled yet (1010, 1030, 2000, 2200, 30xx) map to `''`, so the
+ *   parser can report issues on them; steps E1 (1010), E2 (1030), F1 (2000), F2 (2200) and G1–G5
+ *   (30xx) replace this with their input paths.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -52,7 +53,24 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
       return isCode ? `amounts["${code}"]` : key;
     case '1020':
       return `shareholders[${inputIndex}].${key}`;
-    default:
-      throw new Opcn1214InternalError(`No input paths are defined for record ${recordType}`);
+    // No input mapping yet: replaced by steps E1, E2, F1, F2 and G1–G5.
+    case '1010':
+    case '1030':
+    case '2000':
+    case '2200':
+    case '3027':
+    case '3050':
+    case '3051':
+    case '3054':
+    case '3060':
+    case '3063':
+    case '3064':
+    case '3065':
+    case '3066':
+    case '3077':
+      return '';
+    // Control record: every field is derived (SPEC §7.4).
+    case '9999':
+      return '';
   }
 }

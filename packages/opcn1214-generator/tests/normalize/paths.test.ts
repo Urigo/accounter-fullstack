@@ -1,4 +1,3 @@
-import { Opcn1214InternalError } from '../../src/errors.js';
 import { getLayout } from '../../src/layout/registry.js';
 import { DERIVED_MAIN_CODES } from '../../src/model/codes.generated.js';
 import { pathFor } from '../../src/normalize/paths.js';
@@ -37,7 +36,16 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(pathFor('1000', 0, `code:${code}`)).toBe('');
   });
 
-  it('throws an internal error for a record type it does not map yet', () => {
-    expect(() => pathFor('3077', 0, 'symbol')).toThrow(Opcn1214InternalError);
+  it.each(['1010', '1030', '2000', '2200', '3027', '3077'] as const)(
+    'maps keys of record %s, which has no input mapping yet, to the empty path',
+    recordType => {
+      expect(pathFor(recordType, 0, 'anything')).toBe('');
+    },
+  );
+
+  it('maps the fields of the control record 9999, which are all derived, to the empty path', () => {
+    for (const field of LAYOUT.records['9999'].fields) {
+      expect(pathFor('9999', 0, field.key)).toBe('');
+    }
   });
 });
