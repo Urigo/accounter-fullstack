@@ -62,7 +62,7 @@ export const RULES = deepFreeze([
     source: 'derived',
     scope: 'input',
     description:
-      'A derived code (008, 028, 273, 277, 278, 280, 297) passed in a code map; the message names the input property that controls it.',
+      'A derived code (008, 028, 273, 277, 278, 280, 297; 3077: 501–505) passed in a code map; the message names the input property that controls it.',
   },
   {
     id: 'struct.relatedCompanies.max',
@@ -542,6 +542,33 @@ export const RULES = deepFreeze([
     description:
       'A capital-gains appendix whose gain-from-investment-fund mark (30xx@145) is not the one value the PDF lists for its record type: 3060 and 3065 only no (2), 3064 only yes (1). Absent is allowed (SPEC §15 A-8).',
     specRef: { page: 43 },
+  },
+  {
+    id: 'cg.improvements.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '3077',
+    description:
+      'More than 5 improvements in a 3077 appendix (only five slots exist, 247–416); report the excess via 962 with reason 965 instead.',
+    specRef: { page: 55 },
+  },
+  {
+    id: 'cg.improvements.code50Amount',
+    severity: 'warning',
+    source: 'derived',
+    scope: '3077',
+    description:
+      'An improvement without code50Amount (code 501–505), or a code50Amount with neither expense nor accumulated depreciation.',
+    specRef: { page: 58 },
+  },
+  {
+    id: 'cg.virtualCurrency.wallet',
+    severity: 'error',
+    source: 'spec',
+    scope: '3077',
+    description:
+      'A 3077 appendix with code 071 = 1 (virtual currency) and no wallet address in 489 (the first slot).',
+    specRef: { page: 57 },
   },
   {
     id: 'parse.empty',

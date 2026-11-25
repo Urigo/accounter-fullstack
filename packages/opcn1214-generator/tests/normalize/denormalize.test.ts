@@ -7,10 +7,12 @@ import {
   breakdownCountries,
   forcedVirtualCurrencyAppendix,
   foreignAppendix,
+  improvements,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
   oilPartnershipAppendix,
+  otherTransactionsAppendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
@@ -229,6 +231,48 @@ describe('denormalize: capital-gains appendices (records 30xx)', () => {
     for (const appendix of capitalGains ?? []) {
       expect(appendix).not.toHaveProperty('sequenceNumber');
     }
+  });
+
+  it('reads 3077 records back: improvements with their code-50 amounts, no count, no codes 501–505', () => {
+    const appendices = [
+      otherTransactionsAppendix({ improvements: improvements(5) }),
+      section6Appendix(),
+      {
+        symbol: 77 as const,
+        dates: { code15: '2024-01-01', code20: '2020-01-01' },
+        improvements: [{ date: '2021-01-01' }, { date: '2022-01-01', code50Amount: 3 }],
+        replacementAsset: { price: 5 },
+        amounts: {},
+      },
+    ];
+    const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
+    const capitalGains = denormalize(report).capitalGains;
+    expect(capitalGains).toEqual([appendices[1], appendices[0], appendices[2]]);
+    for (const appendix of capitalGains ?? []) {
+      expect(appendix).not.toHaveProperty('improvementCount');
+      expect(Object.keys(appendix.amounts)).not.toContain('501');
+    }
+  });
+
+  it('reads an empty improvement slot before a used one back as an empty object', () => {
+    const report = normalizeReport(
+      minimalInput({
+        capitalGains: [otherTransactionsAppendix({ improvements: improvements(3) })],
+      }),
+      LAYOUT,
+      OPTIONS,
+    );
+    const record = report.records.find(r => r.recordType === '3077');
+    if (!record) {
+      throw new Error('expected record 3077');
+    }
+    for (const member of ['expense', 'accumulatedDepreciation', 'date']) {
+      delete record.values[`improvements[1].${member}`];
+    }
+    record.codes.delete('502');
+    expect(denormalize(report).capitalGains?.[0]).toMatchObject({
+      improvements: [improvements(3)[0], {}, improvements(3)[2]],
+    });
   });
 
   it('reads an empty first wallet slot before a filled one back as an empty string', () => {

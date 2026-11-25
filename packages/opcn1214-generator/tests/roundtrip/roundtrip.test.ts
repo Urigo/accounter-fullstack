@@ -23,10 +23,12 @@ import {
   foreignAppendixWithBreakdown,
   fullDeclarationsInput,
   fullMainInput,
+  improvements,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
   oilPartnershipAppendix,
+  otherTransactionsAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -464,6 +466,44 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'capital gains: 3077 appendices, mixed with every other type (14 appendices)',
+    minimalInput({
+      capitalGains: [
+        otherTransactionsAppendix({
+          assetDetails: '  מבנה\u00A0 \u201Cהנגב\u201D ',
+          improvements: [
+            { date: '2020-01-01' },
+            { expense: 0, accumulatedDepreciation: 0.01, date: '2020-02-01', code50Amount: 0 },
+            { expense: 99_999_999.99, date: '2020-03-01', code50Amount: 0.01 },
+          ],
+          replacementAsset: { details: ' ' },
+          // Without code 071 = 1 a wallet in the second slot only is valid (cg.virtualCurrency.wallet).
+          walletAddresses: ['', ' 0xdef '],
+          amounts: { '071': undefined, '018': 50, '092': 0, '040': 0.5, '059': 7 },
+        }),
+        sharesAppendix(),
+        bettermentTaxAppendix(),
+        forcedVirtualCurrencyAppendix(),
+        oilPartnershipAppendix(),
+        securitiesAppendix(),
+        section6Appendix(),
+        reitAppendix(),
+        noWithholding1322Appendix(),
+        noWithholding1326Appendix(),
+        {
+          symbol: 77,
+          dates: { code15: '2024-02-29', code20: '2000-01-01' },
+          replacementAsset: { purchaseDate: '2024-03-01', price: 1 },
+          amounts: {},
+        },
+        otherTransactionsAppendix({ improvements: improvements(5), assetLocation: 'abroad' }),
+        otherTransactionsAppendix({ expropriation: true, relatedParty: false }),
+        otherTransactionsAppendix({ walletAddresses: ['a'.repeat(150), 'b'] }),
+      ],
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
@@ -490,6 +530,10 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
         noWithholding1326Appendix({ lossesCarriedForward: 0.5, amounts: { '022': 1.5 } }),
         sharesAppendix({ amounts: { '015': 2.5, '020': 0.5, '074': 0.4 } }),
         oilPartnershipAppendix({ amounts: { '015': 1.5, '016': 0.4 } }),
+        otherTransactionsAppendix({
+          replacementAsset: { price: 2.5 },
+          amounts: { '015': 0.4, '020': 0.5, '072': 1.5 },
+        }),
       ],
     }),
     { ...OPTIONS, rounding: 'halfUp' },

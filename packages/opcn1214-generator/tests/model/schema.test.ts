@@ -10,10 +10,12 @@ import {
   foreignAppendixWithBreakdown,
   fullDeclarationsInput,
   fullMainInput,
+  improvements,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
   oilPartnershipAppendix,
+  otherTransactionsAppendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
@@ -348,6 +350,74 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       ['input.unknownCode', 'capitalGains[1].amounts["071"]'],
       ['input.unknownCode', 'capitalGains[2].amounts["020"]'],
       ['input.unknownCode', 'capitalGains[3].amounts["018"]'],
+    ]);
+  });
+
+  it('accepts 3077 appendices, complete or with only the required members', () => {
+    expect(
+      shapeIssues(
+        minimalInput({
+          capitalGains: [
+            otherTransactionsAppendix(),
+            otherTransactionsAppendix({
+              improvements: improvements(5),
+              walletAddresses: ['0x1', '0x2'],
+              amounts: { '092': 4 },
+            }),
+            { symbol: 77, dates: { code15: '2024-01-01', code20: '2020-01-01' }, amounts: {} },
+            {
+              symbol: 77,
+              dates: { code15: '2024-01-01', code20: '2020-01-01' },
+              improvements: [{ date: '2021-01-01' }],
+              replacementAsset: {},
+              amounts: {},
+            },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects a 3077 without its dates, an undated improvement, three wallets and foreign members', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { ...otherTransactionsAppendix(), dates: { code15: '2024-01-01' } },
+        { ...otherTransactionsAppendix(), improvements: [{ expense: 1 }] },
+        { ...otherTransactionsAppendix(), walletAddresses: ['a', 'b', 'c'] },
+        { ...otherTransactionsAppendix(), purchaseDate: '2020-01-01' },
+        { ...otherTransactionsAppendix(), replacementAsset: { price: '1' } },
+        { ...otherTransactionsAppendix(), improvements: [{ date: '2020-01-01', code: 50 }] },
+      ],
+    };
+    expect(shapePaths(input).sort()).toEqual([
+      'capitalGains[0].dates.code20',
+      'capitalGains[1].improvements[0].date',
+      'capitalGains[2].walletAddresses',
+      'capitalGains[3].purchaseDate',
+      'capitalGains[4].replacementAsset.price',
+      'capitalGains[5].improvements[0].code',
+    ]);
+  });
+
+  it('accepts more than five improvements: cg.improvements.max reports them', () => {
+    expect(
+      shapeIssues(
+        minimalInput({
+          capitalGains: [otherTransactionsAppendix({ improvements: improvements(6) })],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('reports codes 501–505 of a 3077 as input.derivedCode and codes of other types as unknown', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [{ ...otherTransactionsAppendix(), amounts: { '502': 1, '016': 1, '092': 1 } }],
+    };
+    expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.derivedCode', 'capitalGains[0].amounts["502"]'],
+      ['input.unknownCode', 'capitalGains[0].amounts["016"]'],
     ]);
   });
 

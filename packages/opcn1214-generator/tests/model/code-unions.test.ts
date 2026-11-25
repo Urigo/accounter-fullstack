@@ -20,6 +20,7 @@ import {
   type MainFormCode,
   type MainFormInputCode,
 } from '../../src/model/index.js';
+import type { OtherTransactionsAppendix } from '../../src/model/input.js';
 
 const layout = getLayout(2024);
 const codesOf = (type: RecordType) => layout.records[type].codes;
@@ -46,6 +47,12 @@ describe('code unions — types', () => {
     expectTypeOf<'4'>().not.toExtend<CountryCode>();
     expectTypeOf<CapitalGainsSymbol>().toEqualTypeOf<
       27 | 50 | 51 | 54 | 60 | 63 | 64 | 65 | 66 | 77
+    >();
+  });
+
+  it('types the 3077 amounts with the generated input codes (no 501–505)', () => {
+    expectTypeOf<keyof OtherTransactionsAppendix['amounts']>().toEqualTypeOf<
+      CapitalGainsInputCode<77>
     >();
   });
 

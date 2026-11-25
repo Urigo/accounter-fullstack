@@ -5,6 +5,7 @@
  */
 import type {
   CapitalGainsCode,
+  CapitalGainsInputCode,
   CountryBreakdownCode,
   CountryCode,
   ForeignAppendixCode,
@@ -390,7 +391,8 @@ export type CapitalGainsAppendix =
   | Section6SecuritiesAppendix
   | ReitAppendix
   | NoWithholding1322Appendix
-  | NoWithholding1326Appendix;
+  | NoWithholding1326Appendix
+  | OtherTransactionsAppendix;
 
 /**
  * A withholding agent of a securities appendix (records 3060, 3064, 3065): one of the four slots
@@ -489,7 +491,7 @@ export interface NoWithholding1326Appendix {
   amounts: Partial<Record<CapitalGainsCode<66>, number>>;
 }
 
-/** "מקום הנכס" of records 3027 (193) and 3051 (192): abroad → 1, israel → 2 (SPEC §7.2). */
+/** "מקום הנכס" of records 3027 (193), 3051 (192) and 3077 (193): abroad → 1, israel → 2 (SPEC §7.2). */
 export type AssetLocation = 'abroad' | 'israel';
 
 /**
@@ -572,4 +574,52 @@ export interface OilPartnershipAppendix {
   dates: { code15: IsoDate };
   /** Record 3054 code-amount section: 016 is zeroAllowed (written when 0, SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<54>, number>>;
+}
+
+/**
+ * Capital gains from other transactions, record 3077 (SPEC §7.2, p.55–59; virtual currency is
+ * normally reported here, with code 071, SPEC §3.7). Its improvement count (3077@245), code-50
+ * amounts (codes 501–505) and "מספר בתל"ם" sequence (3077@487) are derived (SPEC §7.4).
+ */
+export interface OtherTransactionsAppendix {
+  symbol: 77;
+  /** 3077@142 "הפקעה" (yes/no). */
+  expropriation?: boolean;
+  /** 3077@143 "פרטי הנכס", up to 50 characters. */
+  assetDetails?: string;
+  /** 3077@193 "מקום הנכס": abroad → 1, israel → 2. */
+  assetLocation?: AssetLocation;
+  /** 3077@194 "צד קשור" (yes/no). */
+  relatedParty?: boolean;
+  /** 3077@195 "שם הרוכש", up to 30 characters. */
+  buyerName?: string;
+  /** The dates of codes 15 (3077@225) and 20 (235), both required, written DD/MM/YYYY. */
+  dates: { code15: IsoDate; code20: IsoDate };
+  /**
+   * Improvements ("יתרות השבחה"), written slot by slot (3077@247–416, keys `improvements[i].*`);
+   * only five slots exist (cg.improvements.max), and their number is 3077@245.
+   */
+  improvements?: Array<{
+    /** "סכום ההוצאה על ההשבחה", written ×100 (agorot allowed). */
+    expense?: number;
+    /** "סכום הפחת שנצבר", written ×100 (agorot allowed). */
+    accumulatedDepreciation?: number;
+    /** "תאריך של קוד 50", written DD/MM/YYYY. */
+    date: IsoDate;
+    /** The code-50 amount of the improvement: code 501 … 505 by slot, written ×100. */
+    code50Amount?: number;
+  }>;
+  /** The asset bought in replacement: details (3077@417), purchase date (467) and price (477). */
+  replacementAsset?: { details?: string; purchaseDate?: IsoDate; price?: number };
+  /**
+   * 3077@489 and @639: one or two virtual wallet addresses, up to 150 characters each; the first
+   * (489) is required when code 071 = 1 (cg.virtualCurrency.wallet).
+   */
+  walletAddresses?: [string] | [string, string];
+  /**
+   * Record 3077 code-amount section without the derived codes 501–505: 020/027/040 take agorot
+   * (written ×100), 018 is the rate 23 or 50 (written ×100), 092 a single digit (SPEC §15 A-11),
+   * 071 = 1 marks virtual currency; no code of 3077 is zeroAllowed (SPEC §4.5).
+   */
+  amounts: Partial<Record<CapitalGainsInputCode<77>, number>>;
 }

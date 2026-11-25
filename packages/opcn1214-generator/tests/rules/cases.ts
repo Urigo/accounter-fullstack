@@ -13,7 +13,9 @@ import {
   breakdownCountries,
   foreignAppendix,
   foreignAppendixWithBreakdown,
+  improvements,
   minimalInput,
+  otherTransactionsAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   relatedCompanies,
@@ -603,6 +605,44 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
       ]),
     pass: () => withCountries(breakdownCountries(2)),
     path: `${BREAKDOWN_420}.countries[1].country`,
+  },
+  'cg.improvements.max': {
+    kind: 'input',
+    // Only five improvement slots exist (3077@247–416): a normalizer notice at the sixth.
+    fail: () =>
+      minimalInput({
+        capitalGains: [otherTransactionsAppendix({ improvements: improvements(6) })],
+      }),
+    pass: () =>
+      minimalInput({
+        capitalGains: [otherTransactionsAppendix({ improvements: improvements(5) })],
+      }),
+    path: 'capitalGains[0].improvements[5]',
+  },
+  'cg.improvements.code50Amount': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({
+            improvements: [improvements(1)[0]!, { expense: 500, date: '2015-01-01' }],
+          }),
+        ],
+      }),
+    pass: () => minimalInput({ capitalGains: [otherTransactionsAppendix()] }),
+    path: 'capitalGains[0].improvements[1].code50Amount',
+  },
+  'cg.virtualCurrency.wallet': {
+    kind: 'file',
+    // Line 3 is the 3077 record; 3077@489 is its first (and only) wallet address.
+    fail: () =>
+      generatedFile(minimalInput({ capitalGains: [otherTransactionsAppendix()] }), {
+        line: 3,
+        position: 489,
+        value: ' '.repeat(150),
+      }),
+    pass: () => generatedFile(minimalInput({ capitalGains: [otherTransactionsAppendix()] })),
+    path: 'capitalGains[0].walletAddresses',
   },
   'struct.relatedCompanies.max': {
     kind: 'input',

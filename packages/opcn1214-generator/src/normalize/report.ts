@@ -45,7 +45,7 @@ export function normalizeReport(
     taxYear: input.taxYear,
     layout,
     records,
-    notices: main.notices,
+    notices: [...main.notices, ...capitalGains.notices],
     omittedZeroCodes: [
       ...main.omittedZeroCodes.map(code => ({ record: '1000' as const, recordIndex: 0, code })),
       ...(foreign?.omittedZeroCodes ?? []).map(code => ({
