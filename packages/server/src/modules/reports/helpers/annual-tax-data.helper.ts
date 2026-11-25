@@ -23,7 +23,7 @@ export type TaxAmounts = Awaited<ReturnType<typeof calculateTaxAmounts>>;
 /** A business's books up to the end of a tax year, with the year's P&L and tax computation. */
 export type AnnualTaxData = {
   year: number;
-  /** The business whose books were read. */
+  /** The owner whose ledger was read: the only owner-scoped input (see `loadAnnualTaxData`). */
   ownerId: string;
   /** Every ledger record of the owner from the start of the books up to the end of `year`. */
   ledgerRecords: IGetLedgerRecordsByDatesResult[];
@@ -51,6 +51,13 @@ export type AnnualTaxData = {
 /**
  * Loads a business's books up to the end of a tax year and runs the same P&L and tax computation
  * as the tax report. Shared by the annual reports built from those books (6111, 1214).
+ *
+ * Only the ledger query is scoped to `ownerId`. Financial entities and sort codes are read
+ * unfiltered, and `calculateTaxAmounts` reads the session's admin context (tax categories) and the
+ * year's business trips without an owner filter. Callers must therefore pass the session's active
+ * owner; any other `ownerId` would mix its ledger with the session owner's tax settings.
+ *
+ * The year is not validated here: callers must check it (e.g. 2000–2100) before calling.
  */
 export async function loadAnnualTaxData(
   injector: Injector,
