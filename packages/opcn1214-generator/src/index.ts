@@ -3,6 +3,7 @@
  * Public API (SPEC §6.4).
  */
 export { generate1214, type GenerateResult } from './api/generate.js';
+export { parse1214, type ParseResult } from './api/parse.js';
 export { validate1214, type ValidationResult } from './api/validate.js';
 export { getLayout, supportedTaxYears } from './layout/registry.js';
 export {
@@ -43,5 +44,5 @@ export type {
   MainFormCode,
   MainFormInputCode,
 } from './model/codes.generated.js';
-export type { GenerateOptions, ValidateOptions } from './model/options.js';
+export type { GenerateOptions, ParseOptions, ValidateOptions } from './model/options.js';
 export type { Issue, Severity } from './validate/issue.js';

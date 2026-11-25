@@ -633,8 +633,8 @@ export interface GenerateResult {
 }
 
 export interface ParseResult {
-  report: Report1214Input // canonical form (§8.4)
-  issues: Issue[] // validation of the parsed content (errors and warnings)
+  report: Report1214Input // canonical form (§8.4) for a file written by generate1214; decoded values otherwise
+  issues: Issue[] // validation of the parsed content (errors and warnings, incl. struct.taxYear.provisionalLayout)
   saveDate: IsoDate // from 1000@165
   softwareName: string // from 1000@150
 }
@@ -1104,8 +1104,15 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    position where the remaining text is all `0` (padding). An unknown code, a truncated entry or a
    non-zero tail is a parse error. Duplicate codes are a parse error.
 6. Verify 9999 counts against the records actually present.
-7. Build `NormalizedReport`, denormalize to `Report1214Input` (canonical form, §8.4), and run the
-   rule engine on it; return its issues in `ParseResult.issues` (they are not thrown).
+7. Build `NormalizedReport`, denormalize to `Report1214Input`, and run the rule engine on it; return
+   its issues in `ParseResult.issues` (they are not thrown), together with
+   `struct.taxYear.provisionalLayout` for a file of a provisional tax year (§14). For a file written
+   by `generate1214` the report is the canonical form (§8.4); for any other well-formed file the
+   values come back as read (e.g. a zero value of a non-`zeroAllowed` code, or text with double
+   spaces), so `canonicalize(report)` may differ from it. Issue paths are those of the reconstructed
+   input, the n-th record of a type standing for the n-th input element. A required value that the
+   file leaves empty is absent from `ParseResult.report` too (its `field.required` issue reports
+   it); `ParseResult.saveDate` / `softwareName` are then `''`.
 
 Structural problems from steps 1–6 throw `Opcn1214ParseError` with every problem found in the file
 (the parser continues to the next line where possible; it does not stop at the first problem).
@@ -1139,7 +1146,9 @@ Round-trip requirements (tested, §13.6):
    (with the parsed save date and software name passed back in `meta`).
 
 Lossy cases that make (1) use `canonicalize`: `yesNo` absent vs. not-required; `false` flags;
-`percentLiteral` 10 vs 10.0 (both → `00010`); text whitespace.
+`percentLiteral` 10 vs 10.0 (both → `00010`); text whitespace; float residue in ×100 kinds
+(`amountX100`, `rateX100`, `percentX100`, `percentLiteral`: `1.1 + 2.2` → `3.3`, read back in
+hundredths); a `meta.softwareName` that normalizes to `''` (→ the default `ACCOUNTER`).
 
 ### 8.5 Character set and lengths
 
@@ -1540,10 +1549,11 @@ uses the repository root as working directory.
   fields, a changed 9999 length and year-specific values), so a 2025 report built on it is
   provisional. Until the procedure below has been run on the 2025 PDF, every 2025 report carries one
   warning `struct.taxYear.provisionalLayout` (W, derived, path `taxYear`, raised by the year stage,
-  §9.2, §10.1, and reported even when the shape stage stops the pipeline); `provisionalBaseYear()`
-  in the registry lists the provisional years. Known year-sensitive text: the 3065/3066
-  withholding-status values describe the halves of the tax year (the 2024 text says "January–June
-  2024"); the turnover threshold printed at 834 (₪256,410) is informational only (not validated).
+  §9.2, §10.1, and reported even when the shape stage stops the pipeline; `parse1214` reports it for
+  a file of that year, §8.2); `provisionalBaseYear()` in the registry lists the provisional years.
+  Known year-sensitive text: the 3065/3066 withholding-status values describe the halves of the tax
+  year (the 2024 text says "January–June 2024"); the turnover threshold printed at 834 (₪256,410) is
+  informational only (not validated).
 - **Adding a year** (e.g. when the 2025 PDF is published):
   1. Save the PDF to `documentation/specifications/1214-<year>.pdf`.
   2. `python3 documentation/tools/extract_layout.py extract <pdf> /tmp/raw.json`

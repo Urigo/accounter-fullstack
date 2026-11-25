@@ -11,7 +11,8 @@ import { phonePrefix } from './phone.js';
 import { normalizeText } from './text.js';
 import { todayInJerusalem } from './today.js';
 
-const DEFAULT_SOFTWARE_NAME = 'ACCOUNTER';
+/** 1000@150 when meta.softwareName is absent (SPEC §7.4). */
+export const DEFAULT_SOFTWARE_NAME = 'ACCOUNTER';
 
 export interface NormalizedMain {
   record: NormalizedRecord;
