@@ -29,7 +29,7 @@ async function assertLinkedBusinessesBelongToOwner(
   for (const [index, row] of rows.entries()) {
     if (row.businessId && businesses[index]?.owner_id !== ownerId) {
       throw new GraphQLError(
-        `Shareholder row ${index}: business ${row.businessId} was not found among the owner's businesses`,
+        `Shareholder row ${index + 1}: business ${row.businessId} was not found among the owner's businesses`,
         { extensions: { code: 'BAD_USER_INPUT' } },
       );
     }
