@@ -1,30 +1,40 @@
-import { useMemo, type ReactElement, type ReactNode } from 'react';
+import { useMemo, type ReactElement } from 'react';
+import { useForm, type Control } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Form1214OtherDetailsSectionFragmentDoc,
   type Report1214ProfileInput,
 } from '../../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../../gql/index.js';
+import { useUpdateReport1214Profile } from '../../../../../hooks/use-update-report-1214-profile.js';
 import { Checkbox } from '../../../../ui/checkbox.js';
-import { Input } from '../../../../ui/input.js';
-import { Label } from '../../../../ui/label.js';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../../ui/select.js';
-import { describeField, EditorFooter } from '../editors/editor-footer.js';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../../ui/form.js';
+import { Input } from '../../../../ui/input.js';
 import {
   OTHER_DETAILS_BLOCKS,
   otherDetailsBlockToInput,
-  otherDetailsFieldErrors,
-  otherDetailsValuesFromBlock,
+  otherDetailsFormFromBlock,
+  otherDetailsFormSchema,
+  otherDetailsValuesFromForm,
   type OtherDetailsBlock,
   type OtherDetailsField,
+  type OtherDetailsFormState,
 } from '../editors/other-details.js';
-import { useBlockDraft } from '../editors/use-block-draft.js';
-import { useSaveProfileBlock } from '../editors/use-save-profile-block.js';
+import {
+  EditorActions,
+  TriStateControl,
+  useReportDirtyState,
+  useResetAfterSave,
+} from '../profile-editor-parts.js';
+import type { TriState } from '../profile-forms.js';
+import { useForm1214Report } from '../report-context.js';
 import { Section } from './section-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -73,22 +83,27 @@ type Props = {
   data: FragmentType<typeof Form1214OtherDetailsSectionFragmentDoc>;
 };
 
-/** The smaller profile blocks, each with its own Save. */
+/** The smaller profile blocks, each a form with its own Save. */
 export function Form1214OtherDetailsSection({ data }: Props): ReactElement {
   const { profile } = getFragmentData(Form1214OtherDetailsSectionFragmentDoc, data);
+  // A draft belongs to its year: another year starts a fresh one
+  const { year } = useForm1214Report();
   return (
     <Section id="other-details" title="Other details">
       <div className="space-y-6">
         {OTHER_DETAILS_BLOCKS.map(block => (
-          <OtherDetailsBlockEditor key={block.key} block={block} stored={profile[block.key]} />
+          <OtherDetailsBlockEditor
+            key={`${year}-${block.key}`}
+            block={block}
+            stored={profile[block.key]}
+          />
         ))}
       </div>
     </Section>
   );
 }
 
-const UNSET = 'unset';
-
+/** One block: an empty block is not stored, and saving one with every field empty clears it. */
 function OtherDetailsBlockEditor({
   block,
   stored,
@@ -96,114 +111,123 @@ function OtherDetailsBlockEditor({
   block: OtherDetailsBlock;
   stored: object | null | undefined;
 }): ReactElement {
-  const draft = useBlockDraft(`other-details:${block.key}`, stored, value =>
-    otherDetailsValuesFromBlock(block, value),
-  );
-  const { saving, save } = useSaveProfileBlock();
-  const values = draft.value;
-  const errors = useMemo(() => otherDetailsFieldErrors(block, values), [block, values]);
-  const hasErrors = Object.keys(errors).length > 0;
+  const { year, refresh } = useForm1214Report();
+  const defaults = useMemo(() => otherDetailsFormFromBlock(block, stored), [block, stored]);
+  const schema = useMemo(() => otherDetailsFormSchema(block), [block]);
+  const form = useForm<OtherDetailsFormState>({
+    // Field errors show once a field is left (or on Save); Cancel and Save clear them
+    mode: 'onTouched',
+    resolver: zodResolver(schema),
+    defaultValues: defaults,
+  });
+  const { markSaved, cancel } = useResetAfterSave(form, defaults);
+  const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  useReportDirtyState(`other-details:${block.key}`, form.formState.isDirty);
 
-  const setValue = (path: string, text: string): void =>
-    draft.update(current => ({ ...current, [path]: text }));
-
-  const onSave = async (): Promise<void> => {
-    const input = otherDetailsBlockToInput(block, values);
+  const onSubmit = async (values: OtherDetailsFormState): Promise<void> => {
+    const input = otherDetailsBlockToInput(block, otherDetailsValuesFromForm(block, values));
     if (!input.ok) {
       return;
     }
-    const blockInput = { [block.key]: input.value } as Report1214ProfileInput;
-    if (await save(blockInput, block.title.toLowerCase())) {
-      draft.markSaved();
+    const saved = await updateReport1214Profile({
+      year,
+      input: { [block.key]: input.value } as Report1214ProfileInput,
+      blockName: block.title.toLowerCase(),
+    });
+    if (saved) {
+      markSaved(values);
+      refresh();
     }
   };
 
   return (
-    <fieldset className="space-y-3 border-t pt-4 first:border-t-0 first:pt-0">
-      <legend className="font-semibold">{block.title}</legend>
-      <p className="text-sm text-muted-foreground">{block.description}</p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {block.fields.map(field => (
-          <FieldControl
-            key={field.path}
-            id={`form-1214-${block.key}-${field.path}`}
-            field={field}
-            value={values[field.path] ?? ''}
-            onChange={text => setValue(field.path, text)}
-            described={describeField(draft, `${block.key}.${field.path}`, errors[field.path])}
-          />
-        ))}
-      </div>
-      <EditorFooter
-        dirty={draft.dirty}
-        saving={saving}
-        hasErrors={hasErrors}
-        hasVisibleErrors={Object.keys(errors).some(path => draft.showError(`${block.key}.${path}`))}
-        errorHint="Fix the fields of this block to save."
-        onSave={() => void onSave()}
-        onCancel={draft.cancel}
-      />
-    </fieldset>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-3 border-t pt-4 first:border-t-0 first:pt-0"
+        aria-label={block.title}
+      >
+        <div>
+          <h3 className="font-semibold">{block.title}</h3>
+          <p className="text-sm text-muted-foreground">{block.description}</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {block.fields.map((field, index) => (
+            <FieldControl key={field.path} control={form.control} index={index} field={field} />
+          ))}
+        </div>
+        <EditorActions
+          isDirty={form.formState.isDirty}
+          saving={fetching}
+          errorMessage={errorMessage}
+          onCancel={cancel}
+        />
+      </form>
+    </Form>
   );
 }
 
 function FieldControl({
-  id,
-  field,
-  value,
-  onChange,
-  described,
+  control,
+  index,
+  field: definition,
 }: {
-  id: string;
+  control: Control<OtherDetailsFormState>;
+  index: number;
   field: OtherDetailsField;
-  value: string;
-  onChange: (text: string) => void;
-  described: { inputProps: object; errorNode: ReactNode };
 }): ReactElement {
-  if (field.kind === 'flag') {
-    return (
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id={id}
-          checked={value === 'true'}
-          onCheckedChange={checked => onChange(checked === true ? 'true' : '')}
-        />
-        <Label htmlFor={id}>{field.label}</Label>
-      </div>
-    );
-  }
-  if (field.kind === 'yesNo') {
-    return (
-      <div className="space-y-1">
-        <Label htmlFor={id}>{field.label}</Label>
-        <Select value={value || UNSET} onValueChange={next => onChange(next === UNSET ? '' : next)}>
-          <SelectTrigger id={id} className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={UNSET}>Not set</SelectItem>
-            <SelectItem value="yes">Yes</SelectItem>
-            <SelectItem value="no">No</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  }
-  const numeric = field.kind !== 'text';
   return (
-    <div className="space-y-1">
-      <Label htmlFor={id}>{field.label}</Label>
-      <Input
-        id={id}
-        dir={numeric ? undefined : 'auto'}
-        inputMode={field.kind === 'number' ? 'decimal' : numeric ? 'numeric' : undefined}
-        className={field.kind === 'digits' ? 'font-mono' : undefined}
-        maxLength={field.kind === 'digits' ? field.digits?.[1] : undefined}
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        {...described.inputProps}
-      />
-      {described.errorNode}
-    </div>
+    <FormField
+      control={control}
+      name={`values.${index}`}
+      render={({ field }): ReactElement => {
+        if (definition.kind === 'flag') {
+          return (
+            <FormItem className="flex flex-row items-center gap-2">
+              <FormControl>
+                <Checkbox
+                  checked={field.value === 'true'}
+                  onCheckedChange={checked => field.onChange(checked === true ? 'true' : '')}
+                />
+              </FormControl>
+              <FormLabel className="font-normal">{definition.label}</FormLabel>
+            </FormItem>
+          );
+        }
+        if (definition.kind === 'yesNo') {
+          return (
+            <FormItem className="space-y-1">
+              <FormLabel>{definition.label}</FormLabel>
+              <FormControl>
+                <TriStateControl
+                  label={definition.label}
+                  value={(field.value ?? '') as TriState}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          );
+        }
+        const numeric = definition.kind !== 'text';
+        return (
+          <FormItem className="space-y-1">
+            <FormLabel>{definition.label}</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={field.value ?? ''}
+                dir={numeric ? undefined : 'auto'}
+                inputMode={
+                  definition.kind === 'number' ? 'decimal' : numeric ? 'numeric' : undefined
+                }
+                className={definition.kind === 'digits' ? 'font-mono' : undefined}
+                maxLength={definition.kind === 'digits' ? definition.digits?.[1] : undefined}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
+    />
   );
 }

@@ -53,7 +53,7 @@ const totalFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
   const { profile } = getFragmentData(Form1214RdInvestmentsSectionFragmentDoc, data);
   const draft = useBlockDraft('rd-investments', profile.rdInvestments, rdInvestmentRowsFromProfile);
-  const { saving, save } = useSaveProfileBlock();
+  const { saving, errorMessage, save } = useSaveProfileBlock();
   const rows = draft.value;
   const rowErrors = useMemo(() => rows.map(validateRdInvestmentRow), [rows]);
   const hasErrors = rowErrors.some(errors => Object.keys(errors).length > 0);
@@ -175,6 +175,7 @@ export function Form1214RdInvestmentsSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
+        errorMessage={errorMessage}
         hasErrors={hasErrors}
         hasVisibleErrors={rows.some((row, index) =>
           Object.keys(rowErrors[index] ?? {}).some(name => draft.showError(`${row.rowId}.${name}`)),

@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '../../../../ui/alert.js';
 import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 
@@ -11,6 +12,8 @@ type Props = {
   hasVisibleErrors: boolean;
   /** Why Save is disabled while no error shows yet, e.g. "Fill in a name for every row to save." */
   errorHint: string;
+  /** The server's message for the last failed save, shown as is. */
+  errorMessage?: string;
   onSave: () => void;
   onCancel: () => void;
   /** Extra controls on the left, such as an "Add" button. */
@@ -24,12 +27,19 @@ export function EditorFooter({
   hasErrors,
   hasVisibleErrors,
   errorHint,
+  errorMessage,
   onSave,
   onCancel,
   children,
 }: Props): ReactElement {
   return (
     <div className="mt-4 space-y-2">
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertTitle>Not saved</AlertTitle>
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex flex-wrap items-start gap-2">{children}</div>
         <div className="flex items-center gap-2">

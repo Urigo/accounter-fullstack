@@ -66,7 +66,7 @@ export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
     profile.relatedCompanies,
     relatedCompanyRowsFromProfile,
   );
-  const { saving, save } = useSaveProfileBlock();
+  const { saving, errorMessage, save } = useSaveProfileBlock();
   const rows = draft.value;
   const rowErrors = useMemo(() => rows.map(validateRelatedCompanyRow), [rows]);
   const hasErrors = rowErrors.some(errors => Object.keys(errors).length > 0);
@@ -210,6 +210,7 @@ export function Form1214RelatedCompaniesSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
+        errorMessage={errorMessage}
         hasErrors={hasErrors}
         hasVisibleErrors={rows.some((row, index) =>
           Object.keys(rowErrors[index] ?? {}).some(name => draft.showError(`${row.rowId}.${name}`)),

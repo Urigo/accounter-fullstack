@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useReportDirtyState } from '../profile-editor-parts.js';
 import { useForm1214Report } from '../report-context.js';
 
 export type BlockDraft<T> = {
@@ -36,7 +37,7 @@ export function useBlockDraft<S, T>(
   serverValue: S,
   fromServer: (value: S) => T,
 ): BlockDraft<T> {
-  const { year, setDirty } = useForm1214Report();
+  const { year } = useForm1214Report();
   // `fromServer` may assign fresh row ids, so it runs once per server value
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `fromServer` is a pure mapping
   const initial = useMemo(() => fromServer(serverValue), [serverValue]);
@@ -61,10 +62,7 @@ export function useBlockDraft<S, T>(
   const savedValue = saved?.value ?? initial;
   const dirty = draft !== null && !sameContent(draft, savedValue);
 
-  useEffect(() => {
-    setDirty(section, dirty);
-  }, [section, dirty, setDirty]);
-  useEffect(() => () => setDirty(section, false), [section, setDirty]);
+  useReportDirtyState(section, dirty);
 
   return {
     value: draft ?? savedValue,

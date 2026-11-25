@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { Report1214ProfileInput } from '../../../../../gql/graphql.js';
 import {
   digitsDescription,
@@ -247,4 +248,37 @@ export function otherDetailsBlockToInput<K extends OtherDetailsBlockKey>(
     }
   }
   return parsed(Object.keys(input).length === 0 ? null : (input as Report1214ProfileInput[K]));
+}
+
+/** The form state of a block's react-hook-form editor: the field texts, in `block.fields` order. */
+export type OtherDetailsFormState = { values: string[] };
+
+export function otherDetailsFormFromBlock(
+  block: OtherDetailsBlock,
+  stored: object | null | undefined,
+): OtherDetailsFormState {
+  const values = otherDetailsValuesFromBlock(block, stored);
+  return { values: block.fields.map(field => values[field.path] ?? '') };
+}
+
+export function otherDetailsValuesFromForm(
+  block: OtherDetailsBlock,
+  form: OtherDetailsFormState,
+): OtherDetailsValues {
+  return Object.fromEntries(
+    block.fields.map((field, index) => [field.path, form.values[index] ?? '']),
+  );
+}
+
+/** Validates a block's form with {@link otherDetailsFieldErrors}, each error on its field. */
+export function otherDetailsFormSchema(block: OtherDetailsBlock) {
+  return z.object({ values: z.array(z.string()) }).superRefine((form, ctx) => {
+    const errors = otherDetailsFieldErrors(block, otherDetailsValuesFromForm(block, form));
+    for (const [index, field] of block.fields.entries()) {
+      const message = errors[field.path];
+      if (message) {
+        ctx.addIssue({ code: 'custom', path: ['values', index], message });
+      }
+    }
+  });
 }

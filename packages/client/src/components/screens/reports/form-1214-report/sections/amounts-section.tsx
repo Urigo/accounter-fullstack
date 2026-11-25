@@ -61,7 +61,7 @@ type Props = {
 export function Form1214AmountsSection({ data }: Props): ReactElement {
   const { profile, amounts } = getFragmentData(Form1214AmountsSectionFragmentDoc, data);
   const draft = useBlockDraft('amounts', profile.amountOverrides, amountOverrideDraftsFromProfile);
-  const { saving, save } = useSaveProfileBlock();
+  const { saving, errorMessage, save } = useSaveProfileBlock();
   const [newCode, setNewCode] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [addErrors, setAddErrors] = useState<{ code?: string; amount?: string }>({});
@@ -196,6 +196,7 @@ export function Form1214AmountsSection({ data }: Props): ReactElement {
       <EditorFooter
         dirty={draft.dirty}
         saving={saving}
+        errorMessage={errorMessage}
         hasErrors={hasErrors}
         hasVisibleErrors={drafts.some(
           override =>
