@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { dateToTimelessDateString, roundToAgorot } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
@@ -150,7 +150,10 @@ export function resolveAssetLocalCost(
 }
 
 export type RefundConversion = {
-  /** the refund in the local currency, in agorot */
+  /**
+   * the refund in the local currency: whole shekels for a refund from activation (see
+   * `convertForeignRefunds`), rounded to agorot for a refund from the refund date
+   */
   cost: number;
   /** local currency per unit of the asset's currency */
   rate: number;
@@ -158,28 +161,48 @@ export type RefundConversion = {
   rateDate: TimelessDateString | null;
 };
 
-function toAgorot(amount: number): number {
-  return Math.round(amount * 100) / 100;
+/** A cost refund entered in the currency of a foreign-currency asset */
+export type ForeignRefund = {
+  id: string;
+  originalAmount: number;
+  refundMode: CostRefundMode;
+  chargeId?: string | null;
+  refundDate: TimelessDateString;
+};
+
+function byRefundDateThenId(a: ForeignRefund, b: ForeignRefund): number {
+  if (a.refundDate !== b.refundDate) {
+    return a.refundDate < b.refundDate ? -1 : 1;
+  }
+  if (a.id === b.id) {
+    return 0;
+  }
+  return a.id < b.id ? -1 : 1;
 }
 
 /**
- * Converts a cost refund entered in the currency of a foreign-currency asset to the local currency:
+ * Converts an asset's cost refunds entered in its currency to the local currency, by id:
  * - `FROM_ACTIVATION` corrects the original price, so it converts at the asset's cost-basis rate
- *   (local cost ÷ amount): the purchase date's rate, or the rate implied by a local cost override;
+ *   (local cost ÷ amount): the purchase date's rate, or the rate implied by a local cost override.
+ *   These refunds are allocated cumulatively in whole shekels, in date then id order: each takes
+ *   round(refunded so far × cost ÷ amount) less what the earlier ones took. Refunds of the whole
+ *   amount, however split, then add up to exactly the asset's (whole-shekel) cost.
  * - `FROM_REFUND_DATE` is a later rebate, a receivable arising on the refund date: it converts at
- *   the refund charge's rate (its earliest document date, else the refund date).
+ *   the refund charge's rate (its earliest document date, else the refund date), rounded to agorot.
+ *
+ * Pass all of the asset's refunds entered in its currency, so the allocation sees the earlier ones.
  */
-export async function convertForeignRefund(
+export async function convertForeignRefunds(
   injector: Injector,
   record: AssetCostRecord,
-  refund: {
-    originalAmount: number;
-    refundMode: CostRefundMode;
-    chargeId?: string | null;
-    refundDate: TimelessDateString;
-  },
-): Promise<RefundConversion> {
-  if (refund.refundMode === 'FROM_ACTIVATION') {
+  refunds: readonly ForeignRefund[],
+): Promise<Map<string, RefundConversion>> {
+  const conversions = new Map<string, RefundConversion>();
+
+  const fromActivation = refunds
+    .filter(refund => refund.refundMode === 'FROM_ACTIVATION')
+    .sort(byRefundDateThenId);
+  if (fromActivation.length > 0) {
     const assetCost = await resolveAssetLocalCost(injector, record);
     const amount = record.amount == null ? null : Number(record.amount);
     if (assetCost.cost == null || !amount) {
@@ -187,13 +210,53 @@ export async function convertForeignRefund(
         `Depreciation record ${record.id} has no amount to convert its cost refunds by`,
       );
     }
-    return {
-      cost: toAgorot((refund.originalAmount * assetCost.cost) / amount),
-      rate: assetCost.cost / amount,
-      rateDate: assetCost.rateDate,
-    };
+    // the engine depreciates the cost in whole shekels
+    const cost = Math.round(assetCost.cost);
+    const rate = assetCost.cost / amount;
+    let refunded = 0;
+    let allocated = 0;
+    for (const refund of fromActivation) {
+      refunded = roundToAgorot(refunded + refund.originalAmount);
+      const allocatedSoFar = Math.round((refunded * cost) / amount);
+      conversions.set(refund.id, {
+        cost: allocatedSoFar - allocated,
+        rate,
+        rateDate: assetCost.rateDate,
+      });
+      allocated = allocatedSoFar;
+    }
   }
 
+  for (const refund of refunds) {
+    if (refund.refundMode !== 'FROM_ACTIVATION') {
+      conversions.set(refund.id, await convertAtRefundChargeRate(injector, record, refund));
+    }
+  }
+  return conversions;
+}
+
+/**
+ * Converts one cost refund entered in the currency of a foreign-currency asset (see
+ * `convertForeignRefunds`, which takes the asset's other refunds into account)
+ */
+export async function convertForeignRefund(
+  injector: Injector,
+  record: AssetCostRecord,
+  refund: Omit<ForeignRefund, 'id'>,
+): Promise<RefundConversion> {
+  const id = 'refund';
+  const conversion = (await convertForeignRefunds(injector, record, [{ ...refund, id }])).get(id);
+  if (!conversion) {
+    throw new GraphQLError(`Unable to convert the cost refund of depreciation record ${record.id}`);
+  }
+  return conversion;
+}
+
+async function convertAtRefundChargeRate(
+  injector: Injector,
+  record: AssetCostRecord,
+  refund: ForeignRefund,
+): Promise<RefundConversion> {
   const { defaultLocalCurrency } = await injector
     .get(AdminContextProvider)
     .getVerifiedAdminContext();
@@ -215,5 +278,5 @@ export async function convertForeignRefund(
       `Unable to convert the cost refund of depreciation record ${record.id} from ${record.currency} to ${defaultLocalCurrency} at ${rateDate}`,
     );
   }
-  return { cost: toAgorot(refund.originalAmount * rate), rate, rateDate };
+  return { cost: roundToAgorot(refund.originalAmount * rate), rate, rateDate };
 }

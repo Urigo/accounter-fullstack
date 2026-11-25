@@ -1,7 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import type { Currency } from '../../../shared/enums.js';
-import { formatStringifyAmount } from '../../../shared/helpers/index.js';
+import { formatStringifyAmount, roundToAgorot } from '../../../shared/helpers/index.js';
 import type { LedgerProto, TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { IGetDepreciationDisposalsByIdsResult } from '../../depreciation/types.js';
@@ -65,19 +65,17 @@ export function netCreditToAccount(
   return { local, foreign };
 }
 
-function toAgorot(amount: number): number {
-  return Math.round(amount * 100) / 100;
-}
-
 /**
  * The in-currency check and exchange-rate entry of a charge carrying cost refunds entered in their
  * asset's foreign currency:
  * - in each refund currency, the refunded amounts must add up to what the charge's own entries
- *   credit to P in that currency; otherwise it's a ledger error, and no exchange entry is booked;
+ *   credit to P in that currency; otherwise it's a ledger error, and no exchange entry is booked.
+ *   A refund of a foreign-currency asset invoiced in the local currency (an ILS credit note for a
+ *   USD asset) is not supported: it fails this check;
  * - the exchange difference is what the charge's own entries credit to P in local currency, less
  *   `expectedProceeds` (the events' local proceeds and cost reductions, which the disposal rows
  *   move out of P). A loss is Dr exchange rates / Cr P, a gain Dr P / Cr exchange rates, so P ends
- *   at 0. It's in agorot, dated the (last) refund date.
+ *   at 0. It's rounded to agorot, dated the (last) refund date.
  *
  * `chargeEntries` are the charge's own document, transaction and misc-expense entries, without the
  * disposal rows.
@@ -110,7 +108,7 @@ export function buildCostRefundExchangeEntries(params: {
     const credited = credit.foreign.get(currency) ?? 0;
     if (Math.abs(refunded - credited) > 0.005) {
       errors.push(
-        `Cost refunds of ${formatStringifyAmount(refunded)} ${currency} don't match the ${formatStringifyAmount(credited)} ${currency} the charge credits to its tax category`,
+        `Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (${formatStringifyAmount(refunded)} ${currency} refunded, ${formatStringifyAmount(credited)} ${currency} credited to the charge's tax category)`,
       );
     }
   }
@@ -118,7 +116,7 @@ export function buildCostRefundExchangeEntries(params: {
     return { entries: [], errors };
   }
 
-  const difference = toAgorot(credit.local - params.expectedProceeds);
+  const difference = roundToAgorot(credit.local - params.expectedProceeds);
   if (Math.abs(difference) < 0.005) {
     return { entries: [], errors: [] };
   }
@@ -163,6 +161,10 @@ export function buildCostRefundExchangeEntries(params: {
  * entered in their asset's foreign currency (see `buildCostRefundExchangeEntries`).
  * `proceedsAccountId` is P, the charge's tax category, and `expectedProceeds` what
  * `generateDepreciationDisposalsLedger` found the events move out of it.
+ *
+ * Such a charge may carry no other events (sales, or refunds entered in the local currency): their
+ * proceeds would be checked in the local currency, where the exchange difference would hide a
+ * mismatch. A mix is a ledger error.
  */
 export async function generateCostRefundExchangeLedger(params: {
   disposals: readonly IGetDepreciationDisposalsByIdsResult[];
@@ -172,6 +174,18 @@ export async function generateCostRefundExchangeLedger(params: {
   chargeEntries: readonly LedgerProto[];
   injector: Injector;
 }): Promise<{ entries: LedgerProto[]; errors: string[] }> {
+  const others = params.disposals.filter(disposal => disposal.original_amount == null);
+  if (others.length > 0 && others.length < params.disposals.length) {
+    return {
+      entries: [],
+      errors: [
+        `The charge carries cost refunds entered in an asset's foreign currency together with other asset events (${others
+          .map(disposal => disposal.id)
+          .join(', ')}); book them on separate charges`,
+      ],
+    };
+  }
+
   const refunds: ForeignCostRefund[] = [];
   const errors: string[] = [];
   for (const disposal of params.disposals) {

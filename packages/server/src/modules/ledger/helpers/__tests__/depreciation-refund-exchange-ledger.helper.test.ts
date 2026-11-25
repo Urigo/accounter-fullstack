@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { Injector } from 'graphql-modules';
 import { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
+import type { IGetDepreciationDisposalsByIdsResult } from '../../../depreciation/types.js';
 import {
   buildCostRefundExchangeEntries,
+  generateCostRefundExchangeLedger,
   hasForeignCurrencyRefunds,
   netCreditToAccount,
   type ForeignCostRefund,
@@ -169,7 +172,25 @@ describe('buildCostRefundExchangeEntries', () => {
 
     expect(entries).toEqual([]);
     expect(errors).toEqual([
-      "Cost refunds of 100,000.00 USD don't match the 99,000.00 USD the charge credits to its tax category",
+      "Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (100,000.00 USD refunded, 99,000.00 USD credited to the charge's tax category)",
+    ]);
+  });
+
+  it('reports a refund of a foreign-currency asset invoiced in the local currency', () => {
+    // an ILS credit note for the USD refunds: not supported
+    const ilsCreditNote = entry({
+      description: 'credit note',
+      currency: Currency.Ils,
+      debitAccountID1: SUPPLIER_ID,
+      creditAccountID1: CLEARING_ID,
+      localCurrencyDebitAmount1: 370_000,
+    });
+
+    const { entries, errors } = build([ilsCreditNote]);
+
+    expect(entries).toEqual([]);
+    expect(errors).toEqual([
+      "Cost refunds of a foreign-currency asset must be invoiced in that currency, for the amounts refunded (100,000.00 USD refunded, 0.00 USD credited to the charge's tax category)",
     ]);
   });
 
@@ -196,6 +217,48 @@ describe('buildCostRefundExchangeEntries', () => {
     expect(entries).toEqual([]);
     expect(errors).toEqual([
       'Exchange rate tax category is not defined (cost refund exchange difference)',
+    ]);
+  });
+});
+
+describe('generateCostRefundExchangeLedger', () => {
+  function event(
+    id: string,
+    original: { amount: string; currency: 'USD' } | null,
+  ): IGetDepreciationDisposalsByIdsResult {
+    return {
+      id,
+      charge_id: CHARGE_ID,
+      created_at: new Date('2024-04-15T00:00:00.000Z'),
+      depreciation_id: `asset-${id}`,
+      description: null,
+      disposal_date: DATE,
+      disposed_cost: original ? null : '10000',
+      original_amount: original?.amount ?? null,
+      original_currency: original?.currency ?? null,
+      owner_id: OWNER_ID,
+      proceeds: original ? '0' : '12000',
+      refund_mode: original ? 'FROM_ACTIVATION' : null,
+      type: original ? 'COST_REFUND' : 'SALE',
+      updated_at: new Date('2024-04-15T00:00:00.000Z'),
+    };
+  }
+
+  it('rejects a charge mixing refunds in a foreign currency with other events', async () => {
+    // a USD refund and an ILS sale on the same charge: the sale's proceeds can't be checked
+    const { entries, errors } = await generateCostRefundExchangeLedger({
+      disposals: [event('software', { amount: '16000', currency: 'USD' }), event('laptop', null)],
+      proceedsAccountId: CLEARING_ID,
+      expectedProceeds: 59_200 + 12_000,
+      charge: { id: CHARGE_ID, owner_id: OWNER_ID },
+      chargeEntries: chargeEntries(),
+      // not reached: the mix is rejected first
+      injector: {} as Injector,
+    });
+
+    expect(entries).toEqual([]);
+    expect(errors).toEqual([
+      "The charge carries cost refunds entered in an asset's foreign currency together with other asset events (laptop); book them on separate charges",
     ]);
   });
 });

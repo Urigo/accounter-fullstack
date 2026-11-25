@@ -10,6 +10,7 @@ import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.pro
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
 import {
   convertForeignRefund,
+  convertForeignRefunds,
   resolveAssetLocalCost,
   type AssetCostRecord,
 } from '../asset-cost.helper.js';
@@ -242,6 +243,26 @@ describe('convertForeignRefund', () => {
     ]);
     expect(software.rate).toBeCloseTo(3.7);
     expect(software.rateDate).toBe('2023-08-20');
+  });
+
+  it('allocates refunds from activation cumulatively, in whole shekels', async () => {
+    const { injector } = buildInjector();
+    // USD 10,000 overridden at ₪35,555: each USD 5,000 half is ₪17,777.50
+    const asset = record({ amount: '10000', local_amount: '35555' });
+    const half = (id: string, refundDate: '2024-04-14' | '2024-05-01') => ({
+      id,
+      originalAmount: 5000,
+      refundMode: 'FROM_ACTIVATION' as const,
+      refundDate,
+    });
+
+    const conversions = await convertForeignRefunds(injector, asset, [
+      half('second', '2024-05-01'),
+      half('first', '2024-04-14'),
+    ]);
+
+    expect(conversions.get('first')?.cost).toBe(17_778);
+    expect(conversions.get('second')?.cost).toBe(17_777);
   });
 
   it("carries a local cost override through the asset's cost-basis rate", async () => {

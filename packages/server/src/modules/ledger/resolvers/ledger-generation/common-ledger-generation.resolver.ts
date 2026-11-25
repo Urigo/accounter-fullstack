@@ -155,13 +155,19 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     // the misc-expense entries, also kept in `feeFinancialAccountLedgerEntries`
     const miscExpensesLedgerEntries: LedgerProto[] = [];
 
-    let depreciationRecordsPromise: Promise<boolean> | undefined = undefined;
-    const chargeHasDepreciationRecords = () => {
-      depreciationRecordsPromise ??= injector
+    // whether the charge bought an asset recorded in a foreign currency: its cost is fixed at the
+    // purchase's rate, so the asset account must not absorb the difference to the payment's rate.
+    // Assets recorded in the local currency keep their stored amount, and their charges keep
+    // booking the difference to the documents' tax category.
+    let foreignCurrencyAssetsPromise: Promise<boolean> | undefined = undefined;
+    const chargeHasForeignCurrencyAssets = () => {
+      foreignCurrencyAssetsPromise ??= injector
         .get(DepreciationProvider)
         .getDepreciationRecordsByChargeIdLoader.load(chargeId)
-        .then(records => records.length > 0);
-      return depreciationRecordsPromise;
+        .then(records =>
+          records.some(record => !!record.currency && record.currency !== defaultLocalCurrency),
+        );
+      return foreignCurrencyAssetsPromise;
     };
 
     // generate ledger from documents
@@ -518,14 +524,15 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           );
         }
 
-        // an asset purchase entered as misc expenses (no documents): the payment's rate difference
-        // goes to exchange rates, since the assets' cost is fixed at the misc expenses' rate
+        // a foreign-currency asset purchase entered as misc expenses (no documents): the payment's
+        // rate difference goes to exchange rates, since the assets' cost is fixed at the misc
+        // expenses' rate
         let fromDepreciatedMiscExpenses = false;
         if (!exchangeRateEntry) {
           const miscExpenseEntry = miscExpensesLedgerEntries.find(entry =>
             [entry.creditAccountID1, entry.debitAccountID1].includes(entityId),
           );
-          if (miscExpenseEntry && (await chargeHasDepreciationRecords())) {
+          if (miscExpenseEntry && (await chargeHasForeignCurrencyAssets())) {
             exchangeRateEntry = miscExpenseEntry;
             fromDepreciatedMiscExpenses = true;
           }
@@ -535,9 +542,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           if (fromDepreciatedMiscExpenses) {
             exchangeRateTaxCategory = exchangeRateTaxCategoryId;
           } else if (documentsTaxCategoryId) {
-            // a depreciated asset's cost is fixed at the document date's rate, so the asset account
-            // must not absorb the difference to the payment's rate: book it to exchange rates
-            exchangeRateTaxCategory = (await chargeHasDepreciationRecords())
+            // a foreign-currency asset's cost is fixed at the document date's rate, so the asset
+            // account must not absorb the difference to the payment's rate: book it to exchange rates
+            exchangeRateTaxCategory = (await chargeHasForeignCurrencyAssets())
               ? exchangeRateTaxCategoryId
               : documentsTaxCategoryId;
           } else {

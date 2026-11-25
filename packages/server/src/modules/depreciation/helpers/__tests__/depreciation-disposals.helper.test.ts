@@ -8,9 +8,11 @@ import type {
   IGetDepreciationDisposalsByIdsResult,
   IGetDepreciationRecordsByIdsResult,
 } from '../../types.js';
+import { remainingAssetCost } from '../asset-depreciation.helper.js';
 import { validateDepreciationPercentage } from '../depreciation-categories.helper.js';
 import {
   checkDisposal,
+  loadDisposalInputs,
   resolveDisposalProceeds,
   resolveRefundMode,
   toAssetInput,
@@ -371,6 +373,76 @@ describe('checkDisposal', () => {
     expect(check.errors).toContain(
       "Disposed cost (13000) exceeds the asset's cost (12000), both rounded to whole shekels",
     );
+  });
+
+  describe("refunds of a foreign-currency asset's whole cost in pieces", () => {
+    // USD 10,000 with a ₪35,555 local cost: ₪3.5555 a dollar, so USD 5,000 is ₪17,777.50
+    const asset = {
+      record: {
+        amount: '10000',
+        currency: 'USD',
+        local_amount: '35555',
+      } as Partial<IGetDepreciationRecordsByIdsResult>,
+      localCost: 35_555,
+    };
+    const usdRefund = (id: string, date: TimelessDateString, amount: string) => ({
+      id,
+      type: 'COST_REFUND' as const,
+      refund_mode: null,
+      disposal_date: date,
+      disposed_cost: null,
+      original_amount: amount,
+      original_currency: 'USD' as const,
+      proceeds: '0',
+    });
+    const SECOND_ID = 'ee000000-0000-4000-8000-000000000002';
+    const THIRD_ID = 'ee000000-0000-4000-8000-000000000003';
+
+    it('allocates two halves to exactly the cost, and accepts both', async () => {
+      // the first half is stored; the second is checked against it
+      const check = await checkDisposal(
+        buildInjector(),
+        buildContext({ ...asset, disposals: [usdRefund(DISPOSAL_ID, '2025-03-01', '5000')] }),
+        { ...refund, disposedCost: undefined, originalAmount: 5000 },
+      );
+
+      expect(check.errors).toBeUndefined();
+      expect(check.result?.costReduction).toBe(17_777);
+      expect(check.remainingCost).toBe(0);
+
+      // both stored: 17,778 + 17,777 = 35,555, so nothing is left for the disposal picker to offer
+      const both = buildContext({
+        ...asset,
+        disposals: [
+          usdRefund(DISPOSAL_ID, '2025-03-01', '5000'),
+          usdRefund(SECOND_ID, '2025-07-01', '5000'),
+        ],
+      });
+      const events = await loadDisposalInputs(buildInjector(), both.record, both.disposals);
+      expect(events.map(event => event.disposedCost)).toEqual([17_778, 17_777]);
+      expect(remainingAssetCost({ cost: 35_555 }, events)).toBe(0);
+    });
+
+    it('allocates an uneven three-way split in date order, whatever order it is given in', async () => {
+      const context = buildContext({
+        ...asset,
+        disposals: [
+          usdRefund(THIRD_ID, '2025-04-01', '3333.34'),
+          usdRefund(SECOND_ID, '2025-03-01', '3333.33'),
+          usdRefund(DISPOSAL_ID, '2025-02-01', '3333.33'),
+        ],
+      });
+
+      const events = await loadDisposalInputs(buildInjector(), context.record, context.disposals);
+
+      // round(3,333.33 × 3.5555) = 11,852; round(6,666.66 × 3.5555) = 23,703; then the rest
+      expect(Object.fromEntries(events.map(event => [event.id, event.disposedCost]))).toEqual({
+        [DISPOSAL_ID]: 11_852,
+        [SECOND_ID]: 11_851,
+        [THIRD_ID]: 11_852,
+      });
+      expect(remainingAssetCost({ cost: 35_555 }, events)).toBe(0);
+    });
   });
 
   describe('an asset recorded in a foreign currency', () => {

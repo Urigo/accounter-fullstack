@@ -13,7 +13,7 @@ import type {
   IGetDepreciationRecordsByIdsResult,
 } from '../types.js';
 import {
-  convertForeignRefund,
+  convertForeignRefunds,
   resolveAssetLocalCost,
   type AssetCostRecord,
   type RefundConversion,
@@ -104,57 +104,75 @@ export type DisposalLocalCost = {
   rate: number | null;
 };
 
+type DisposalCostRow = Pick<
+  IGetDepreciationDisposalsByIdsResult,
+  | 'id'
+  | 'type'
+  | 'refund_mode'
+  | 'charge_id'
+  | 'disposal_date'
+  | 'disposed_cost'
+  | 'original_amount'
+  | 'original_currency'
+>;
+
 /**
- * The local cost of a stored event: its `disposed_cost`, or, for a cost refund entered in the
- * currency of a foreign-currency asset, its `original_amount` converted (see
- * `convertForeignRefund`)
+ * The local cost of an asset's events, by id: their `disposed_cost`, or, for a cost refund entered
+ * in the currency of a foreign-currency asset, its `original_amount` converted (see
+ * `convertForeignRefunds`, which allocates refunds from activation cumulatively, so pass all of the
+ * asset's events up to the latest one needed)
  */
-export async function resolveDisposalLocalCost(
+export async function resolveDisposalLocalCosts(
   injector: Injector,
   record: AssetCostRecord,
-  disposal: Pick<
-    IGetDepreciationDisposalsByIdsResult,
-    | 'id'
-    | 'type'
-    | 'refund_mode'
-    | 'charge_id'
-    | 'disposal_date'
-    | 'disposed_cost'
-    | 'original_amount'
-    | 'original_currency'
-  >,
-): Promise<DisposalLocalCost> {
-  if (disposal.original_amount == null) {
-    return { cost: Number(disposal.disposed_cost), rate: null };
+  disposals: readonly DisposalCostRow[],
+): Promise<Map<string, DisposalLocalCost>> {
+  const costs = new Map<string, DisposalLocalCost>();
+  const foreign = disposals.filter(disposal => disposal.original_amount != null);
+  for (const disposal of foreign) {
+    if (disposal.original_currency && disposal.original_currency !== record.currency) {
+      throw new GraphQLError(
+        `Depreciation disposal ${disposal.id} is in ${disposal.original_currency}, but its asset is recorded in ${record.currency ?? 'the local currency'}`,
+      );
+    }
   }
-  if (disposal.original_currency && disposal.original_currency !== record.currency) {
-    throw new GraphQLError(
-      `Depreciation disposal ${disposal.id} is in ${disposal.original_currency}, but its asset is recorded in ${record.currency ?? 'the local currency'}`,
+  const conversions: Map<string, RefundConversion> =
+    foreign.length > 0
+      ? await convertForeignRefunds(
+          injector,
+          record,
+          foreign.map(disposal => ({
+            id: disposal.id,
+            originalAmount: Number(disposal.original_amount),
+            refundMode: storedRefundMode(disposal) ?? DEFAULT_COST_REFUND_MODE,
+            chargeId: disposal.charge_id,
+            refundDate: disposal.disposal_date,
+          })),
+        )
+      : new Map();
+  for (const disposal of disposals) {
+    const conversion = conversions.get(disposal.id);
+    costs.set(
+      disposal.id,
+      conversion
+        ? { cost: conversion.cost, rate: conversion.rate }
+        : { cost: Number(disposal.disposed_cost), rate: null },
     );
   }
-  const { cost, rate } = await convertForeignRefund(injector, record, {
-    originalAmount: Number(disposal.original_amount),
-    refundMode: storedRefundMode(disposal) ?? DEFAULT_COST_REFUND_MODE,
-    chargeId: disposal.charge_id,
-    refundDate: disposal.disposal_date,
-  });
-  return { cost, rate };
+  return costs;
 }
 
 /** The engine's input for an asset's stored events, at their local cost */
-export function loadDisposalInputs(
+export async function loadDisposalInputs(
   injector: Injector,
   record: AssetCostRecord,
   disposals: readonly IGetDepreciationDisposalsByIdsResult[],
 ): Promise<AssetDisposalInput[]> {
-  return Promise.all(
-    disposals.map(async disposal =>
-      toDisposalInput(disposal, (await resolveDisposalLocalCost(injector, record, disposal)).cost),
-    ),
-  );
+  const costs = await resolveDisposalLocalCosts(injector, record, disposals);
+  return disposals.map(disposal => toDisposalInput(disposal, costs.get(disposal.id)?.cost));
 }
 
-/** The local cost of a stored event, loading its asset */
+/** The local cost of a stored event, loading its asset and the asset's other events */
 export async function loadDisposalLocalCost(
   injector: Injector,
   disposal: IGetDepreciationDisposalsByIdsResult,
@@ -162,13 +180,26 @@ export async function loadDisposalLocalCost(
   if (disposal.original_amount == null) {
     return { cost: Number(disposal.disposed_cost), rate: null };
   }
-  const record = await injector
-    .get(DepreciationProvider)
-    .getDepreciationRecordByIdLoader.load(disposal.depreciation_id);
+  const [record, assetDisposals] = await Promise.all([
+    injector
+      .get(DepreciationProvider)
+      .getDepreciationRecordByIdLoader.load(disposal.depreciation_id),
+    injector
+      .get(DepreciationDisposalsProvider)
+      .getDisposalsByDepreciationIdLoader.load(disposal.depreciation_id),
+  ]);
   if (!record) {
     throw new GraphQLError(`Depreciation record with id ${disposal.depreciation_id} not found`);
   }
-  return resolveDisposalLocalCost(injector, record, disposal);
+  const costs = await resolveDisposalLocalCosts(injector, record, [
+    ...assetDisposals.filter(other => other.id !== disposal.id),
+    disposal,
+  ]);
+  const cost = costs.get(disposal.id);
+  if (!cost) {
+    throw new GraphQLError(`Unable to convert depreciation disposal ${disposal.id}`);
+  }
+  return cost;
 }
 
 export type AssetContext = {
@@ -412,7 +443,8 @@ export async function checkDisposal(
   const foreignCurrency =
     record.currency && record.currency !== defaultLocalCurrency ? record.currency : null;
   let disposedCost = candidate.disposedCost ?? null;
-  let conversion: RefundConversion | null = null;
+  // converted below, together with the asset's other refunds entered in its currency
+  let inAssetCurrency = false;
   if (candidate.originalAmount != null) {
     if (candidate.type !== 'COST_REFUND') {
       errors.push("An amount in the asset's currency (originalAmount) is for cost refunds only");
@@ -427,17 +459,7 @@ export async function checkDisposal(
     } else if (candidate.originalAmount <= 0 || Number.isNaN(candidate.originalAmount)) {
       errors.push('The refunded amount must be positive');
     } else if (localCost != null) {
-      try {
-        conversion = await convertForeignRefund(injector, record, {
-          originalAmount: candidate.originalAmount,
-          refundMode: refundMode ?? DEFAULT_COST_REFUND_MODE,
-          chargeId: candidate.chargeId,
-          refundDate: candidate.disposalDate,
-        });
-        disposedCost = conversion.cost;
-      } catch (e) {
-        errors.push(e instanceof Error ? e.message : String(e));
-      }
+      inAssetCurrency = true;
     }
   } else if (candidate.type === 'COST_REFUND' && foreignCurrency) {
     errors.push(
@@ -458,17 +480,42 @@ export async function checkDisposal(
     errors.push(`Disposal date ${candidate.disposalDate} is in the locked period (${ledgerLock})`);
   }
 
+  const id = candidate.id ?? PREVIEW_DISPOSAL_ID;
+  const others = disposals.filter(disposal => disposal.id !== candidate.id);
+  let costs: Map<string, DisposalLocalCost>;
+  try {
+    costs = await resolveDisposalLocalCosts(injector, record, [
+      ...others,
+      ...(inAssetCurrency
+        ? [
+            {
+              id,
+              type: candidate.type,
+              refund_mode: refundMode,
+              charge_id: candidate.chargeId ?? null,
+              disposal_date: candidate.disposalDate,
+              disposed_cost: null,
+              original_amount: String(candidate.originalAmount),
+              original_currency: foreignCurrency,
+            },
+          ]
+        : []),
+    ]);
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : String(e));
+    return { errors };
+  }
+  const conversion = inAssetCurrency ? costs.get(id) : undefined;
+  if (conversion) {
+    disposedCost = conversion.cost;
+  }
+
   if (disposedCost == null) {
     return { errors };
   }
 
-  const id = candidate.id ?? PREVIEW_DISPOSAL_ID;
   const all: AssetDisposalInput[] = [
-    ...(await loadDisposalInputs(
-      injector,
-      record,
-      disposals.filter(disposal => disposal.id !== candidate.id),
-    )),
+    ...others.map(disposal => toDisposalInput(disposal, costs.get(disposal.id)?.cost)),
     {
       id,
       kind: candidate.type,

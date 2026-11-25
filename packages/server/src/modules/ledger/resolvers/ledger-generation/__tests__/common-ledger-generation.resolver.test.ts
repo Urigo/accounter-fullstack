@@ -367,14 +367,12 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
     ]);
   });
 
-  it("books an asset purchase's rate difference to exchange rates, not to the asset account", async () => {
-    // a $1,000 asset invoiced at the day's ₪3.60 and paid a week later at ₪3.70: the asset's cost
-    // stays at the invoice rate, so the ₪100 difference is a financial expense
+  function assetPurchase(depreciationRecords: unknown[]) {
     vi.mocked(ledgerEntryFromDocument).mockResolvedValue(
       invoiceEntry({ currency: Currency.Usd, amount: 1000, rate: 3.6 }),
     );
     const paymentDay: TimelessDateString = '2025-03-19';
-    const injector = makeInjector({
+    return makeInjector({
       transactions: [
         buildTransaction({
           id: 'payment',
@@ -388,16 +386,40 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         }),
       ],
       rates: [[Currency.Usd, paymentDay, 3.7]],
-      depreciationRecords: [{ id: 'asset', charge_id: CHARGE_ID }],
+      depreciationRecords,
     });
+  }
 
-    const { records, balance, errors } = await generate(injector);
+  it("books a foreign-currency asset purchase's rate difference to exchange rates, not to the asset account", async () => {
+    // a $1,000 asset recorded in USD, invoiced at the day's ₪3.60 and paid a week later at ₪3.70:
+    // the asset's cost stays at the invoice rate, so the ₪100 difference is a financial expense
+    const { records, balance, errors } = await generate(
+      assetPurchase([{ id: 'asset', charge_id: CHARGE_ID, currency: Currency.Usd }]),
+    );
 
     expect(errors).toEqual([]);
     expect(balance?.isBalanced).toBe(true);
     expect(exchangeRecords(records).map(summarize)).toEqual([
       expect.objectContaining({
         debit: 'tax-category-exchange-rates',
+        credit: SUPPLIER_ID,
+        currency: Currency.Ils,
+        localAmount: 100,
+      }),
+    ]);
+  });
+
+  it('keeps booking the rate difference to the tax category for an asset recorded in ILS', async () => {
+    // the same purchase, its asset recorded in ILS at its stored amount: as before
+    const { records, balance, errors } = await generate(
+      assetPurchase([{ id: 'asset', charge_id: CHARGE_ID, currency: Currency.Ils }]),
+    );
+
+    expect(errors).toEqual([]);
+    expect(balance?.isBalanced).toBe(true);
+    expect(exchangeRecords(records).map(summarize)).toEqual([
+      expect.objectContaining({
+        debit: EXPENSES_TAX_CATEGORY_ID,
         credit: SUPPLIER_ID,
         currency: Currency.Ils,
         localAmount: 100,
@@ -451,9 +473,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
       });
     }
 
-    it("books the payment's rate difference to exchange rates when the charge carries assets", async () => {
+    it("books the payment's rate difference to exchange rates when the charge carries foreign-currency assets", async () => {
       const { records, balance, errors } = await generate(
-        acquisition([{ id: 'asset', charge_id: CHARGE_ID }]),
+        acquisition([{ id: 'asset', charge_id: CHARGE_ID, currency: Currency.Usd }]),
       );
 
       expect(errors).toEqual([]);
@@ -470,6 +492,17 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
 
     it('still finds no exchange rate account for misc expenses of a charge without assets', async () => {
       const { records, errors } = await generate(acquisition([]));
+
+      expect(exchangeRecords(records)).toEqual([]);
+      expect(errors).toContain(
+        `Failed to locate tax category for exchange rate for business ID="${SUPPLIER_ID}"`,
+      );
+    });
+
+    it('still finds no exchange rate account for misc expenses of assets recorded in ILS', async () => {
+      const { records, errors } = await generate(
+        acquisition([{ id: 'asset', charge_id: CHARGE_ID, currency: Currency.Ils }]),
+      );
 
       expect(exchangeRecords(records)).toEqual([]);
       expect(errors).toContain(
