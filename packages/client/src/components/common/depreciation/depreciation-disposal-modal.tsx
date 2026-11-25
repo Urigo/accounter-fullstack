@@ -1,4 +1,4 @@
-import { useMemo, type ReactElement } from 'react';
+import { useContext, useMemo, type ReactElement } from 'react';
 import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import {
@@ -11,6 +11,7 @@ import {
 import { formatStringifyAmount, TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationDisposal } from '../../../hooks/use-add-depreciation-disposal.js';
 import { useUpdateDepreciationDisposal } from '../../../hooks/use-update-depreciation-disposal.js';
+import { UserContext } from '../../../providers/index.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
@@ -28,6 +29,7 @@ import { depreciationCategoryLabel } from './depreciation-category-label.js';
       activationDate
       amount {
         formatted
+        currency
       }
       remainingCost {
         raw
@@ -55,6 +57,7 @@ import { depreciationCategoryLabel } from './depreciation-category-label.js';
         message
       }
       ... on DepreciationDisposalComputation {
+        exchangeRate
         accumulatedDepreciation {
           raw
         }
@@ -119,6 +122,8 @@ export type ExistingDisposal = {
   type: DepreciationDisposalType;
   disposalDate: string;
   disposedCost: number;
+  /** a cost refund of an asset recorded in a foreign currency, in that currency */
+  originalAmount?: number | null;
   proceeds: number;
   refundMode?: DepreciationRefundMode | null;
   chargeId?: string | null;
@@ -144,6 +149,8 @@ type Props = {
   onDone?: () => void;
   /** The asset; when missing the modal shows an asset picker */
   depreciationRecordId?: string;
+  /** The currency the asset is recorded in, when the asset is given */
+  assetCurrency?: string | null;
   /** The charge carrying the sale or refund */
   chargeId?: string;
   /** Edit an existing disposal */
@@ -173,6 +180,7 @@ export function DepreciationDisposalModal({
   close,
   onDone,
   depreciationRecordId,
+  assetCurrency,
   chargeId,
   disposal,
 }: Props): ReactElement {
@@ -182,7 +190,7 @@ export function DepreciationDisposalModal({
       chargeId: disposal ? (disposal.chargeId ?? '') : (chargeId ?? ''),
       type: disposal?.type ?? DepreciationDisposalType.CostRefund,
       disposalDate: disposal?.disposalDate ?? '',
-      disposedCost: disposal ? String(disposal.disposedCost) : '',
+      disposedCost: disposal ? String(disposal.originalAmount ?? disposal.disposedCost) : '',
       proceeds: disposal ? String(disposal.proceeds) : '',
       refundMode: disposal?.refundMode ?? DepreciationRefundMode.FromActivation,
       description: disposal?.description ?? '',
@@ -214,6 +222,15 @@ export function DepreciationDisposalModal({
     [assetsData],
   );
 
+  // a cost refund of an asset recorded in a foreign currency is entered in that currency
+  const { userContext } = useContext(UserContext);
+  const localCurrency = userContext?.context.defaultLocalCurrency ?? 'ILS';
+  const currency =
+    assetCurrency ??
+    assetsData?.depreciationRecords.find(record => record.id === values.depreciationRecordId)
+      ?.amount.currency;
+  const inAssetCurrency = isRefund && !!currency && currency !== localCurrency;
+
   const input = useMemo((): InsertDepreciationDisposalInput | null => {
     const disposedCost = Number(values.disposedCost);
     if (
@@ -231,7 +248,7 @@ export function DepreciationDisposalModal({
       chargeId: chargeIdValue || null,
       type: values.type,
       disposalDate: values.disposalDate as TimelessDate,
-      disposedCost,
+      ...(inAssetCurrency ? { originalAmount: disposedCost } : { disposedCost }),
       // a cost refund is a cost correction: no proceeds, only a refund mode
       proceeds:
         values.type === DepreciationDisposalType.Sale ? Number(values.proceeds || 0) : undefined,
@@ -241,7 +258,7 @@ export function DepreciationDisposalModal({
           : undefined,
       description: values.description || null,
     };
-  }, [values, validDate, chargeIdValue, chargeIdError]);
+  }, [values, validDate, chargeIdValue, chargeIdError, inAssetCurrency]);
 
   // The preview validates a new disposal next to the asset's stored ones, so it is only shown
   // when recording a new disposal.
@@ -267,6 +284,7 @@ export function DepreciationDisposalModal({
             type: input.type,
             disposalDate: input.disposalDate,
             disposedCost: input.disposedCost,
+            originalAmount: input.originalAmount,
             proceeds: proceedsForUpdate(input),
             refundMode: input.refundMode,
             chargeId: input.chargeId,
@@ -347,7 +365,9 @@ export function DepreciationDisposalModal({
             render={({ field }): ReactElement => (
               <FormItem>
                 <FormLabel>
-                  {isRefund ? 'Refund Amount (excl. VAT, ILS)' : 'Disposed Cost (ILS)'}
+                  {isRefund
+                    ? `Refund Amount (excl. VAT, ${inAssetCurrency ? currency : localCurrency})`
+                    : `Disposed Cost (${localCurrency})`}
                 </FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" min="0" {...field} />
@@ -449,6 +469,14 @@ export function DepreciationDisposalModal({
           )}
           {preview?.__typename === 'DepreciationDisposalComputation' && isRefund && (
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm border rounded-sm p-3">
+              {preview.exchangeRate != null && (
+                <>
+                  <span>Converted at</span>
+                  <span className="text-right">
+                    {preview.exchangeRate.toFixed(4)} {localCurrency} / {currency}
+                  </span>
+                </>
+              )}
               <span>Cost reduction</span>
               <span className="text-right">{amount(preview.costReduction.raw)}</span>
               <span className="font-bold">Depreciation correction (income)</span>

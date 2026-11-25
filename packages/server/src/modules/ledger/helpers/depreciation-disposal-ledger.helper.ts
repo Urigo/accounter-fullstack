@@ -1,7 +1,11 @@
 import type { Injector } from 'graphql-modules';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import type { Currency } from '../../../shared/enums.js';
-import { formatStringifyAmount, getTimelessDateYear } from '../../../shared/helpers/index.js';
+import {
+  formatStringifyAmount,
+  getTimelessDateYear,
+  roundToAgorot,
+} from '../../../shared/helpers/index.js';
 import type { LedgerProto, TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeTaxCategoryId } from '../../charges/helpers/common.helper.js';
@@ -14,10 +18,14 @@ import {
 import {
   computeStoredDisposal,
   loadAssetContext,
+  loadDisposalLocalCost,
   storedRefundMode,
   type DisposalComputation,
 } from '../../depreciation/helpers/depreciation-disposals.helper.js';
-import type { IGetDepreciationDisposalsByIdsResult } from '../../depreciation/types.js';
+import type {
+  IGetDepreciationDisposalsByIdsResult,
+  IGetDepreciationRecordsByIdsResult,
+} from '../../depreciation/types.js';
 
 export type DisposalLedgerAccounts = {
   /** The asset's cost account: the tax category of the charge that bought it */
@@ -70,6 +78,11 @@ export function correctedYears(
  *   unless the refund was booked to the asset account already;
  * - the depreciation the refund reverses (the recapture, or the excess over book value) is released
  *   as income (Dr AD / Cr depreciation correction).
+ *
+ * `foreign` is given for a cost refund entered in the currency of a foreign-currency asset: every
+ * row then carries that currency, the rate the refund converted at and the foreign amount (local ÷
+ * rate, rounded to cents), like the foreign misc-expense rows; the cost-reduction row takes the
+ * refunded amount itself, so it ties to the refund. Local amounts are unchanged.
  */
 export function buildDisposalLedgerEntries(params: {
   disposal: {
@@ -87,6 +100,13 @@ export function buildDisposalLedgerEntries(params: {
   ownerId: string;
   currency: Currency;
   assetLabel?: string | null;
+  foreign?: {
+    currency: Currency;
+    /** local currency per unit of `currency`, as the refund converted at */
+    rate: number;
+    /** the refunded amount, in `currency` */
+    originalAmount: number;
+  } | null;
 }): { entries: LedgerProto[]; errors: string[] } {
   const { disposal, result, accounts, chargeId, ownerId, currency } = params;
   const errors: string[] = [];
@@ -96,21 +116,33 @@ export function buildDisposalLedgerEntries(params: {
     params.assetLabel ? ` (${params.assetLabel})` : ''
   }`;
 
-  const add = (amount: number, debitAccountId: string, creditAccountId: string, what: string) => {
+  const { foreign } = params;
+  const add = (
+    amount: number,
+    debitAccountId: string,
+    creditAccountId: string,
+    what: string,
+    foreignAmount?: number,
+  ) => {
     if (Math.abs(amount) < 0.005) {
       return;
     }
+    // in cents of the foreign currency
+    const foreignValue = foreign
+      ? (foreignAmount ?? roundToAgorot(Math.abs(amount) / foreign.rate))
+      : undefined;
     entries.push({
       id: EMPTY_UUID,
       chargeId,
       ownerId,
       invoiceDate: disposal.disposalDate,
       valueDate: disposal.disposalDate,
-      currency,
-      currencyRate: 1,
+      currency: foreign?.currency ?? currency,
+      currencyRate: foreign?.rate ?? 1,
       isCreditorCounterparty: true,
       debitAccountID1: debitAccountId,
       creditAccountID1: creditAccountId,
+      ...(foreignValue != null && { debitAmount1: foreignValue, creditAmount1: foreignValue }),
       localCurrencyDebitAmount1: Math.abs(amount),
       localCurrencyCreditAmount1: Math.abs(amount),
       description: `${label}: ${what}`,
@@ -127,7 +159,13 @@ export function buildDisposalLedgerEntries(params: {
         );
       }
     } else if (proceedsAccountId !== assetAccountId) {
-      add(result.costReduction, proceedsAccountId, assetAccountId, 'cost reduction');
+      add(
+        result.costReduction,
+        proceedsAccountId,
+        assetAccountId,
+        'cost reduction',
+        foreign?.originalAmount,
+      );
     }
 
     if (result.depreciationCorrection >= 0.005) {
@@ -177,6 +215,17 @@ export function buildDisposalLedgerEntries(params: {
   }
 
   return { entries, errors };
+}
+
+/**
+ * An asset's cost account: its own asset account when set (one charge buying several assets, e.g.
+ * an acquisition booked through misc expenses), else the tax category of the charge that bought it
+ */
+export async function getAssetAccountId(
+  record: Pick<IGetDepreciationRecordsByIdsResult, 'asset_tax_category_id' | 'charge_id'>,
+  injector: Injector,
+): Promise<string | null | undefined> {
+  return record.asset_tax_category_id ?? getChargeTaxCategoryId(record.charge_id, injector);
 }
 
 export type DisposalsLedger = {
@@ -241,12 +290,29 @@ export async function generateDepreciationDisposalsLedger(
       ]);
       const [assetCharge, assetAccountId] = await Promise.all([
         injector.get(ChargesProvider).getChargeByIdLoader.load(record.charge_id),
-        getChargeTaxCategoryId(record.charge_id, injector),
+        getAssetAccountId(record, injector),
       ]);
+      // a refund entered in the asset's currency books its rows in that currency
+      let foreign: { currency: Currency; rate: number; originalAmount: number } | null = null;
+      if (disposal.original_amount != null && disposal.original_currency) {
+        const { rate } = await loadDisposalLocalCost(injector, disposal);
+        if (!rate) {
+          rowsMissing = true;
+          errors.push(
+            `Asset disposal ${disposal.id}: no rate to book it in ${disposal.original_currency}`,
+          );
+          continue;
+        }
+        foreign = {
+          currency: disposal.original_currency as Currency,
+          rate,
+          originalAmount: Number(disposal.original_amount),
+        };
+      }
       if (!assetAccountId) {
         rowsMissing = true;
         errors.push(
-          `Asset disposal ${disposal.id}: the asset's charge has no tax category (asset account)`,
+          `Asset disposal ${disposal.id}: the asset has no account: set its asset account, or a tax category on the charge that bought it`,
         );
         continue;
       }
@@ -271,6 +337,7 @@ export async function generateDepreciationDisposalsLedger(
         ownerId: charge.owner_id,
         currency: defaultLocalCurrency,
         assetLabel: disposal.description ?? assetCharge?.user_description,
+        foreign,
       });
       entries.push(...built.entries);
       errors.push(...built.errors);

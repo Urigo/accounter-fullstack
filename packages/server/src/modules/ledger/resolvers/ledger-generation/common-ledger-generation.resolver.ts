@@ -16,6 +16,8 @@ import {
 } from '../../../charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
 import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
+import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
+import type { IGetDepreciationDisposalsByIdsResult } from '../../../depreciation/types.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -32,6 +34,10 @@ import {
   checkDisposalProceeds,
   generateDepreciationDisposalsLedger,
 } from '../../helpers/depreciation-disposal-ledger.helper.js';
+import {
+  generateCostRefundExchangeLedger,
+  hasForeignCurrencyRefunds,
+} from '../../helpers/depreciation-refund-exchange-ledger.helper.js';
 import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
 import {
   getEntriesFromFeeTransaction,
@@ -146,6 +152,25 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const miscLedgerEntries: LedgerProto[] = [];
+    // the misc-expense entries, also kept in `feeFinancialAccountLedgerEntries`
+    const miscExpensesLedgerEntries: LedgerProto[] = [];
+
+    // whether the charge bought an asset recorded in a foreign currency: its cost basis is fixed at
+    // the activation date's rate, so the asset account must not absorb the difference to the
+    // payment's rate (the asset account keeps the charge's own rate: a known gap against the cost
+    // basis when activation is on another date, Urigo/accounter-fullstack#5196).
+    // Assets recorded in the local currency keep their stored amount, and their charges keep
+    // booking the difference to the documents' tax category.
+    let foreignCurrencyAssetsPromise: Promise<boolean> | undefined = undefined;
+    const chargeHasForeignCurrencyAssets = () => {
+      foreignCurrencyAssetsPromise ??= injector
+        .get(DepreciationProvider)
+        .getDepreciationRecordsByChargeIdLoader.load(chargeId)
+        .then(records =>
+          records.some(record => !!record.currency && record.currency !== defaultLocalCurrency),
+        );
+      return foreignCurrencyAssetsPromise;
+    };
 
     // generate ledger from documents
     if (gotRelevantDocuments) {
@@ -267,6 +292,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
+        miscExpensesLedgerEntries.push(entry);
         updateLedgerBalance(entry);
         dates.add(exchangeRatePointKey(entry));
         currencies.add(entry.currency);
@@ -276,8 +302,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     // generate ledger for disposals of depreciated assets this charge carries the money for
     const disposalEntries = new Set<LedgerProto>();
-    const disposalProceedsChecks: Array<{ proceedsAccountId: string; expectedProceeds: number }> =
-      [];
+    const disposalProceedsChecks: Array<{
+      disposals: IGetDepreciationDisposalsByIdsResult[];
+      proceedsAccountId: string;
+      expectedProceeds: number;
+    }> = [];
     const disposalsLedgerPromise = injector
       .get(DepreciationDisposalsProvider)
       .getDisposalsByChargeIdLoader.load(chargeId)
@@ -306,7 +335,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           updateLedgerBalance(entry);
         }
         if (proceedsAccountId && expectedProceeds != null) {
-          disposalProceedsChecks.push({ proceedsAccountId, expectedProceeds });
+          disposalProceedsChecks.push({ disposals, proceedsAccountId, expectedProceeds });
         }
       });
     entriesPromises.push(disposalsLedgerPromise);
@@ -315,14 +344,31 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     // the charge must carry the money for the sales and cost refunds linked to it
     for (const check of disposalProceedsChecks) {
-      const error = checkDisposalProceeds({
-        ...check,
-        chargeEntries: [
-          ...accountingLedgerEntries,
-          ...financialAccountLedgerEntries,
-          ...feeFinancialAccountLedgerEntries,
-        ].filter(entry => !disposalEntries.has(entry)),
-      });
+      const chargeEntries = [
+        ...accountingLedgerEntries,
+        ...financialAccountLedgerEntries,
+        ...feeFinancialAccountLedgerEntries,
+      ].filter(entry => !disposalEntries.has(entry));
+      if (hasForeignCurrencyRefunds(check.disposals)) {
+        // refunds entered in an asset's foreign currency are checked in that currency instead, and
+        // the local-currency gap left in the refund account is their exchange-rate difference
+        const { entries, errors: refundExchangeErrors } = await generateCostRefundExchangeLedger({
+          ...check,
+          charge,
+          chargeEntries,
+          injector,
+        });
+        for (const error of refundExchangeErrors) {
+          errors.add(error);
+        }
+        for (const entry of entries) {
+          disposalEntries.add(entry);
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalance(entry);
+        }
+        continue;
+      }
+      const error = checkDisposalProceeds({ ...check, chargeEntries });
       if (error) {
         errors.add(error);
       }
@@ -480,9 +526,31 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           );
         }
 
+        // a foreign-currency asset purchase entered as misc expenses (no documents): the payment's
+        // rate difference goes to exchange rates, so the asset account keeps the misc expenses'
+        // rate (the cost basis is at the activation date's rate; see
+        // Urigo/accounter-fullstack#5196 for the gap when the dates differ)
+        let fromDepreciatedMiscExpenses = false;
+        if (!exchangeRateEntry) {
+          const miscExpenseEntry = miscExpensesLedgerEntries.find(entry =>
+            [entry.creditAccountID1, entry.debitAccountID1].includes(entityId),
+          );
+          if (miscExpenseEntry && (await chargeHasForeignCurrencyAssets())) {
+            exchangeRateEntry = miscExpenseEntry;
+            fromDepreciatedMiscExpenses = true;
+          }
+        }
+
         if (exchangeRateEntry) {
-          if (documentsTaxCategoryId) {
-            exchangeRateTaxCategory = documentsTaxCategoryId;
+          if (fromDepreciatedMiscExpenses) {
+            exchangeRateTaxCategory = exchangeRateTaxCategoryId;
+          } else if (documentsTaxCategoryId) {
+            // a foreign-currency asset's account keeps the document date's rate: the difference to
+            // the payment's rate goes to exchange rates (the cost basis is at the activation date's
+            // rate; see Urigo/accounter-fullstack#5196 for the gap when the dates differ)
+            exchangeRateTaxCategory = (await chargeHasForeignCurrencyAssets())
+              ? exchangeRateTaxCategoryId
+              : documentsTaxCategoryId;
           } else {
             exchangeRateTaxCategory =
               exchangeRateEntry.debitAccountID1 === entityId

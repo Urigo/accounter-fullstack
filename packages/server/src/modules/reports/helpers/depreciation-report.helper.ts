@@ -6,8 +6,8 @@ import {
   calculateDepreciation,
 } from '../../depreciation/helpers/asset-depreciation.helper.js';
 import {
-  toAssetInput,
-  toDisposalInput,
+  loadAssetInput,
+  loadDisposalInputs,
 } from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
@@ -45,12 +45,15 @@ export async function calculateDepreciationAmount(
         return;
       }
 
-      const disposals = await injector
-        .get(DepreciationDisposalsProvider)
-        .getDisposalsByDepreciationIdLoader.load(record.id);
+      const [disposals, asset] = await Promise.all([
+        injector
+          .get(DepreciationDisposalsProvider)
+          .getDisposalsByDepreciationIdLoader.load(record.id),
+        loadAssetInput(injector, record, depreciationCategory),
+      ]);
       const { yearDepreciation: yearlyDepreciationAmount } = calculateAssetYear(
-        toAssetInput(record, depreciationCategory),
-        disposals.map(toDisposalInput),
+        asset,
+        await loadDisposalInputs(injector, record, disposals),
         year,
       );
       // nothing to add: fully depreciated or disposed of, or in a category that is not depreciated (0%)

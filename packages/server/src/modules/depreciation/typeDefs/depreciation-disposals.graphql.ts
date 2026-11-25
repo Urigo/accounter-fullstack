@@ -71,8 +71,12 @@ export default gql`
     " how a cost refund corrects the asset; null for a sale or write-off "
     refundMode: DepreciationRefundMode
     disposalDate: TimelessDate!
-    " part of the asset cost that leaves the books (the refunded amount for a cost refund), excluding VAT "
+    " part of the asset cost that leaves the books (the refunded amount for a cost refund), excluding VAT, in the local currency "
     disposedCost: FinancialAmount!
+    " a cost refund of an asset recorded in a foreign currency, as entered in that currency; null otherwise "
+    originalAmount: FinancialAmount
+    " the rate originalAmount was converted to the local currency at; null when there is no originalAmount "
+    exchangeRate: Float
     " consideration for a sale, excluding VAT; 0 for a write-off and a cost refund "
     proceeds: FinancialAmount!
     description: String
@@ -91,6 +95,8 @@ export default gql`
   " computed values of a disposal or cost refund "
   type DepreciationDisposalComputation {
     disposedCost: FinancialAmount!
+    " the rate a cost refund entered in the asset's currency is converted at; null otherwise "
+    exchangeRate: Float
     proceeds: FinancialAmount!
     accumulatedDepreciation: FinancialAmount!
     netBookValue: FinancialAmount!
@@ -111,8 +117,10 @@ export default gql`
     " COST_REFUND only; defaults to FROM_ACTIVATION "
     refundMode: DepreciationRefundMode
     disposalDate: TimelessDate!
-    " the cost that leaves the books; for COST_REFUND, the refunded amount "
-    disposedCost: Float!
+    " the cost that leaves the books, in the local currency; for COST_REFUND, the refunded amount. Required, except for a COST_REFUND of an asset recorded in a foreign currency, which takes originalAmount instead "
+    disposedCost: Float
+    " COST_REFUND of an asset recorded in a foreign currency only, and required for it: the refunded amount in the asset's currency. It is converted at the asset's cost-basis rate (FROM_ACTIVATION) or at the refund charge's rate (FROM_REFUND_DATE) "
+    originalAmount: Float
     " SALE only; a WRITE_OFF or COST_REFUND has no proceeds "
     proceeds: Float
     description: String
@@ -127,7 +135,10 @@ export default gql`
     " COST_REFUND only; when left out, a cost refund keeps its mode (FROM_ACTIVATION when it becomes one) "
     refundMode: DepreciationRefundMode
     disposalDate: TimelessDate
+    " the local cost; not for a COST_REFUND of an asset recorded in a foreign currency "
     disposedCost: Float
+    " the refunded amount in the asset's currency, for a COST_REFUND of an asset recorded in a foreign currency; when left out, it is kept "
+    originalAmount: Float
     " SALE only; when left out, a sale keeps its proceeds "
     proceeds: Float
     " pass null to clear it "

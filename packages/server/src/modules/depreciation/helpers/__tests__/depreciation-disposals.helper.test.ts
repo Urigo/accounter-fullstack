@@ -8,9 +8,11 @@ import type {
   IGetDepreciationDisposalsByIdsResult,
   IGetDepreciationRecordsByIdsResult,
 } from '../../types.js';
+import { remainingAssetCost } from '../asset-depreciation.helper.js';
 import { validateDepreciationPercentage } from '../depreciation-categories.helper.js';
 import {
   checkDisposal,
+  loadDisposalInputs,
   resolveDisposalProceeds,
   resolveRefundMode,
   toAssetInput,
@@ -53,10 +55,13 @@ function buildInjector({ ledgerLock }: { ledgerLock?: TimelessDateString } = {})
 
 function buildContext({
   record: recordOverrides = {},
+  localCost,
   disposals = [],
   percentage,
 }: {
   record?: Partial<IGetDepreciationRecordsByIdsResult>;
+  /** the resolved local cost; defaults to the record's amount */
+  localCost?: number | null;
   disposals?: Partial<IGetDepreciationDisposalsByIdsResult>[];
   percentage?: string;
 } = {}): AssetContext {
@@ -74,10 +79,13 @@ function buildContext({
     id: 'category',
     percentage: percentage ?? '10',
   } as IGetAllDepreciationCategoriesResult;
+  const defaultCost = record.amount == null ? null : Number(record.amount);
+  const cost = localCost === undefined ? defaultCost : localCost;
   return {
     record,
     category,
-    asset: toAssetInput(record, category),
+    localCost: cost,
+    asset: toAssetInput(record, category, cost),
     disposals: disposals.map(
       disposal =>
         ({
@@ -335,15 +343,234 @@ describe('checkDisposal', () => {
     );
   });
 
-  it('rejects an asset recorded in a foreign currency', async () => {
+  it('disposes of an asset paid in a foreign currency at its local cost', async () => {
+    // $3,000 at ₪4 is a ₪12,000 cost; the disposal's amounts are in shekels
     const check = await checkDisposal(
       buildInjector(),
-      buildContext({ record: { currency: 'USD' } as Partial<IGetDepreciationRecordsByIdsResult> }),
+      buildContext({
+        record: { amount: '3000', currency: 'USD' } as Partial<IGetDepreciationRecordsByIdsResult>,
+        localCost: 12_000,
+      }),
       sale,
     );
 
+    expect(check.errors).toBeUndefined();
+    expect(check.result).toMatchObject({ disposedCost: 4000, proceeds: 3000 });
+    expect(check.remainingCost).toBe(8000);
+  });
+
+  it('rejects disposing of more than the local cost of a foreign-currency asset', async () => {
+    const check = await checkDisposal(
+      buildInjector(),
+      buildContext({
+        record: { amount: '3000', currency: 'USD' } as Partial<IGetDepreciationRecordsByIdsResult>,
+        localCost: 12_000,
+      }),
+      { ...sale, disposedCost: 13_000 },
+    );
+
+    // the check is against the ₪12,000 local cost, not the 3,000 in dollars
     expect(check.errors).toContain(
-      'Disposals are only supported for assets recorded in ILS (this asset is in USD)',
+      "Disposed cost (13000) exceeds the asset's cost (12000), both rounded to whole shekels",
+    );
+  });
+
+  describe("refunds of a foreign-currency asset's whole cost in pieces", () => {
+    // USD 10,000 with a ₪35,555 local cost: ₪3.5555 a dollar, so USD 5,000 is ₪17,777.50
+    const asset = {
+      record: {
+        amount: '10000',
+        currency: 'USD',
+        local_amount: '35555',
+      } as Partial<IGetDepreciationRecordsByIdsResult>,
+      localCost: 35_555,
+    };
+    const usdRefund = (id: string, date: TimelessDateString, amount: string) => ({
+      id,
+      type: 'COST_REFUND' as const,
+      refund_mode: null,
+      disposal_date: date,
+      disposed_cost: null,
+      original_amount: amount,
+      original_currency: 'USD' as const,
+      proceeds: '0',
+    });
+    const SECOND_ID = 'ee000000-0000-4000-8000-000000000002';
+    const THIRD_ID = 'ee000000-0000-4000-8000-000000000003';
+
+    it('allocates two halves to exactly the cost, and accepts both', async () => {
+      // the first half is stored; the second is checked against it
+      const check = await checkDisposal(
+        buildInjector(),
+        buildContext({ ...asset, disposals: [usdRefund(DISPOSAL_ID, '2025-03-01', '5000')] }),
+        { ...refund, disposedCost: undefined, originalAmount: 5000 },
+      );
+
+      expect(check.errors).toBeUndefined();
+      expect(check.result?.costReduction).toBe(17_777);
+      expect(check.remainingCost).toBe(0);
+
+      // both stored: 17,778 + 17,777 = 35,555, so nothing is left for the disposal picker to offer
+      const both = buildContext({
+        ...asset,
+        disposals: [
+          usdRefund(DISPOSAL_ID, '2025-03-01', '5000'),
+          usdRefund(SECOND_ID, '2025-07-01', '5000'),
+        ],
+      });
+      const events = await loadDisposalInputs(buildInjector(), both.record, both.disposals);
+      expect(events.map(event => event.disposedCost)).toEqual([17_778, 17_777]);
+      expect(remainingAssetCost({ cost: 35_555 }, events)).toBe(0);
+    });
+
+    it('allocates a preview after a stored refund of the same date, as once it is stored', async () => {
+      // the stored refund's id sorts after the new one's: creation time decides, not the id
+      const storedId = 'ff000000-0000-4000-8000-000000000001';
+      const newId = 'aa000000-0000-4000-8000-000000000001';
+      const stored = {
+        ...usdRefund(storedId, '2025-07-01', '5000'),
+        created_at: new Date('2025-07-01T10:00:00.000Z'),
+      };
+
+      const check = await checkDisposal(
+        buildInjector(),
+        buildContext({ ...asset, disposals: [stored] }),
+        { ...refund, disposalDate: '2025-07-01', disposedCost: undefined, originalAmount: 5000 },
+      );
+
+      // the preview comes last: the stored refund keeps 17,778, the new one takes 17,777
+      expect(check.errors).toBeUndefined();
+      expect(check.result?.costReduction).toBe(17_777);
+
+      const both = buildContext({
+        ...asset,
+        disposals: [
+          stored,
+          {
+            ...usdRefund(newId, '2025-07-01', '5000'),
+            created_at: new Date('2025-07-01T11:00:00.000Z'),
+          },
+        ],
+      });
+      const events = await loadDisposalInputs(buildInjector(), both.record, both.disposals);
+      expect(Object.fromEntries(events.map(event => [event.id, event.disposedCost]))).toEqual({
+        [storedId]: 17_778,
+        [newId]: 17_777,
+      });
+    });
+
+    it('allocates an uneven three-way split in date order, whatever order it is given in', async () => {
+      const context = buildContext({
+        ...asset,
+        disposals: [
+          usdRefund(THIRD_ID, '2025-04-01', '3333.34'),
+          usdRefund(SECOND_ID, '2025-03-01', '3333.33'),
+          usdRefund(DISPOSAL_ID, '2025-02-01', '3333.33'),
+        ],
+      });
+
+      const events = await loadDisposalInputs(buildInjector(), context.record, context.disposals);
+
+      // round(3,333.33 × 3.5555) = 11,852; round(6,666.66 × 3.5555) = 23,703; then the rest
+      expect(Object.fromEntries(events.map(event => [event.id, event.disposedCost]))).toEqual({
+        [DISPOSAL_ID]: 11_852,
+        [SECOND_ID]: 11_851,
+        [THIRD_ID]: 11_852,
+      });
+      expect(remainingAssetCost({ cost: 35_555 }, events)).toBe(0);
+    });
+  });
+
+  describe('an asset recorded in a foreign currency', () => {
+    // USD 3,000 with a ₪12,000 local cost: ₪4 a dollar
+    const usdAsset = {
+      record: {
+        amount: '3000',
+        currency: 'USD',
+        local_amount: '12000',
+      } as Partial<IGetDepreciationRecordsByIdsResult>,
+      localCost: 12_000,
+    };
+
+    it("takes a cost refund in the asset's currency, converted at its cost-basis rate", async () => {
+      const check = await checkDisposal(buildInjector(), buildContext(usdAsset), {
+        ...refund,
+        disposedCost: undefined,
+        originalAmount: 300,
+      });
+
+      // USD 300 at ₪4 is the same ₪1,200 refund
+      expect(check.errors).toBeUndefined();
+      expect(check.result).toMatchObject({ costReduction: 1200, depreciationCorrection: 120 });
+      expect(check.exchangeRate).toBe(4);
+      expect(check.stored).toEqual({
+        disposedCost: null,
+        originalAmount: 300,
+        originalCurrency: 'USD',
+      });
+      expect(check.remainingCost).toBe(10_800);
+    });
+
+    it('counts a stored refund entered in its currency at its local cost', async () => {
+      const check = await checkDisposal(
+        buildInjector(),
+        buildContext({
+          ...usdAsset,
+          disposals: [
+            {
+              id: DISPOSAL_ID,
+              type: 'COST_REFUND',
+              refund_mode: null,
+              disposal_date: '2025-03-01',
+              disposed_cost: null,
+              original_amount: '300',
+              original_currency: 'USD',
+              proceeds: '0',
+            },
+          ],
+        }),
+        sale,
+      );
+
+      // 12,000 − 1,200 refunded − 4,000 sold
+      expect(check.errors).toBeUndefined();
+      expect(check.remainingCost).toBe(6800);
+      expect(check.stored).toEqual({
+        disposedCost: 4000,
+        originalAmount: null,
+        originalCurrency: null,
+      });
+    });
+
+    it("rejects a cost refund given in the local currency instead of the asset's", async () => {
+      const check = await checkDisposal(buildInjector(), buildContext(usdAsset), refund);
+
+      expect(check.errors).toContain(
+        'Enter a cost refund of an asset recorded in USD in USD (originalAmount)',
+      );
+    });
+
+    it("rejects an amount in the asset's currency for a sale", async () => {
+      const check = await checkDisposal(buildInjector(), buildContext(usdAsset), {
+        ...sale,
+        originalAmount: 1000,
+      });
+
+      expect(check.errors).toContain(
+        "An amount in the asset's currency (originalAmount) is for cost refunds only",
+      );
+    });
+  });
+
+  it("rejects an amount in the asset's currency for an asset recorded in the local currency", async () => {
+    const check = await checkDisposal(buildInjector(), buildContext(), {
+      ...refund,
+      disposedCost: undefined,
+      originalAmount: 300,
+    });
+
+    expect(check.errors).toContain(
+      "An amount in the asset's currency (originalAmount) is for assets recorded in a foreign currency; give this refund in ILS (disposedCost)",
     );
   });
 

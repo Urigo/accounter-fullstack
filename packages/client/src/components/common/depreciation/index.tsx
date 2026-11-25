@@ -17,6 +17,9 @@ import { DepreciationRow } from './depreciation-row.js';
     depreciationRecordsByCharge(chargeId: $chargeId) {
       id
       ...DepreciationRecordRowFields
+      amount {
+        currency
+      }
       remainingCost {
         raw
       }
@@ -79,6 +82,7 @@ export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
                     {depreciation.remainingCost.raw > 0 && (
                       <RecordDisposalButton
                         depreciationRecordId={depreciation.id}
+                        assetCurrency={depreciation.amount.currency}
                         onDone={onRecordsChange}
                       />
                     )}
@@ -105,9 +109,11 @@ export const depreciationTypes = Object.entries(DepreciationType).map(([key, val
 
 function RecordDisposalButton({
   depreciationRecordId,
+  assetCurrency,
   onDone,
 }: {
   depreciationRecordId: string;
+  assetCurrency?: string | null;
   onDone?: () => void;
 }): ReactElement {
   const [opened, setOpened] = useState(false);
@@ -133,6 +139,7 @@ function RecordDisposalButton({
           close={() => setOpened(false)}
           onDone={onDone}
           depreciationRecordId={depreciationRecordId}
+          assetCurrency={assetCurrency}
         />
       )}
     </>

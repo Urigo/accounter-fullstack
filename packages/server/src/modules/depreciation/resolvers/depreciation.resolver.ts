@@ -4,6 +4,8 @@ import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { calculateTotalAmount } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import { resolveAssetLocalCost } from '../helpers/asset-cost.helper.js';
 import { validateDepreciationPercentage } from '../helpers/depreciation-categories.helper.js';
 import { DepreciationCategoriesProvider } from '../providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '../providers/depreciation.provider.js';
@@ -32,7 +34,15 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       try {
         const depreciationRecords = await injector
           .get(DepreciationProvider)
-          .updateDepreciationRecord(input);
+          .updateDepreciationRecord({
+            ...input,
+            // null clears the local cost override; leaving it out keeps the stored one
+            localAmount: input.localAmount ?? null,
+            clearLocalAmount: input.localAmount === null,
+            // null clears the asset account; leaving it out keeps the stored one
+            assetTaxCategoryId: input.assetTaxCategoryId ?? null,
+            clearAssetTaxCategoryId: input.assetTaxCategoryId === null,
+          });
 
         if (!depreciationRecords || depreciationRecords.length === 0) {
           return {
@@ -242,6 +252,33 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       }
       return formatFinancialAmount(amount.raw * -1, amount.currency);
     },
+    localAmount: async (dbDepreciationRecord, _, { injector }) => {
+      const [{ cost }, { defaultLocalCurrency }] = await Promise.all([
+        resolveAssetLocalCost(injector, dbDepreciationRecord),
+        injector.get(AdminContextProvider).getVerifiedAdminContext(),
+      ]);
+      return cost == null ? null : formatFinancialAmount(cost, defaultLocalCurrency);
+    },
+    assetTaxCategory: async (dbDepreciationRecord, _, { injector }) => {
+      if (!dbDepreciationRecord.asset_tax_category_id) {
+        return null;
+      }
+      const taxCategory = await injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByIdLoader.load(dbDepreciationRecord.asset_tax_category_id);
+      if (!taxCategory) {
+        throw new GraphQLError(
+          `Tax category with id ${dbDepreciationRecord.asset_tax_category_id} not found`,
+        );
+      }
+      return taxCategory;
+    },
+    localAmountOverride: dbDepreciationRecord =>
+      dbDepreciationRecord.local_amount == null ? null : Number(dbDepreciationRecord.local_amount),
+    exchangeRate: async (dbDepreciationRecord, _, { injector }) =>
+      (await resolveAssetLocalCost(injector, dbDepreciationRecord)).rate,
+    exchangeRateDate: async (dbDepreciationRecord, _, { injector }) =>
+      (await resolveAssetLocalCost(injector, dbDepreciationRecord)).rateDate,
     activationDate: dbDepreciationRecord => dbDepreciationRecord.activation_date,
     category: async (dbDepreciationRecord, _, { injector }) => {
       return injector
