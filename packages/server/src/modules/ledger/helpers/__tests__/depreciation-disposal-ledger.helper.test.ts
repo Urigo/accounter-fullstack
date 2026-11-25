@@ -451,7 +451,7 @@ describe('checkDisposalProceeds', () => {
         ],
       }),
     ).toBe(
-      `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 21,000.00 to its tax category "${CLEARING}" (-4,000.00 diff): book the refund with a credit-note document to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty (misc expenses don't stand in for a credit note)`,
+      `Sales and cost refunds of depreciated assets come to 25,000.00, but the charge credits 21,000.00 to its tax category "${CLEARING}" (-4,000.00 diff): book the refund with a credit-note document to the charge's tax category, or leave it to the refund record, which books it against the charge's counterparty`,
     );
   });
 });

@@ -327,6 +327,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         expectedProceeds,
         proceedsDisposals,
         counterpartyRefunds,
+        proceedsToAssetAccount,
       } = await generateDepreciationDisposalsLedger(
         disposals,
         charge,
@@ -348,7 +349,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         addDisposalEntry(entry);
       }
 
-      // the charge must carry the money for the sales and cost refunds booked to its tax category
+      // the charge must carry the money for the sales and cost refunds booked to its tax category:
+      // its documents only, when the tax category is the asset account, whose other movements
+      // (such as the refund of an asset that isn't depreciated) are meant to leave a balance there
+      const proceedsEntries = proceedsToAssetAccount ? accountingLedgerEntries : chargeEntries;
       if (proceedsAccountId && expectedProceeds != null) {
         if (hasForeignCurrencyRefunds(proceedsDisposals)) {
           // refunds entered in an asset's foreign currency are checked in that currency instead,
@@ -359,7 +363,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               proceedsAccountId,
               expectedProceeds,
               charge,
-              chargeEntries,
+              chargeEntries: proceedsEntries,
               injector,
             });
           for (const error of refundExchangeErrors) {
@@ -373,7 +377,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             expectedProceeds,
             proceedsAccountId,
             proceedsAccountName: await getLedgerAccountName(injector, proceedsAccountId),
-            chargeEntries,
+            chargeEntries: proceedsEntries,
           });
           if (error) {
             errors.add(error);

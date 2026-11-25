@@ -19,6 +19,9 @@
 - Only documents count as a credit note: misc expenses, transactions and fees crediting the tax
   category don't stand in for one, whatever the tax category is (the asset account included, which
   carries the charge's other movements).
+- A credit note to the asset account itself is checked against the charge's documents only: the
+  asset account's other movements (such as the refund of an asset that is not depreciated) are meant
+  to leave a balance there. A clearing tax category keeps every entry counted.
 - Booking both (a credit note crediting the asset account, and the refund record) counts the refund
   twice; the counterparty is left unbalanced, which the business balance reports.
 - Sales always take the charge's tax category; the yearly depreciation charge is unchanged.

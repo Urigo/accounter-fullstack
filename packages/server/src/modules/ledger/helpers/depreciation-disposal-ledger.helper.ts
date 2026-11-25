@@ -256,6 +256,14 @@ export type DisposalsLedger = {
    * the tax category): nothing to check here, the counterparty's balance checks them
    */
   counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[];
+  /**
+   * Whether the charge's tax category is the asset account of an event in `proceedsDisposals`. The
+   * asset account carries the charge's other movements too (e.g. a misc expense refunding an asset
+   * that is not depreciated), which are meant to leave a balance there, so the proceeds checks
+   * then count only the charge's documents. A clearing tax category keeps every entry counted, so
+   * that a stray credit to it is still caught.
+   */
+  proceedsToAssetAccount: boolean;
 };
 
 /**
@@ -272,7 +280,9 @@ export type DisposalsLedger = {
  *   refund's currency (its foreign currency when entered in one, else the local currency). The cost
  *   reduction is moved from there (Dr tax category / Cr asset), and the refund is checked with the
  *   sales in `expectedProceeds` (`checkDisposalProceeds`, or the in-currency check and exchange
- *   entry of `generateCostRefundExchangeLedger`, both against `chargeEntries`);
+ *   entry of `generateCostRefundExchangeLedger`). Those count every entry of the charge when the
+ *   tax category is a clearing account, but only its documents when it is the asset account (see
+ *   `proceedsToAssetAccount`);
  * - by the refund record itself, without such a document: the cost reduction is booked against
  *   `counterpartyAccountId`, the charge's main business (Dr counterparty / Cr asset, in the refund's
  *   currency), and settles against the money the charge receives from it. The refund is left out of
@@ -304,6 +314,7 @@ export async function generateDepreciationDisposalsLedger(
       expectedProceeds: null,
       proceedsDisposals: [],
       counterpartyRefunds: [],
+      proceedsToAssetAccount: false,
     };
   }
   const {
@@ -323,6 +334,7 @@ export async function generateDepreciationDisposalsLedger(
       expectedProceeds: null,
       proceedsDisposals: [],
       counterpartyRefunds: [],
+      proceedsToAssetAccount: false,
     };
   }
 
@@ -333,15 +345,31 @@ export async function generateDepreciationDisposalsLedger(
   let rowsMissing = false;
   const proceedsDisposals: IGetDepreciationDisposalsByIdsResult[] = [];
   const counterpartyRefunds: IGetDepreciationDisposalsByIdsResult[] = [];
+  let proceedsToAssetAccount = false;
   const documentCredits = new Map<string, ReturnType<typeof netCreditToAccount>>();
-  /** What the charge's documents net-credit to an account: in `currency`, else locally */
+  const localDocumentCredits = new Map<string, number>();
+  /**
+   * What the charge's documents net-credit to an account: in `currency`, else in local currency by
+   * the local-currency documents only (a foreign credit note covers refunds in its own currency)
+   */
   const documentCreditTo = (accountId: string, currency: Currency | null): number => {
+    if (!currency) {
+      let local = localDocumentCredits.get(accountId);
+      if (local == null) {
+        local = netCreditToAccount(
+          (documentEntries ?? []).filter(entry => entry.currency === defaultLocalCurrency),
+          accountId,
+        ).local;
+        localDocumentCredits.set(accountId, local);
+      }
+      return local;
+    }
     let credit = documentCredits.get(accountId);
     if (!credit) {
       credit = netCreditToAccount(documentEntries ?? [], accountId);
       documentCredits.set(accountId, credit);
     }
-    return currency ? (credit.foreign.get(currency) ?? 0) : credit.local;
+    return credit.foreign.get(currency) ?? 0;
   };
 
   for (const disposal of disposals) {
@@ -427,6 +455,7 @@ export async function generateDepreciationDisposalsLedger(
         continue;
       }
       proceedsDisposals.push(disposal);
+      proceedsToAssetAccount ||= assetAccountId === chargeProceedsAccountId;
       carriesMoney ||= disposal.type === 'SALE' || disposal.type === 'COST_REFUND';
       if (disposal.type === 'SALE') {
         expectedProceeds += result.proceeds;
@@ -445,6 +474,7 @@ export async function generateDepreciationDisposalsLedger(
     expectedProceeds: carriesMoney && !rowsMissing ? expectedProceeds : null,
     proceedsDisposals,
     counterpartyRefunds,
+    proceedsToAssetAccount,
   };
 }
 
@@ -475,7 +505,9 @@ function netLocalCredit(entries: readonly LedgerProto[], accountId: string): num
  * proceeds account is left with a balance. Returns a ledger error, or `null` when they match.
  *
  * `expectedProceeds` covers only the events booked to the proceeds account, not the cost refunds
- * booked by their record against the charge's counterparty.
+ * booked by their record against the charge's counterparty. When the proceeds account is the asset
+ * account, pass the charge's documents only as `chargeEntries`: the asset account's other movements
+ * are meant to leave a balance there (see `DisposalsLedger.proceedsToAssetAccount`).
  */
 export function checkDisposalProceeds(params: {
   expectedProceeds: number;

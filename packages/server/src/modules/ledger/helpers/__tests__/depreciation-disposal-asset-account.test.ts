@@ -20,7 +20,10 @@ import {
   generateDepreciationDisposalsLedger,
   getAssetAccountId,
 } from '../depreciation-disposal-ledger.helper.js';
-import { netCreditToAccount } from '../depreciation-refund-exchange-ledger.helper.js';
+import {
+  generateCostRefundExchangeLedger,
+  netCreditToAccount,
+} from '../depreciation-refund-exchange-ledger.helper.js';
 
 vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
@@ -43,6 +46,7 @@ const REFUND_CHARGE_ID = 'charge-refund';
 const CLEARING = 'tax-category-refund-clearing';
 const AD = 'tax-category-accumulated-depreciation';
 const CORRECTION = 'tax-category-depreciation-correction';
+const EXCHANGE_RATES = 'tax-category-exchange-rates';
 const SELLER = 'business-seller';
 const REFUND_DATE = '2024-04-14';
 
@@ -108,6 +112,7 @@ function makeInjector(
             disposalLossTaxCategoryId: 'tax-category-disposal-loss',
             correctionTaxCategoryId: CORRECTION,
           },
+          general: { taxCategories: { exchangeRateTaxCategoryId: EXCHANGE_RATES } },
         }),
       },
     ],
@@ -576,5 +581,112 @@ describe('a cost refund booked by its record', () => {
     expect(ledger.expectedProceeds).toBe(10_000);
     expect(ledger.proceedsDisposals).toEqual([laptopsRefund]);
     expect(ledger.counterpartyRefunds).toEqual([softwareRefund]);
+  });
+
+  it('chooses per refund currency: a USD credit note covers only the USD refund', async () => {
+    // the software's USD refund comes with a USD credit note; the laptops' ILS refund has no ILS
+    // credit note, so its record books it against the seller (the USD note's local value doesn't
+    // count for it)
+    const laptops = {
+      ...asset('laptops', '100000', 'category-software', 'tax-category-laptops'),
+      currency: 'ILS' as const,
+    };
+    const laptopsRefund: IGetDepreciationDisposalsByIdsResult = {
+      ...usdRefund('laptops', '0'),
+      disposed_cost: '10000',
+      original_amount: null,
+      original_currency: null,
+    };
+    const softwareRefund = refunds[0];
+    const events = [softwareRefund, laptopsRefund];
+    const usdCreditNote = usdEntry(SELLER, CLEARING, 16_000);
+    const entries = [usdCreditNote, usdEntry(BANK, SELLER, 16_000)];
+    const injector = makeInjector([assets[0], laptops], events);
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      events,
+      charge,
+      injector,
+      CLEARING,
+      entries,
+      SELLER,
+      [usdCreditNote],
+    );
+
+    expect(ledger.errors).toEqual([]);
+    expect(costReductions(ledger.entries)).toEqual([
+      [CLEARING, ACQUISITION, 59_200],
+      [SELLER, 'tax-category-laptops', 10_000],
+    ]);
+    expect(ledger.proceedsDisposals).toEqual([softwareRefund]);
+    expect(ledger.counterpartyRefunds).toEqual([laptopsRefund]);
+
+    // no mixed-events error: the USD refund is alone in the credit note's group
+    const exchange = await generateCostRefundExchangeLedger({
+      disposals: ledger.proceedsDisposals,
+      proceedsAccountId: CLEARING,
+      expectedProceeds: ledger.expectedProceeds!,
+      charge,
+      chargeEntries: entries,
+      injector,
+    });
+    expect(exchange.errors).toEqual([]);
+    // USD 16,000 credited at ₪3.650, moved out at ₪3.700
+    expect(rows(exchange.entries)).toEqual([[EXCHANGE_RATES, CLEARING, 800]]);
+  });
+
+  it('checks a credit note to the asset account against the documents only', async () => {
+    // the charge's tax category is A, credited by a USD credit invoice for exactly the software's
+    // refund, and by the unrelated misc expense (refunded receivables)
+    const softwareRefund = refunds[0];
+    const creditNote = usdEntry(SELLER, ACQUISITION, 16_000);
+    const entries = [creditNote, usdEntry(SELLER, ACQUISITION, 5000), usdEntry(BANK, SELLER, 21_000)];
+    const injector = makeInjector([assets[0]], [softwareRefund]);
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      [softwareRefund],
+      charge,
+      injector,
+      ACQUISITION,
+      entries,
+      SELLER,
+      [creditNote],
+    );
+
+    // the credit note reduced A: no cost-reduction row, only the correction
+    expect(ledger.errors).toEqual([]);
+    expect(rows(ledger.entries)).toEqual([[AD, CORRECTION, 7172]]);
+    expect(ledger.proceedsDisposals).toEqual([softwareRefund]);
+    expect(ledger.proceedsToAssetAccount).toBe(true);
+
+    // checked against the documents, the misc expense left in A
+    const exchange = await generateCostRefundExchangeLedger({
+      disposals: ledger.proceedsDisposals,
+      proceedsAccountId: ACQUISITION,
+      expectedProceeds: ledger.expectedProceeds!,
+      charge,
+      chargeEntries: [creditNote],
+      injector,
+    });
+    expect(exchange.errors).toEqual([]);
+    // A ends reduced by the cost reduction at the cost-basis rate: ₪58,400 + ₪800
+    expect(rows(exchange.entries)).toEqual([[EXCHANGE_RATES, ACQUISITION, 800]]);
+  });
+
+  it('keeps counting every entry for a clearing tax category', async () => {
+    const softwareRefund = refunds[0];
+    const creditNote = usdEntry(SELLER, CLEARING, 16_000);
+
+    const ledger = await generateDepreciationDisposalsLedger(
+      [softwareRefund],
+      charge,
+      makeInjector([assets[0]], [softwareRefund]),
+      CLEARING,
+      [creditNote],
+      SELLER,
+      [creditNote],
+    );
+
+    expect(ledger.proceedsToAssetAccount).toBe(false);
   });
 });

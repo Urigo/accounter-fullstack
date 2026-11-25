@@ -148,6 +148,7 @@ describe('generateLedgerRecordsForDepreciationExpenses', () => {
       expectedProceeds: null,
       proceedsDisposals: [],
       counterpartyRefunds: [],
+      proceedsToAssetAccount: false,
     });
 
     const { records, errors } = await generate(injector);
