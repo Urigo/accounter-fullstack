@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactElement } from 'react';
+import { useCallback, useId, useState, type ReactElement } from 'react';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useClient } from 'urql';
@@ -24,12 +24,15 @@ import { Spinner } from '../../../ui/spinner.js';
 
 type Props = {
   year: number;
-  /** Whether the report has blocking validation errors; such a report has no file to download. */
-  disabled?: boolean;
+  /**
+   * Why the file cannot be downloaded now (e.g. the report has blocking validation errors); the
+   * button is enabled when there is none.
+   */
+  disabledReason?: string;
 };
 
 /** Downloads the form 1214 file for upload to SHAAM (Windows-1255, as the server encoded it). */
-export function Form1214DownloadButton({ year, disabled }: Props): ReactElement {
+export function Form1214DownloadButton({ year, disabledReason }: Props): ReactElement {
   const client = useClient();
   const [fetching, setFetching] = useState(false);
 
@@ -68,18 +71,24 @@ export function Form1214DownloadButton({ year, disabled }: Props): ReactElement 
     }
   }, [client, year]);
 
-  // The title sits on a wrapper: a disabled button has `pointer-events: none` and never shows it
+  const reasonId = useId();
   return (
-    <span title={disabled ? 'Resolve the blocking issues to download the file' : undefined}>
+    <span className="flex items-center gap-2">
       <Button
         variant="outline"
         className="flex items-center gap-2"
         onClick={download}
-        disabled={disabled || fetching}
+        disabled={!!disabledReason || fetching}
+        aria-describedby={disabledReason ? reasonId : undefined}
       >
         {fetching ? <Spinner /> : <Download className="h-4 w-4" />}
         Download file
       </Button>
+      {disabledReason && (
+        <span id={reasonId} className="text-xs text-muted-foreground">
+          {disabledReason}
+        </span>
+      )}
     </span>
   );
 }

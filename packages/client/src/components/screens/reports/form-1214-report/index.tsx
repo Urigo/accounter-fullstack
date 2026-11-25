@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from 'urql';
+import { useQuery, type CombinedError } from 'urql';
 import {
   Form1214ReportScreenDocument,
   Form1214SupportedYearsDocument,
 } from '../../../../gql/graphql.js';
+import { SUPPRESS_ERROR_TOAST_CONTEXT } from '../../../../providers/urql-error-handler.js';
 import { AccounterSpinner } from '../../../ui/accounter-spinner.js';
 import { Alert, AlertDescription, AlertTitle } from '../../../ui/alert.js';
-import { Card, CardHeader, CardTitle } from '../../../ui/card.js';
+import { Card, CardHeader } from '../../../ui/card.js';
 import { Label } from '../../../ui/label.js';
 import {
   Select,
@@ -16,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
+import { Spinner } from '../../../ui/spinner.js';
 import { Form1214DownloadButton } from './download-button.js';
+import { Form1214ReportProvider } from './report-context.js';
 import { Form1214ReportSections } from './report-sections.js';
 import { Form1214ValidationPanel } from './validation-panel.js';
 import { resolveForm1214Year, sortForm1214Years } from './years.js';
@@ -47,6 +50,15 @@ import { resolveForm1214Year, sortForm1214Years } from './years.js';
   }
 `;
 
+// The page shows its own errors inline: skip the client-wide error toast, so one failure is not
+// reported twice. Module-level, so the queries' context keeps its identity across renders.
+const QUERY_CONTEXT = SUPPRESS_ERROR_TOAST_CONTEXT;
+
+/** The error's message, without urql's "[GraphQL] " / "[Network] " prefix. */
+function errorMessage(error: CombinedError): string {
+  return error.graphQLErrors[0]?.message ?? error.networkError?.message ?? error.message;
+}
+
 /**
  * The annual company report (form 1214) of the active business: its validation, the data it is
  * built from and the file to upload to SHAAM. The year lives in the URL (`?year=`), so the annual
@@ -59,6 +71,7 @@ export function Form1214Report(): ReactElement {
 
   const [{ data: yearsData, fetching: yearsFetching, error: yearsError }] = useQuery({
     query: Form1214SupportedYearsDocument,
+    context: QUERY_CONTEXT,
   });
   const supportedYears = useMemo(
     () => sortForm1214Years(yearsData?.report1214SupportedYears ?? []),
@@ -67,54 +80,79 @@ export function Form1214Report(): ReactElement {
   const yearParam = searchParams.get('year');
   const selectedYear = resolveForm1214Year(yearParam, supportedYears);
 
-  // Keeps `?year=` and the hash (a section anchor) together: `setSearchParams` would drop the hash
-  const setYearInUrl = useCallback(
-    (year: number) => {
-      const next = new URLSearchParams(location.search);
-      next.set('year', String(year));
-      navigate({ search: `?${next.toString()}`, hash: location.hash }, { replace: true });
-    },
-    [location.search, location.hash, navigate],
-  );
-
-  // A missing or unsupported `?year=` falls back to the latest supported year: show it in the URL
+  // A missing or unsupported `?year=` falls back to the latest supported year: show it in the URL.
+  // The hash (a section anchor) is kept; `setSearchParams` would drop it.
   useEffect(() => {
     if (selectedYear !== undefined && yearParam !== String(selectedYear)) {
-      setYearInUrl(selectedYear);
+      const next = new URLSearchParams(location.search);
+      next.set('year', String(selectedYear));
+      navigate({ search: `?${next.toString()}`, hash: location.hash }, { replace: true });
     }
-  }, [selectedYear, yearParam, setYearInUrl]);
+  }, [selectedYear, yearParam, location.search, location.hash, navigate]);
+
+  // A year picked by hand starts at the top of the page: the section anchor is dropped
+  const selectYear = useCallback(
+    (year: string) => {
+      const next = new URLSearchParams(location.search);
+      next.set('year', year);
+      navigate({ search: `?${next.toString()}` }, { replace: true });
+    },
+    [location.search, navigate],
+  );
 
   // The report omits `ownerId`: the server reports on the active business, the only one whose 1214
   // data can be edited
-  const [{ data, fetching, error }] = useQuery({
+  const [{ data, fetching, error }, reexecute] = useQuery({
     query: Form1214ReportScreenDocument,
     variables: { year: selectedYear ?? 0 },
     pause: selectedYear === undefined,
+    context: QUERY_CONTEXT,
   });
+  const refresh = useCallback(() => reexecute({ requestPolicy: 'network-only' }), [reexecute]);
+  // urql keeps the previous result while another year loads: never show one year as another
   const report = data?.report1214.year === selectedYear ? data?.report1214 : undefined;
 
   // The sections render only once the report loads, after the browser looked for the hash's
-  // element: scroll to it then
+  // element: scroll to it then, once per hash, so a refresh does not scroll the page back
   const hasReport = !!report;
+  const scrolledHash = useRef<string | null>(null);
   useEffect(() => {
-    if (hasReport && location.hash) {
-      document.getElementById(location.hash.slice(1))?.scrollIntoView();
+    if (hasReport && location.hash && scrolledHash.current !== location.hash) {
+      const element = document.getElementById(location.hash.slice(1));
+      if (element) {
+        scrolledHash.current = location.hash;
+        element.scrollIntoView();
+      }
     }
   }, [hasReport, location.hash]);
+
+  const loadError = yearsError ?? error;
+  let disabledReason: string | undefined;
+  if (!report) {
+    disabledReason = loadError ? 'Could not load the report' : 'Loading';
+  } else if (!report.validation.isValid) {
+    disabledReason = 'Resolve the blocking issues';
+  }
 
   return (
     <div className="container mx-auto space-y-4 p-4">
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-2xl">Form 1214: annual company report</CardTitle>
+            <h1 className="text-2xl font-semibold">Form 1214: annual company report</h1>
             {report && <p className="text-sm text-muted-foreground">{report.owner.name}</p>}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {report && fetching && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Spinner />
+                Refreshing…
+              </span>
+            )}
             <Label htmlFor="form-1214-year">Tax year</Label>
             <Select
-              value={selectedYear === undefined ? undefined : String(selectedYear)}
-              onValueChange={value => setYearInUrl(Number.parseInt(value, 10))}
+              value={selectedYear ? String(selectedYear) : ''}
+              onValueChange={selectYear}
               disabled={supportedYears.length === 0}
             >
               <SelectTrigger id="form-1214-year" className="w-28">
@@ -129,31 +167,36 @@ export function Form1214Report(): ReactElement {
               </SelectContent>
             </Select>
             {selectedYear !== undefined && (
-              <Form1214DownloadButton year={selectedYear} disabled={!report?.validation.isValid} />
+              <Form1214DownloadButton year={selectedYear} disabledReason={disabledReason} />
             )}
           </div>
         </CardHeader>
       </Card>
 
-      {yearsError || error ? (
+      {loadError && (
         <Alert variant="destructive">
           <AlertTitle>Failed to load the 1214 report</AlertTitle>
-          <AlertDescription>{(yearsError ?? error)?.message}</AlertDescription>
+          <AlertDescription>{errorMessage(loadError)}</AlertDescription>
         </Alert>
-      ) : !yearsFetching && supportedYears.length === 0 ? (
+      )}
+      {!loadError && !yearsFetching && supportedYears.length === 0 && (
         <Alert>
           <AlertTitle>No supported tax years</AlertTitle>
           <AlertDescription>Form 1214 cannot be generated for any tax year yet.</AlertDescription>
         </Alert>
-      ) : yearsFetching || fetching || !report ? (
-        <div className="flex justify-center p-8">
-          <AccounterSpinner className="size-24" />
-        </div>
-      ) : (
-        <>
+      )}
+      {report ? (
+        <Form1214ReportProvider year={report.year} refresh={refresh}>
           <Form1214ValidationPanel validation={report.validation} />
           <Form1214ReportSections report={report} />
-        </>
+        </Form1214ReportProvider>
+      ) : (
+        !loadError &&
+        (yearsFetching || selectedYear !== undefined) && (
+          <div className="flex justify-center p-8">
+            <AccounterSpinner className="size-24" />
+          </div>
+        )
       )}
     </div>
   );
