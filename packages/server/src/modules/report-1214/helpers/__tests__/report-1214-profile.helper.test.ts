@@ -133,10 +133,23 @@ describe('normalizeReport1214ProfileInput', () => {
     expect(form6111Obligation.toGql('bogus')).toBeNull();
   });
 
-  it('rejects reportable positions out of range or more than 5', () => {
+  it('rejects reportable positions out of 1-999', () => {
     badUserInput(() => normalize({ declarations: { reportablePositions: [0] } }));
     badUserInput(() => normalize({ declarations: { reportablePositions: [1000] } }));
-    badUserInput(() => normalize({ declarations: { reportablePositions: [1, 2, 3, 4, 5, 6] } }));
+  });
+
+  it('stores more reportable positions than the form allows as is (the generator reports it)', () => {
+    const positions = [1, 2, 3, 4, 5, 6];
+    expect(
+      normalize({ declarations: { reportablePositions: positions } }).declarations,
+    ).toEqual({ reportablePositions: positions });
+    expect(
+      badUserInput(() =>
+        normalize({
+          declarations: { reportablePositions: Array.from({ length: 51 }, (_, i) => i + 1) },
+        }),
+      ).message,
+    ).toMatch(/^declarations\.reportablePositions exceeds the size limit of 50 items/);
   });
 
   it('validates digit-only file numbers and the bank account', () => {
@@ -165,7 +178,7 @@ describe('normalizeReport1214ProfileInput', () => {
     ).toMatch(/^company\.registeredName must be at most 200 characters/);
   });
 
-  it('converts related companies and caps them at 3', () => {
+  it('converts related companies', () => {
     const { relatedCompanies } = normalize({
       relatedCompanies: [
         { companyName: ' Sub ', relationType: 'SUBSIDIARY', companyFileNumber: null },
@@ -192,20 +205,35 @@ describe('normalizeReport1214ProfileInput', () => {
     ]);
 
     const company = { companyName: 'X', relationType: 'OTHER' as const };
-    expect(
-      badUserInput(() => normalize({ relatedCompanies: [company, company, company, company] }))
-        .message,
-    ).toMatch(/^At most 3 related companies/);
     badUserInput(() => normalize({ relatedCompanies: [{ ...company, companyName: ' ' }] }));
   });
 
-  it('caps R&D investments at 5', () => {
-    const investment = { companyName: 'Lab', investmentAmount: 1000 };
-    expect(normalize({ rdInvestments: [investment] }).rdInvestments).toEqual([investment]);
+  it('stores more related companies and R&D investments than the form allows as is', () => {
+    const company = { companyName: 'X', relationType: 'OTHER' as const };
     expect(
-      badUserInput(() => normalize({ rdInvestments: Array.from({ length: 6 }, () => investment) }))
+      normalize({ relatedCompanies: Array.from({ length: 4 }, () => company) }).relatedCompanies,
+    ).toEqual(Array.from({ length: 4 }, () => ({ companyName: 'X', relationType: 'other' })));
+    const investment = { companyName: 'Lab', investmentAmount: 1000 };
+    expect(
+      normalize({ rdInvestments: Array.from({ length: 6 }, () => investment) }).rdInvestments,
+    ).toEqual(Array.from({ length: 6 }, () => investment));
+  });
+
+  it('refuses lists over the 50-item size limit', () => {
+    const company = { companyName: 'X', relationType: 'OTHER' as const };
+    expect(
+      badUserInput(() =>
+        normalize({ relatedCompanies: Array.from({ length: 51 }, () => company) }),
+      ).message,
+    ).toMatch(/^relatedCompanies exceeds the size limit of 50 items \(got 51\)/);
+    const investment = { companyName: 'Lab', investmentAmount: 1000 };
+    expect(
+      badUserInput(() => normalize({ rdInvestments: Array.from({ length: 51 }, () => investment) }))
         .message,
-    ).toMatch(/^At most 5 R&D investments/);
+    ).toMatch(/^rdInvestments exceeds the size limit of 50 items/);
+    expect(
+      normalize({ rdInvestments: Array.from({ length: 50 }, () => investment) }).rdInvestments,
+    ).toHaveLength(50);
   });
 });
 
@@ -238,9 +266,39 @@ describe('amount overrides', () => {
     expect(layoutYear).toBe(YEAR);
     const codes = getLayout(YEAR).records['1000'].codes;
     expect(inputCodes.size + derivedCodes.size).toBe(codes.length);
-    expect(derivedCodes.has('008')).toBe(true);
     expect(inputCodes.has('072')).toBe(true);
     expect(inputCodes.has('008')).toBe(false);
+  });
+
+  it('derives exactly the codes the generator computes (SPEC §7.4)', () => {
+    for (const year of supportedTaxYears()) {
+      expect([...amountOverrideCodes(year).derivedCodes].sort()).toEqual([
+        '008',
+        '028',
+        '273',
+        '277',
+        '278',
+        '280',
+        '297',
+      ]);
+    }
+  });
+
+  it('accepts the enum codes 018 and 263', () => {
+    expect(
+      normalizeAmountOverrides(
+        [
+          { code: '018', amount: 4 },
+          { code: '263', amount: 1 },
+        ],
+        YEAR,
+      ),
+    ).toEqual({ '018': 4, '263': 1 });
+  });
+
+  it('keeps an override of 0, which suppresses a code that does not allow zero', () => {
+    expect(normalizeAmountOverrides([{ code: '072', amount: 0 }], YEAR)).toEqual({ '072': 0 });
+    expect(amountOverridesToGql({ '072': 0 })).toEqual([{ code: '072', amount: 0 }]);
   });
 
   it('falls back to the latest supported layout for a year without one', () => {

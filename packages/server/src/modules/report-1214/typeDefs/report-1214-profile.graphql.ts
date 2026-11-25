@@ -38,9 +38,9 @@ export default gql`
     capitalGainsSummary: Report1214CapitalGainsSummary
     " Purchase of a qualifying company (part A of the form); null when none is stored "
     qualifyingCompany: Report1214QualifyingCompany
-    " Related companies in Israel or abroad (records 1010, at most 3) "
+    " Related companies in Israel or abroad (records 1010). The form allows 3; the report validation reports more "
     relatedCompanies: [Report1214RelatedCompany!]!
-    " Investments in R&D companies (records 1030, at most 5) "
+    " Investments in R&D companies (records 1030). The form allows 5; the report validation reports more "
     rdInvestments: [Report1214RdInvestment!]!
     " Record 1000 amounts entered by hand, by code; they win over computed amounts "
     amountOverrides: [Report1214AmountOverride!]!
@@ -73,7 +73,7 @@ export default gql`
   }
 
   " Whether the company must file form 6111 (field 834) "
-  enum Form6111Obligation {
+  enum Report1214Form6111Obligation {
     OBLIGED
     NOT_OBLIGED
     NOT_RELEVANT
@@ -130,10 +130,10 @@ export default gql`
     directorsReceivedOpinion: Boolean
     " 1030, required "
     tookReportablePosition: Boolean
-    " 1034-1046: up to 5 reportable position numbers (form 1346) "
+    " 1034-1046: reportable position numbers (form 1346); the form allows 5 "
     reportablePositions: [Int!]
     " 834 "
-    form6111Obligation: Form6111Obligation
+    form6111Obligation: Report1214Form6111Obligation
     " 835 "
     financialStatementsAttached: Boolean
     " 836-837 "
@@ -264,6 +264,7 @@ export default gql`
   type Report1214AmountOverride {
     " 3-digit record 1000 code "
     code: String!
+    " The amount. 0 is kept: for a code that does not allow zero, the report then leaves the code out "
     amount: Float!
   }
 
@@ -277,9 +278,9 @@ export default gql`
     otherTaxableIncome: Report1214OtherTaxableIncomeInput
     capitalGainsSummary: Report1214CapitalGainsSummaryInput
     qualifyingCompany: Report1214QualifyingCompanyInput
-    " At most 3 "
+    " The form allows 3 (the report validation reports more); at most 50 are stored "
     relatedCompanies: [Report1214RelatedCompanyInput!]
-    " At most 5 "
+    " The form allows 5 (the report validation reports more); at most 50 are stored "
     rdInvestments: [Report1214RdInvestmentInput!]
     " Record 1000 input codes of the tax year, each at most once; derived codes are refused "
     amountOverrides: [Report1214AmountOverrideInput!]
@@ -332,9 +333,9 @@ export default gql`
     appliesAccountingStandards: Boolean
     directorsReceivedOpinion: Boolean
     tookReportablePosition: Boolean
-    " Up to 5 position numbers, 1-999 "
+    " Position numbers, 1-999 each. The form allows 5 (the report validation reports more); at most 50 are stored "
     reportablePositions: [Int!]
-    form6111Obligation: Form6111Obligation
+    form6111Obligation: Report1214Form6111Obligation
     financialStatementsAttached: Boolean
     familyCompany: Report1214FamilyCompanyInput
     isHouseCompany: Boolean
@@ -445,6 +446,7 @@ export default gql`
   input Report1214AmountOverrideInput {
     " 3-digit record 1000 code "
     code: String!
+    " The amount. 0 is meaningful: for a code that does not allow zero, it suppresses the code in the report "
     amount: Float!
   }
 `;

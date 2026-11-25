@@ -36,8 +36,9 @@ export const report1214ProfileResolvers: Report_1214Module.Resolvers = {
     ) => {
       try {
         assertReport1214Year(year);
-        const patch = normalizeReport1214ProfileInput(input, year);
+        // access first: a caller without it gets FORBIDDEN, not input errors
         const ownerId = await resolveReport1214Owner(injector, requestedOwnerId, 'write');
+        const patch = normalizeReport1214ProfileInput(input, year);
         const row = await injector
           .get(Report1214ProfileProvider)
           .upsertProfile(ownerId, year, patch);
@@ -49,8 +50,6 @@ export const report1214ProfileResolvers: Report_1214Module.Resolvers = {
   },
   Report1214Profile: {
     id: profile => `${profile.ownerId}:${profile.year}`,
-    ownerId: profile => profile.ownerId,
-    year: profile => profile.year,
     company: profile => profile.company,
     declarations: profile => declarationsToGql(profile.declarations),
     preparer: profile => emptyToNull(profile.preparer),

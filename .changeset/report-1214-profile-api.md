@@ -12,6 +12,8 @@ qualifying company, related companies, R&D investments and record 1000 amount ov
 omitted block is kept, a provided block replaces the stored one, and `null` clears it. Blocks are
 stored in the input shape of `@accounter/opcn1214-generator`. Invalid input is rejected with
 `BAD_USER_INPUT` naming the field: unknown phone prefixes, phone numbers that are not 7 digits,
-non-digit file numbers, more than 3 related companies or 5 R&D investments, and amount codes that
-are unknown, repeated or derived by the report. `ownerId` defaults to the caller's active
+non-digit file numbers, lists over a 50-item size limit, and amount codes that are unknown,
+repeated or derived by the report. The form's own limits (3 related companies, 5 R&D investments, 5
+reportable positions) are not enforced on save; the report validation reports them. An amount
+override of 0 is kept, which leaves a code that does not allow zero out of the report. `ownerId` defaults to the caller's active
 business, and writes to any other business are refused with `FORBIDDEN`.
