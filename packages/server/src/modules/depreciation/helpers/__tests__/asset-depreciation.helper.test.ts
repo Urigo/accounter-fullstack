@@ -6,6 +6,7 @@ import {
   calculateDepreciation,
   computeCostRefund,
   computeDisposal,
+  depreciatesOnOrAfter,
   depreciationEndDate,
   remainingAssetCost,
   validateAssetDisposals,
@@ -1330,5 +1331,87 @@ describe('depreciationEndDate (C4)', () => {
         }
       }
     });
+  });
+});
+
+describe('depreciatesOnOrAfter', () => {
+  // 25% from 2024-07-01 ends on 2028-06-30
+  const activation = d('2024-07-01');
+
+  it('keeps an asset whose end date is exactly on the start of the period', () => {
+    expect(depreciatesOnOrAfter(25, activation, d('2028-06-30'))).toBe(true);
+    expect(depreciatesOnOrAfter(25, activation, d('2028-01-01'))).toBe(true);
+  });
+
+  it('drops an asset whose end date is the day before the start of the period', () => {
+    expect(depreciatesOnOrAfter(25, activation, d('2028-07-01'))).toBe(false);
+    expect(depreciatesOnOrAfter(25, d('2024-01-01'), d('2028-01-01'))).toBe(false);
+  });
+
+  it('keeps a record in a category that is not depreciated (0%)', () => {
+    expect(depreciatesOnOrAfter(0, activation, d('2099-01-01'))).toBe(true);
+  });
+});
+
+describe('cumulative rounding across event kinds', () => {
+  const asset = { cost: 100_000, depreciationRate: 25, activationDate: d('2024-07-01') };
+
+  it('rounds sales and refunds together, so a full removal lands on the rounded cost', () => {
+    const events: AssetDisposalInput[] = [
+      { id: 'a', kind: 'SALE', disposalDate: d('2025-03-01'), disposedCost: 33_333.4, proceeds: 1 },
+      {
+        id: 'b',
+        kind: 'COST_REFUND',
+        disposalDate: d('2025-06-01'),
+        disposedCost: 33_333.3,
+        proceeds: 0,
+      },
+      {
+        id: 'c',
+        kind: 'COST_REFUND',
+        refundMode: 'FROM_REFUND_DATE',
+        disposalDate: d('2025-09-01'),
+        disposedCost: 33_333.3,
+        proceeds: 0,
+      },
+    ];
+    expect(validateAssetDisposals(asset, events)).toEqual([]);
+    expect(remainingAssetCost(asset, events)).toBe(0);
+    const year = calculateAssetYear(asset, events, 2025);
+    // slices: round(33,333.4) = 33,333; round(66,666.7) − 33,333 = 33,334; 100,000 − 66,667
+    expect(year.disposedCost).toBe(33_333);
+    expect(year.costRefunds.map(refund => refund.costReduction)).toEqual([33_334, 33_333]);
+    expect(year.closingCost).toBe(0);
+  });
+
+  it("checks a refund's slice against the cost still on the books", () => {
+    const events: AssetDisposalInput[] = [
+      { id: 'a', kind: 'SALE', disposalDate: d('2025-03-01'), disposedCost: 60_000.4, proceeds: 1 },
+      {
+        id: 'b',
+        kind: 'COST_REFUND',
+        disposalDate: d('2025-06-01'),
+        disposedCost: 40_000.2,
+        proceeds: 0,
+      },
+    ];
+    // round(100,000.6) − 60,000 = 40,001 against 40,000 left
+    expect(validateAssetDisposals(asset, events)).toEqual([
+      'The refunded amount (40001) exceeds the cost still on the books on 2025-06-01 (40000), both rounded to whole shekels',
+    ]);
+  });
+
+  it('rejects a refunded amount that is not positive', () => {
+    expect(
+      validateAssetDisposals(asset, [
+        {
+          id: 'a',
+          kind: 'COST_REFUND',
+          disposalDate: d('2025-06-01'),
+          disposedCost: -5,
+          proceeds: 0,
+        },
+      ]),
+    ).toEqual(['The refunded amount must be positive']);
   });
 });
