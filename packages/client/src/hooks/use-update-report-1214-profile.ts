@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import {
   UpdateReport1214ProfileDocument,
   type UpdateReport1214ProfileMutation,
@@ -15,17 +16,17 @@ import { useApiMutation } from './use-api-mutation.js';
   }
 `;
 
-type UpdateReport1214ProfileVariables = UpdateReport1214ProfileMutationVariables & {
-  /** What is being saved, for the notifications (e.g. "company details"). */
-  blockName: string;
-};
-
 type UseUpdateReport1214Profile = {
   fetching: boolean;
-  /** The message of the last failed save, as the server phrased it. */
-  errorMessage: string | undefined;
-  /** Saves the given profile blocks; resolves to `true` once saved. */
-  updateReport1214Profile: (variables: UpdateReport1214ProfileVariables) => Promise<boolean>;
+  /**
+   * Saves the given profile blocks; resolves to `true` once saved. `blockName` names what is saved
+   * in the notifications (e.g. "company details"). A failure is reported by the error toast, which
+   * carries the server's message.
+   */
+  updateReport1214Profile: (
+    variables: UpdateReport1214ProfileMutationVariables,
+    blockName: string,
+  ) => Promise<boolean>;
 };
 
 /**
@@ -34,29 +35,32 @@ type UseUpdateReport1214Profile = {
  * the active business's profile only.
  */
 export const useUpdateReport1214Profile = (): UseUpdateReport1214Profile => {
-  const { fetching, error, execute } = useApiMutation<
+  // Read by the notification callbacks, which only get the GraphQL variables
+  const blockName = useRef('profile');
+  const { fetching, execute } = useApiMutation<
     UpdateReport1214ProfileMutation,
-    UpdateReport1214ProfileVariables,
+    UpdateReport1214ProfileMutationVariables,
     undefined,
     true
   >({
     document: UpdateReport1214ProfileDocument,
-    notificationId: variables => `updateReport1214Profile-${variables.year}-${variables.blockName}`,
-    loadingMessage: variables => `Saving the form 1214 ${variables.blockName}`,
-    errorMessage: variables => `Error saving the form 1214 ${variables.blockName}`,
-    // The server's message names the field it rejected: show it as is
-    errorDescription: (e, variables) =>
-      e instanceof Error ? e.message : `Error saving the form 1214 ${variables.blockName}`,
+    notificationId: variables => `updateReport1214Profile-${variables.year}-${blockName.current}`,
+    loadingMessage: () => `Saving the form 1214 ${blockName.current}`,
+    errorMessage: () => `Error saving the form 1214 ${blockName.current}`,
     select: () => true,
     successToast: (_result, variables) => ({
       title: 'Saved',
-      description: `The form 1214 ${variables.blockName} for ${variables.year} were saved`,
+      description: `The form 1214 ${blockName.current} for ${variables.year} were saved`,
     }),
   });
 
-  return {
-    fetching,
-    errorMessage: error ? (error.graphQLErrors[0]?.message ?? error.message) : undefined,
-    updateReport1214Profile: async variables => (await execute(variables)) === true,
-  };
+  const updateReport1214Profile = useCallback(
+    async (variables: UpdateReport1214ProfileMutationVariables, name: string) => {
+      blockName.current = name;
+      return (await execute(variables)) === true;
+    },
+    [execute],
+  );
+
+  return { fetching, updateReport1214Profile };
 };

@@ -46,15 +46,17 @@ export function Form1214CompanyEditor({
     defaultValues: defaults,
   });
   const { markSaved, cancel } = useResetAfterSave(form, defaults);
-  const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  const { updateReport1214Profile, fetching } = useUpdateReport1214Profile();
   useReportDirtyState('company', form.formState.isDirty);
 
   const onSubmit = async (values: CompanyFormState): Promise<void> => {
-    const saved = await updateReport1214Profile({
-      year,
-      input: { company: companyFormToInput(values) },
-      blockName: 'company details',
-    });
+    const saved = await updateReport1214Profile(
+      {
+        year,
+        input: { company: companyFormToInput(values) },
+      },
+      'company details',
+    );
     if (saved) {
       markSaved(values);
       refresh();
@@ -65,66 +67,64 @@ export function Form1214CompanyEditor({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <h3 className="font-semibold">Company details</h3>
-          <p className="text-sm text-muted-foreground">
-            Leave a field empty to use the value from the books.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextField
-            control={control}
-            name="registeredName"
-            label="Registered name"
-            placeholder={`${FROM_BOOKS} (business name)`}
-          />
-          <TextField
-            control={control}
-            name="withholdingFileNumber"
-            label="Withholding file number"
-            placeholder={FROM_BOOKS}
-            inputMode="numeric"
-          />
-          <PhoneFields control={control} name="phone" label="Phone" placeholder={FROM_BOOKS} />
-          <PhoneFields control={control} name="fax" label="Fax" placeholder="Not reported" />
-          <TextField
-            control={control}
-            name="email"
-            label="Email"
-            placeholder={FROM_BOOKS}
-            inputMode="email"
-          />
-          <TextField
-            control={control}
-            name="occupationDescription"
-            label="Occupation description"
-            placeholder="Not reported"
-          />
-          <TextField
-            control={control}
-            name="mailingAddress"
-            label="Mailing address"
-            placeholder={`${FROM_BOOKS} (business address)`}
-          />
-          <TextField
-            control={control}
-            name="businessAddress"
-            label="Business address"
-            placeholder={`${FROM_BOOKS} (business address)`}
-          />
-          <TextField
-            control={control}
-            name="booksAddress"
-            label="Where the books are kept"
-            placeholder="Not reported"
-          />
-        </div>
-        <EditorActions
-          isDirty={form.formState.isDirty}
-          saving={fetching}
-          errorMessage={errorMessage}
-          onCancel={cancel}
-        />
+        {/* No edits while a save is in flight: they would be lost when the saved block lands */}
+        <fieldset disabled={fetching} className="min-w-0 space-y-4">
+          <div>
+            <h3 className="font-semibold">Company details</h3>
+            <p className="text-sm text-muted-foreground">
+              Leave a field empty to use the value from the books.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TextField
+              control={control}
+              name="registeredName"
+              label="Registered name"
+              placeholder={`${FROM_BOOKS} (business name)`}
+            />
+            <TextField
+              control={control}
+              name="withholdingFileNumber"
+              label="Withholding file number"
+              placeholder={FROM_BOOKS}
+              inputMode="numeric"
+            />
+            <PhoneFields control={control} name="phone" label="Phone" placeholder={FROM_BOOKS} />
+            <PhoneFields control={control} name="fax" label="Fax" placeholder="Not reported" />
+            <TextField
+              control={control}
+              name="email"
+              label="Email"
+              placeholder={FROM_BOOKS}
+              inputMode="email"
+            />
+            <TextField
+              control={control}
+              name="occupationDescription"
+              label="Occupation description"
+              placeholder="Not reported"
+            />
+            <TextField
+              control={control}
+              name="mailingAddress"
+              label="Mailing address"
+              placeholder={`${FROM_BOOKS} (business address)`}
+            />
+            <TextField
+              control={control}
+              name="businessAddress"
+              label="Business address"
+              placeholder={`${FROM_BOOKS} (business address)`}
+            />
+            <TextField
+              control={control}
+              name="booksAddress"
+              label="Where the books are kept"
+              placeholder="Not reported"
+            />
+          </div>
+        </fieldset>
+        <EditorActions isDirty={form.formState.isDirty} saving={fetching} onCancel={cancel} />
       </form>
     </Form>
   );
@@ -148,15 +148,17 @@ export function Form1214PreparerEditor({
     defaultValues: defaults,
   });
   const { markSaved, cancel } = useResetAfterSave(form, defaults);
-  const { updateReport1214Profile, fetching, errorMessage } = useUpdateReport1214Profile();
+  const { updateReport1214Profile, fetching } = useUpdateReport1214Profile();
   useReportDirtyState('preparer', form.formState.isDirty);
 
   const onSubmit = async (values: PreparerFormState): Promise<void> => {
-    const saved = await updateReport1214Profile({
-      year,
-      input: { preparer: preparerFormToInput(values) },
-      blockName: 'preparer details',
-    });
+    const saved = await updateReport1214Profile(
+      {
+        year,
+        input: { preparer: preparerFormToInput(values) },
+      },
+      'preparer details',
+    );
     if (saved) {
       markSaved(values);
       refresh();
@@ -167,35 +169,33 @@ export function Form1214PreparerEditor({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <Separator />
-        <div>
-          <h3 className="font-semibold">Report preparer</h3>
-          <p className="text-sm text-muted-foreground">
-            The person or office that helped fill in the report. Leave every field empty when there
-            is none.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextField control={control} name="officeName" label="Office name" />
-          <TextField control={control} name="contactName" label="Contact person" />
-          <TextField control={control} name="name" label="Preparer name" />
-          <TextField control={control} name="profession" label="Profession" />
-          <TextField
-            control={control}
-            name="licensedDealerNumber"
-            label="Licensed dealer number"
-            placeholder="Up to 9 digits"
-            inputMode="numeric"
-          />
-          <TextField control={control} name="address" label="Address" />
-          <PhoneFields control={control} name="phone" label="Phone" />
-        </div>
-        <EditorActions
-          isDirty={form.formState.isDirty}
-          saving={fetching}
-          errorMessage={errorMessage}
-          onCancel={cancel}
-        />
+        {/* No edits while a save is in flight: they would be lost when the saved block lands */}
+        <fieldset disabled={fetching} className="min-w-0 space-y-4">
+          <Separator />
+          <div>
+            <h3 className="font-semibold">Report preparer</h3>
+            <p className="text-sm text-muted-foreground">
+              The person or office that helped fill in the report. Leave every field empty when
+              there is none.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TextField control={control} name="officeName" label="Office name" />
+            <TextField control={control} name="contactName" label="Contact person" />
+            <TextField control={control} name="name" label="Preparer name" />
+            <TextField control={control} name="profession" label="Profession" />
+            <TextField
+              control={control}
+              name="licensedDealerNumber"
+              label="Licensed dealer number"
+              placeholder="Up to 9 digits"
+              inputMode="numeric"
+            />
+            <TextField control={control} name="address" label="Address" />
+            <PhoneFields control={control} name="phone" label="Phone" />
+          </div>
+        </fieldset>
+        <EditorActions isDirty={form.formState.isDirty} saving={fetching} onCancel={cancel} />
       </form>
     </Form>
   );
