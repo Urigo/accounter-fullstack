@@ -691,6 +691,80 @@ export default gql`
     counter: Int!
   }
 
+  # ── Bank Leumi ───────────────────────────────────────────────────────────────
+
+  " Input for a Bank Leumi shekel account transaction "
+  input LeumiIlsTransactionInput {
+    " Full account number, as set up in the financial accounts "
+    accountNumber: String!
+    " Transaction date (YYYY-MM-DD) "
+    date: String!
+    " Value date (YYYY-MM-DD) "
+    effectiveDate: String!
+    " Signed amount: negative for a debit "
+    amount: Float!
+    credit: Float!
+    debit: Float!
+    description: String!
+    additionalData: String
+    " Account balance after this transaction "
+    runningBalance: Float!
+    " The bank's reference number, as a string of digits "
+    referenceNumber: String!
+    checkNumber: String!
+    " The bank's ID for the row; not unique on its own "
+    fitid: String!
+    typeCode: Int!
+    additionalActivityType: Int!
+    extensionTypeCode: Int!
+    segmentationFlag: Int!
+    creditCardIndex: Int!
+    ifLink: Int!
+  }
+
+  " Input for a Bank Leumi foreign-currency account transaction "
+  input LeumiForeignTransactionInput {
+    " Full number of the foreign-currency account (each currency has its own) "
+    accountNumber: String!
+    " ISO currency code "
+    currency: String!
+    " Transaction date (YYYY-MM-DD) "
+    date: String!
+    description: String!
+    reference: String!
+    debit: Float!
+    credit: Float!
+    " Account balance after this transaction "
+    balance: Float!
+  }
+
+  " Input for a transaction of a credit card issued by Bank Leumi "
+  input LeumiCreditCardTransactionInput {
+    " Last four digits of the card, as set up in the financial accounts "
+    cardLast4: String!
+    " Full number of the account the card is attached to "
+    relatedAccountNumber: String!
+    " The bank's ID for the transaction "
+    cardTransactionId: String!
+    " Date of the deal (YYYY-MM-DD) "
+    dealDate: String!
+    " Date the billing cycle is debited (YYYY-MM-DD) "
+    debitDate: String!
+    merchantName: String!
+    dealDescription: String
+    " Amount of the deal, in its own currency "
+    dealAmount: Float!
+    " The bank's code for the deal currency, as sent "
+    dealCurrencyCode: String!
+    " Amount debited in this cycle; negative for a refund "
+    chargeAmount: Float!
+    " ISO code of the currency the cycle is debited in "
+    chargeCurrency: String!
+    transactionType: Int!
+    " Which of the cycle's tables the row was listed in "
+    tableId: Int!
+  }
+
   # ── Poalim Deposit Tax Events ───────────────────────────────────────────────
 
   # Field names mirror the bank's own, misspelling included (crditAmount), so the mapping stays
@@ -770,6 +844,17 @@ export default gql`
 
     uploadOtsarHahayalCreditCardTransactions(
       transactions: [OtsarHahayalCreditCardTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadLeumiIlsTransactions(transactions: [LeumiIlsTransactionInput!]!): ScraperUploadResult!
+      @requiresRole(role: "scraper")
+
+    uploadLeumiForeignTransactions(
+      transactions: [LeumiForeignTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadLeumiCreditCardTransactions(
+      transactions: [LeumiCreditCardTransactionInput!]!
     ): ScraperUploadResult! @requiresRole(role: "scraper")
   }
 `;

@@ -1,5 +1,6 @@
 import { withScraperUploadErrors } from '../helpers/upload-error.helper.js';
 import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
+import { LeumiScraperIngestionProvider } from '../providers/leumi-scraper-ingestion.provider.js';
 import { OtsarHahayalScraperIngestionProvider } from '../providers/otsar-hahayal-scraper-ingestion.provider.js';
 import { PoalimScraperIngestionProvider } from '../providers/poalim-scraper-ingestion.provider.js';
 import { ScraperIngestionProvider } from '../providers/scraper-ingestion.provider.js';
@@ -88,6 +89,21 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
         injector
           .get(OtsarHahayalScraperIngestionProvider)
           .uploadOtsarHahayalCreditCardTransactions(transactions),
+      ),
+
+    uploadLeumiIlsTransactions: (_, { transactions }, { injector }) =>
+      withScraperUploadErrors('uploadLeumiIlsTransactions', () =>
+        injector.get(LeumiScraperIngestionProvider).uploadLeumiIlsTransactions(transactions),
+      ),
+
+    uploadLeumiForeignTransactions: (_, { transactions }, { injector }) =>
+      withScraperUploadErrors('uploadLeumiForeignTransactions', () =>
+        injector.get(LeumiScraperIngestionProvider).uploadLeumiForeignTransactions(transactions),
+      ),
+
+    uploadLeumiCreditCardTransactions: (_, { transactions }, { injector }) =>
+      withScraperUploadErrors('uploadLeumiCreditCardTransactions', () =>
+        injector.get(LeumiScraperIngestionProvider).uploadLeumiCreditCardTransactions(transactions),
       ),
   },
 };

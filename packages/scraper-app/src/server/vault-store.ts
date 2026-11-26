@@ -167,6 +167,7 @@ const SOURCE_ARRAYS = {
   calAccounts: 'cal',
   maxAccounts: 'max',
   otsarHahayalAccounts: 'otsar-hahayal',
+  leumiAccounts: 'leumi',
 } as const satisfies Partial<Record<keyof Vault, string>>;
 
 type Identified = { id: string };
