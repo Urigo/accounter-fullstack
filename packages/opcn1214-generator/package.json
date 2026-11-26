@@ -1,6 +1,6 @@
 {
   "name": "@accounter/opcn1214-generator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Fully typed application that generates, parses, and validates OPCN 1214 tax reports.",
   "repository": {
