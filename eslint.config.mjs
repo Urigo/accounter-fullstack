@@ -221,6 +221,7 @@ export default [
               'PriceIndexLinkage',
               'PriceIndexSyncResult',
               'PriceIndexValue',
+              'Report1214Amount',
               'Report1214AmountOverride',
               'Report1214Attachments',
               'Report1214BankAccount',

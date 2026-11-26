@@ -43,6 +43,18 @@ async function getActiveWriteTarget(injector: Injector): Promise<string> {
 }
 
 /**
+ * Whether `ownerId` is the request's active business (the session's write target). Reads that
+ * depend on session-wide settings (e.g. the tax computation, which reads the session's admin
+ * context) are only consistent for that owner.
+ */
+export async function isActiveReport1214Owner(
+  injector: Injector,
+  ownerId: string,
+): Promise<boolean> {
+  return (await getActiveWriteTarget(injector)).toLowerCase() === ownerId.toLowerCase();
+}
+
+/**
  * Throws `FORBIDDEN` unless the caller's membership in `ownerId` carries one of
  * {@link REPORT_1214_ROLES}. The `@requiresAnyRole` directive only checks the role of the caller's
  * primary membership, while the business acted on may be another one: an explicit `ownerId`, or

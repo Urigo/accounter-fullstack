@@ -30,7 +30,10 @@ const INPUT_SHAPE_RULE = 'input.shape';
  * helpfully, so it is dropped. While any `input.shape` issue remains the generator stops there, so
  * the form's other rules only run in full once the identity is complete.
  */
-export function collectReport1214Issues({ input, mappingIssues }: Report1214BuildResult): {
+export function collectReport1214Issues({
+  input,
+  mappingIssues,
+}: Pick<Report1214BuildResult, 'input' | 'mappingIssues'>): {
   errors: Report1214IssueProto[];
   warnings: Report1214IssueProto[];
 } {

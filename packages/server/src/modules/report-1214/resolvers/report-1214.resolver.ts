@@ -77,6 +77,7 @@ export const report1214Resolvers: Report_1214Module.Resolvers = {
         .getShareholdersByOwnerAndYearLoader.load({ ownerId: report.ownerId, year: report.year });
       return rows.map(mapShareholderRow);
     },
+    amounts: async report => (await report.build()).amounts,
     validation: async report => {
       const { errors, warnings } = collectReport1214Issues(await report.build());
       return {

@@ -22,10 +22,34 @@ export default gql`
     profile: Report1214Profile!
     " The shareholders of the year, in report order "
     shareholders: [Shareholder!]!
+    " The record 1000 amounts of the report, sorted by code: the amounts Accounter computes, replaced by the profile's overrides "
+    amounts: [Report1214Amount!]!
     " Issues found while building the report from the books and the profile, and the form's validation rules "
     validation: Report1214Validation!
     " The file to upload to SHAAM. Null (with a REPORT_1214_VALIDATION_FAILED error) while validation has errors, so the other fields still resolve "
     file: Report1214File
+  }
+
+  " Where a form 1214 amount comes from "
+  enum Report1214AmountSource {
+    " Computed by Accounter from the books or the profile "
+    COMPUTED
+    " Set in the 1214 profile's amount overrides "
+    OVERRIDE
+  }
+
+  " A record 1000 amount of a form 1214 report "
+  type Report1214Amount {
+    " The 3-digit record 1000 code "
+    code: String!
+    " The amount the report uses for the code "
+    amount: Float!
+    " Whether the amount is computed by Accounter or set in the profile's overrides (an override always wins) "
+    source: Report1214AmountSource!
+    " The amount Accounter computed for the code, also when an override replaces it. Null for override-only codes, and when the computed amount is 0 for a code that does not allow 0 (such a code is left out) "
+    computedAmount: Float
+    " The code's Hebrew name, for the codes Accounter computes; null for override-only codes "
+    label: String
   }
 
   " Result of validating a form 1214 report "
