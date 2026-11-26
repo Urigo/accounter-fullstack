@@ -6,6 +6,7 @@ import {
   setAuthContext,
   type McpAuthContext,
 } from '../auth/identity.js';
+import { localDevPrincipal } from '../auth/local-dev-auth.js';
 import {
   extractBearerToken,
   setAuthPrincipal,
@@ -663,6 +664,23 @@ async function authenticate(
   res: ServerResponse,
 ): Promise<AuthPrincipal | null> {
   const correlationId = getRequestContext(req)?.correlationId ?? '';
+
+  // Local dev-auth mode (off unless MCP_LOCAL_DEV_AUTH_USER_ID is set, and only accepted with a
+  // loopback upstream — see auth/local-dev-auth.ts): no token is asked for or verified. The
+  // request acts as the configured user, and its memberships come from the upstream exactly as
+  // for a verified token; the upstream client sends X-Dev-Auth instead of a bearer token. A
+  // failed lookup throws (5xx) rather than degrading into an empty scope.
+  if (env.localDevAuth) {
+    const principal = localDevPrincipal(env.localDevAuth.userId);
+    setAuthPrincipal(req, principal);
+    const membershipSource = createUpstreamMembershipSource({
+      client: getUpstreamClient(),
+      correlationId: correlationId || generateId(),
+    });
+    setAuthContext(req, await resolveAuthContext(principal, membershipSource));
+    return principal;
+  }
+
   const token = extractBearerToken(req);
   if (!token) {
     getMetrics().recordAuthFailure('missing_token');
@@ -795,8 +813,11 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
   const { response, status } = await dispatchMcpBodyDualEra(raw, {
     auth,
     correlationId: getRequestContext(req)?.correlationId ?? '',
+    // In local dev-auth mode nothing the caller sent is forwarded as a credential.
     authorization:
-      typeof req.headers.authorization === 'string' ? req.headers.authorization : undefined,
+      !env.localDevAuth && typeof req.headers.authorization === 'string'
+        ? req.headers.authorization
+        : undefined,
     protocolVersionHeader:
       typeof req.headers[MCP_PROTOCOL_VERSION_HEADER] === 'string'
         ? (req.headers[MCP_PROTOCOL_VERSION_HEADER] as string)

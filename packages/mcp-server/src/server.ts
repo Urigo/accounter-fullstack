@@ -1,5 +1,10 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { trace } from '@opentelemetry/api';
+import {
+  LOCAL_DEV_AUTH_ENV,
+  LOCAL_DEV_AUTH_LISTEN_HOST,
+  localDevAuthBanner,
+} from './auth/local-dev-auth.js';
 import { env } from './config/env.js';
 import { createRequestContext, elapsedMs, setRequestContext } from './context.js';
 import { completionFields, createRequestLogger, log } from './logger.js';
@@ -251,13 +256,30 @@ export function start(): Server {
     log('warn', 'MCP_ENABLED=0 — server is starting in disabled mode (health only)');
   }
 
+  const localDevAuth = env.localDevAuth;
+  if (localDevAuth) {
+    // Loud on purpose: this mode does not authenticate requests. Both a structured warning (for
+    // log pipelines) and a banner on stderr (for whoever is looking at the terminal).
+    log('warn', 'MCP LOCAL DEV AUTH ENABLED — requests are not authenticated', {
+      event: 'mcp_local_dev_auth_enabled',
+      variable: LOCAL_DEV_AUTH_ENV,
+      userId: localDevAuth.userId,
+      upstream: env.upstream.graphqlUrl,
+      listenHost: LOCAL_DEV_AUTH_LISTEN_HOST,
+    });
+    // eslint-disable-next-line no-console
+    console.warn(localDevAuthBanner(localDevAuth.userId, env.upstream.graphqlUrl));
+  }
+
   const server = createHttpServer();
   const shutdown = createShutdownHandler({ server });
 
   process.once('SIGINT', () => shutdown('SIGINT'));
   process.once('SIGTERM', () => shutdown('SIGTERM'));
 
-  server.listen(env.server.port, () => {
+  // In local dev-auth mode, accept connections from this machine only.
+  const listenHost = localDevAuth ? LOCAL_DEV_AUTH_LISTEN_HOST : undefined;
+  server.listen(env.server.port, listenHost, () => {
     // `pid` tags this process instance so restarts are distinguishable in
     // aggregated logs; each `mcp server started` line marks a fresh (cold)
     // start of the transport.
@@ -266,6 +288,7 @@ export function start(): Server {
       version: getServiceVersion(),
       port: env.server.port,
       enabled: env.server.enabled,
+      localDevAuth: localDevAuth !== null,
       pid: process.pid,
     });
   });

@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
+import { localDevAuthRefusals } from '../auth/local-dev-auth.js';
 
 /**
  * Environment configuration for the Accounter MCP server.
@@ -75,6 +76,13 @@ export const envSchema = zod
       zod.coerce.number().int().positive().max(900_000).optional().default(300_000),
     ),
     MCP_RATE_LIMIT_CONFIG: emptyStringAsUndefined(zod.string().optional().default('')),
+    // Local development only: authenticate every request as this `business_users.user_id` and
+    // send it upstream as `X-Dev-Auth` instead of a bearer token. Unset (the default) is off.
+    // `parseEnv` refuses it unless the upstream and the public URL are both on loopback and
+    // NODE_ENV is not production. See `../auth/local-dev-auth.ts`.
+    MCP_LOCAL_DEV_AUTH_USER_ID: emptyStringAsUndefined(
+      zod.guid({ message: 'MCP_LOCAL_DEV_AUTH_USER_ID must be a UUID' }).optional(),
+    ),
 
     // --- OpenTelemetry (traces exported over OTLP/HTTP to Grafana Tempo) ---
     // Mirrors the main server's OTEL_* configuration so both services share one
@@ -157,6 +165,11 @@ export interface AppConfig {
     /** Whether mutating (write) tools are exposed at all. Off by default. */
     writeToolsEnabled: boolean;
   };
+  /**
+   * Local dev-auth mode (`MCP_LOCAL_DEV_AUTH_USER_ID`), or `null` when off (the default). When
+   * set, requests are not authenticated: each acts as `userId`. See `auth/local-dev-auth.ts`.
+   */
+  localDevAuth: { userId: string } | null;
   auth0: {
     issuerUrl: string;
     audience: string;
@@ -227,6 +240,18 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
   }
 
   const raw = result.data;
+
+  if (raw.MCP_LOCAL_DEV_AUTH_USER_ID !== undefined) {
+    const refusals = localDevAuthRefusals({
+      upstreamUrl: raw.GRAPHQL_UPSTREAM_URL,
+      publicBaseUrl: raw.MCP_PUBLIC_BASE_URL,
+      nodeEnv: source.NODE_ENV,
+    });
+    if (refusals.length > 0) {
+      throw new EnvValidationError(refusals.join('\n'));
+    }
+  }
+
   return {
     server: {
       port: raw.MCP_SERVER_PORT,
@@ -237,6 +262,10 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
         .filter(Boolean),
       writeToolsEnabled: raw.MCP_ENABLE_WRITE_TOOLS === '1',
     },
+    localDevAuth:
+      raw.MCP_LOCAL_DEV_AUTH_USER_ID === undefined
+        ? null
+        : { userId: raw.MCP_LOCAL_DEV_AUTH_USER_ID.toLowerCase() },
     auth0: {
       issuerUrl: ensureTrailingSlash(raw.AUTH0_ISSUER_URL),
       audience: raw.AUTH0_AUDIENCE,
