@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "workspace:^",
-    "@fastify/static": "10.1.12",
+    "@fastify/static": "11.0.0",
     "@fastify/websocket": "11.3.7",
     "date-fns": "4.4.0",
     "fast-xml-parser": "5.12.1",

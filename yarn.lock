@@ -315,7 +315,7 @@ __metadata:
   resolution: "@accounter/scraper-app@workspace:packages/scraper-app"
   dependencies:
     "@accounter/modern-poalim-scraper": "workspace:^"
-    "@fastify/static": "npm:10.1.12"
+    "@fastify/static": "npm:11.0.0"
     "@fastify/websocket": "npm:11.3.7"
     "@testing-library/dom": "npm:10.4.2"
     "@testing-library/react": "npm:16.3.3"
@@ -2149,9 +2149,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fastify/static@npm:10.1.12":
-  version: 10.1.12
-  resolution: "@fastify/static@npm:10.1.12"
+"@fastify/static@npm:11.0.0":
+  version: 11.0.0
+  resolution: "@fastify/static@npm:11.0.0"
   dependencies:
     "@fastify/accept-negotiator": "npm:^2.0.0"
     "@fastify/error": "npm:^4.0.0"
@@ -2160,7 +2160,7 @@ __metadata:
     fastify-plugin: "npm:^6.0.0"
     fastq: "npm:^1.17.1"
     glob: "npm:^14.0.0"
-  checksum: 10c0/ab383fd869fe449e1ca4c90a603c1ce369b18d1fd83c7bd190f7114bb626ca2f08a13c564285c667bfa41272b9c45e7db82bfba26b2f43cef53731905262aee6
+  checksum: 10c0/b0ab3da501e8102ae42b5344314527b727729fce929361f783e856fdb59fbef4969433d4131e3488d51ba132c9d3eb357c33a9b4401e2c47b6beab3836e54f6d
   languageName: node
   linkType: hard
 
