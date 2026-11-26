@@ -30,6 +30,8 @@ import { Form1214ReportProvider } from '../report-context.js';
 
 const YEAR = 2025;
 const TAX_PLANNING = 'The company took a tax planning action';
+const REPORTABLE = 'The company took a reportable position';
+const POSITIONS_HEADING = 'Reportable positions (1034-1046)';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -111,6 +113,7 @@ describe('Form1214DeclarationsEditor', () => {
   it('saves the whole declarations block and refreshes the report', async () => {
     render({ hadRelatedPartyTransactions: false, isKibbutz: true });
     answer(TAX_PLANNING, 'Yes');
+    answer(REPORTABLE, 'Yes');
     act(() => button('Add position').click());
     type(input('Reportable position 1'), '12');
     expect(hasText('Unsaved changes')).toBe(true);
@@ -127,6 +130,7 @@ describe('Form1214DeclarationsEditor', () => {
           declarations: {
             hasTaxPlanningAction: true,
             hadRelatedPartyTransactions: false,
+            tookReportablePosition: true,
             isKibbutz: true,
             reportablePositions: [12],
           },
@@ -161,6 +165,7 @@ describe('Form1214DeclarationsEditor', () => {
 
   it('does not save an invalid position, and ties the error to its input', async () => {
     render(null);
+    answer(REPORTABLE, 'Yes');
     act(() => button('Add position').click());
     type(input('Reportable position 1'), '1000');
     await act(async () => button('Save').click());
@@ -175,8 +180,62 @@ describe('Form1214DeclarationsEditor', () => {
   });
 
   it('allows more positions than the form holds, with a hint', () => {
-    render({ reportablePositions: [1, 2, 3, 4, 5, 6] });
+    render({ tookReportablePosition: true, reportablePositions: [1, 2, 3, 4, 5, 6] });
     expect(hasText('The form has room for 5 positions')).toBe(true);
+  });
+
+  it('shows the reportable positions only once 1030 is answered yes', () => {
+    render(null);
+    expect(hasText(POSITIONS_HEADING)).toBe(false);
+    expect(() => button('Add position')).toThrow();
+    answer(REPORTABLE, 'No');
+    expect(hasText(POSITIONS_HEADING)).toBe(false);
+    answer(REPORTABLE, 'Yes');
+    expect(hasText(POSITIONS_HEADING)).toBe(true);
+    expect(button('Add position')).toBeTruthy();
+  });
+
+  it('keeps hidden positions while 1030 is toggled, and saves none unless it is yes', async () => {
+    render(null);
+    answer(REPORTABLE, 'Yes');
+    act(() => button('Add position').click());
+    type(input('Reportable position 1'), '12');
+
+    answer(REPORTABLE, 'No');
+    expect(hasText(POSITIONS_HEADING)).toBe(false);
+    expect(container.querySelector('input[aria-label="Reportable position 1"]')).toBeNull();
+
+    answer(REPORTABLE, 'Yes');
+    expect(input('Reportable position 1').value).toBe('12');
+
+    answer(REPORTABLE, 'No');
+    updateMock.mockResolvedValue(true);
+    await act(async () => button('Save').click());
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    expect(updateMock.mock.calls[0]?.[0].input.declarations).toEqual({
+      tookReportablePosition: false,
+    });
+  });
+
+  it('does not let a hidden invalid position block Save', async () => {
+    render(null);
+    answer(REPORTABLE, 'Yes');
+    act(() => button('Add position').click());
+    type(input('Reportable position 1'), '1000');
+    answer(REPORTABLE, 'No');
+
+    updateMock.mockResolvedValue(true);
+    await act(async () => button('Save').click());
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    expect(updateMock.mock.calls[0]?.[0].input.declarations).toEqual({
+      tookReportablePosition: false,
+    });
+  });
+
+  it('hides stored positions while 1030 is no', () => {
+    render({ tookReportablePosition: false, reportablePositions: [3] });
+    expect(hasText(POSITIONS_HEADING)).toBe(false);
+    expect(container.querySelector('input[aria-label="Reportable position 1"]')).toBeNull();
   });
 
   it('clears its dirty mark when it unmounts', () => {

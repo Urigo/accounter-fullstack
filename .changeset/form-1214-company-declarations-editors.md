@@ -13,7 +13,9 @@ declarations:
 - **Declarations**: the 7 required yes/no questions (Yes / No / Not answered), the optional yes/no
   questions and flags, the form 6111 obligation and consolidated report selects, the family company,
   beneficiary enterprise and special year details, and the reportable positions (more than the
-  form's 5 can be saved; the report validation flags them).
+  form's 5 can be saved; the report validation flags them). The reportable positions show only
+  while declaration 1030 (the company took a reportable position) is answered yes; otherwise they
+  are not checked, and saving the declarations clears them.
 
 Each editor saves its own block, shows the server's message when a save is rejected, and refreshes
 the report's validation after saving.
