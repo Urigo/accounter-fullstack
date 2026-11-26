@@ -58,7 +58,7 @@ export const MAX_PROFILE_TEXT_LENGTH = 200;
 type Maybe<T> = T | null | undefined;
 
 /** `true` when type `T` is `never`; used for compile-time drift checks against the generator. */
-type AssertNever<T extends never> = T;
+export type AssertNever<T extends never> = T;
 
 /**
  * Phone prefixes form 1214 allows. The generator keeps the list (`PHONE_PREFIXES`) internal, so it
@@ -87,7 +87,7 @@ export const REPORT_1214_PHONE_PREFIXES = [
 export type _PhonePrefixesCovered = AssertNever<
   Exclude<PhonePrefix, (typeof REPORT_1214_PHONE_PREFIXES)[number]>
 >;
-const PHONE_PREFIX_SET: ReadonlySet<string> = new Set(REPORT_1214_PHONE_PREFIXES);
+export const PHONE_PREFIX_SET: ReadonlySet<string> = new Set(REPORT_1214_PHONE_PREFIXES);
 
 /** The yes/no and flag members of `Declarations`, copied as is. */
 const DECLARATION_BOOLEAN_KEYS = [
@@ -201,7 +201,7 @@ function assertListSize(length: number, path: string): void {
 }
 
 /** Drops the `undefined` members, so stored JSON carries only what is set. */
-function compact<T extends object>(value: T): T {
+export function compact<T extends object>(value: T): T {
   return Object.fromEntries(
     Object.entries(value).filter(([, member]) => member !== undefined),
   ) as T;
