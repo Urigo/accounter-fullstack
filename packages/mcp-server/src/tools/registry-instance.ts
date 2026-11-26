@@ -24,6 +24,7 @@ import { getSecurityExecutionsTool, listSecurityHoldingsTool } from './securitie
 import { updateChargesTagsTool } from './tags-write.js';
 import { explainTerminologyTool } from './terminology.js';
 import { getTransactionsTool } from './transaction-details.js';
+import { uncategorizedTransactionGroupsTool } from './transaction-groups.js';
 import { updateTransactionsTool } from './transactions-write.js';
 
 /**
@@ -50,6 +51,8 @@ toolRegistry.register(searchChargesTool);
 // into specific charges — which nest their transactions and documents.
 toolRegistry.register(getChargesTool);
 toolRegistry.register(getTransactionsTool);
+// The grouped view of the same rows: what is still missing a counterparty, one group per merchant.
+toolRegistry.register(uncategorizedTransactionGroupsTool);
 toolRegistry.register(getDocumentsTool);
 // Ledger records are the accounting layer under a charge, so they follow the
 // charge/transaction/document drill-down rather than sitting with the lookups.

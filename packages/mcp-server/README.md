@@ -20,7 +20,7 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of seventeen read-only tools
+Accounter GraphQL server; a curated registry of eighteen read-only tools
 (`accounter_list_business_memberships`, `accounter_explain_terminology`, `accounter_search_charges`,
 `accounter_get_charges`, `accounter_get_transactions`, `accounter_get_documents`,
 `accounter_get_ledger_records`, `accounter_list_clients`, `accounter_get_contracts`,
@@ -176,6 +176,17 @@ scope, because it _is_ the scope.
   counterparty, account, and `ownerId`. A transaction whose owner falls outside the resolved scope
   is dropped as defense-in-depth on top of RLS — possible only since `Transaction.ownerId` was added
   upstream.
+- **`accounter_list_uncategorized_transaction_groups`** — one business's transactions with **no
+  counterparty**, grouped upstream (`uncategorizedTransactionGroups`, one SQL `GROUP BY`) by a
+  normalised source description: lower case, whitespace collapsed, runs of 4+ digits replaced by
+  `#`. Each group has `key`, `sampleDescription`, `transactionCount`, `chargeCount`, per-currency
+  `totals`, `firstDate` / `lastDate` and up to `sampleSize` (default 5, max 200) `transactionIds`
+  and `chargeIds`; largest group first, paged with `limit` / `offset`, with `totalGroups` and
+  `totalTransactions` across all pages. Passing `keys` returns only those groups, so a second call
+  with a large `sampleSize` gets every id of the groups about to be updated. Single-business
+  (required `memberBusinessId`), because a group's aggregates have no per-row `ownerId`. Built for
+  categorising a freshly imported business a few hundred groups at a time instead of paging
+  thousands of rows.
 - **`accounter_get_documents`** — read-only **documents** by id (`documentIds`) or by `filters`
   (every `DocumentsFilters` field: business/owner/charge ids, date range, type, unmatched,
   missing-counterparty/info flags, free text). Each row carries `documentType`, serial number, date,
