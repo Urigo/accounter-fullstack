@@ -134,6 +134,9 @@ DB table — not through the app.
   tenants, security model
 - [Super-Admin Plan](docs/super-user/plan.md) — roadmap for cross-tenant access and global client
   listing
+- [Onboarding a new user](docs/onboarding/README.md) — the whole path from creating the tenant to
+  categorised charges, per-bank notes, and what to watch for (also packaged for coding agents as the
+  `onboard-user` skill)
 
 ## Testing
 
