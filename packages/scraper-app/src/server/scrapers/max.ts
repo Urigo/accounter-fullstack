@@ -62,7 +62,11 @@ export async function scrapeMax(
 
   try {
     const scraper = await maxFn(
-      { username: creds.username, password: creds.password },
+      {
+        username: creds.username,
+        password: creds.password,
+        idNumber: creds.idNumber?.trim() || undefined,
+      },
       { startDate: dateFrom },
     );
 

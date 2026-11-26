@@ -72,11 +72,17 @@ export class FiatExchangeProvider {
       },
       this.dbProvider,
     );
+    // The latest rates on or before each date, or null when there are none that early: a
+    // new business has transactions before any rate was loaded. `reduce` without an initial
+    // value throws on an empty list, and that surfaced as an unhandled rejection that shut
+    // the server down.
     return dates.map(date =>
       rates
         .filter(rate => rate.exchange_date! <= date)
-        .reduce((prev: IGetExchangeRatesByDatesResult, curr: IGetExchangeRatesByDatesResult) =>
-          (prev.exchange_date ?? '') > (curr.exchange_date ?? '') ? prev : curr,
+        .reduce<IGetExchangeRatesByDatesResult | null>(
+          (prev, curr) =>
+            prev && (prev.exchange_date ?? '') > (curr.exchange_date ?? '') ? prev : curr,
+          null,
         ),
     );
   }

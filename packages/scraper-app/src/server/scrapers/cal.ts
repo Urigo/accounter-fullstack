@@ -21,6 +21,14 @@ function buildMonthList(dateFrom: Date, dateTo: Date): Date[] {
   return months;
 }
 
+/**
+ * The progress row a month belongs to. Rows are keyed by this label, so when several cards
+ * are read each card's month needs its own.
+ */
+export function calProgressLabel(month: string, card: string, severalCards: boolean): string {
+  return severalCards ? `${month} · ${card}` : month;
+}
+
 export async function scrapeCal(
   creds: CalCreds,
   dateFrom: Date,
@@ -40,29 +48,45 @@ export async function scrapeCal(
     const months = buildMonthList(dateFrom, dateTo);
     const results: CalPayload = [];
 
-    for (const month of months) {
-      // delay for 2-5 seconds, so we can avoid being blocked by Cal
-      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+    // With no card named, every card on the account is read; which of them are uploaded is
+    // decided afterwards, when the discovered cards are approved or ignored.
+    const requested = creds.last4Digits.trim();
+    const cards = requested === '' ? scraper.getCards() : [requested];
+    if (cards.length === 0) {
+      throw new Error('No cards were found on this CAL account');
+    }
 
-      const monthStr = format(month, 'yyyy-MM');
-      emit({ type: 'task-month-fetching', sourceId: creds.id, month: monthStr });
-      try {
-        const transactions = await scraper.getMonthTransactions(creds.last4Digits, month);
-        emit({
-          type: 'task-month-fetched',
-          sourceId: creds.id,
-          month: monthStr,
-          transactionCount: transactions.length,
-        });
-        results.push({ card: creds.last4Digits, month: monthStr, transactions });
-      } catch (err) {
-        emit({
-          type: 'task-month-error',
-          sourceId: creds.id,
-          month: monthStr,
-          error: err instanceof Error ? err.message : String(err),
-        });
+    let fetched = 0;
+    let lastError: string | undefined;
+    for (const card of cards) {
+      for (const month of months) {
+        // delay for 2-5 seconds, so we can avoid being blocked by Cal
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+
+        const monthStr = format(month, 'yyyy-MM');
+        const label = calProgressLabel(monthStr, card, cards.length > 1);
+        emit({ type: 'task-month-fetching', sourceId: creds.id, month: label });
+        try {
+          const transactions = await scraper.getMonthTransactions(card, month);
+          emit({
+            type: 'task-month-fetched',
+            sourceId: creds.id,
+            month: label,
+            transactionCount: transactions.length,
+          });
+          results.push({ card, month: monthStr, transactions });
+          fetched++;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : String(err);
+          emit({ type: 'task-month-error', sourceId: creds.id, month: label, error: lastError });
+        }
       }
+    }
+
+    // A month can fail on its own and the rest still be worth uploading. When every one
+    // failed there is nothing to upload, and reporting the task as done would hide that.
+    if (fetched === 0) {
+      throw new Error(lastError ?? 'No month could be read from CAL');
     }
 
     return validatePayload('cal', results);

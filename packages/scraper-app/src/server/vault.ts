@@ -77,6 +77,8 @@ export const MaxAccountSchema = z.object({
   nickname: z.string().optional(),
   username: z.string(),
   password: z.string(),
+  // Max asks for the card holder's ID number only after failed sign-in attempts.
+  idNumber: z.string().optional(),
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),

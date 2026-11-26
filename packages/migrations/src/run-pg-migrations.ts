@@ -230,6 +230,8 @@ import migration_2026_11_24T11_30_00_depreciation_disposal_original_amount from 
 import migration_2026_11_24T12_00_00_depreciation_asset_tax_category from './actions/2026-11-24T12-00-00.depreciation-asset-tax-category.js';
 import migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders from './actions/2026-11-25T12-00-00.report-1214-profile-and-shareholders.js';
 import migration_2026_11_26T12_00_00_add_leumi_tables from './actions/2026-11-26T12-00-00.add-leumi-tables.js';
+import migration_2026_11_26T13_00_00_widen_isracard_amex_text_columns from './actions/2026-11-26T13-00-00.widen-isracard-amex-text-columns.js';
+import migration_2026_11_26T14_00_00_card_handlers_missing_date_and_foreign_currency from './actions/2026-11-26T14-00-00.card-handlers-missing-date-and-foreign-currency.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -464,6 +466,8 @@ export const MIGRATIONS = [
   migration_2026_11_24T12_00_00_depreciation_asset_tax_category,
   migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders,
   migration_2026_11_26T12_00_00_add_leumi_tables,
+  migration_2026_11_26T13_00_00_widen_isracard_amex_text_columns,
+  migration_2026_11_26T14_00_00_card_handlers_missing_date_and_foreign_currency,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

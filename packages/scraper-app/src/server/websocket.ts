@@ -24,7 +24,7 @@ import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import { BlockedError, ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
 import { scrapeAmex, type MonthlyIsracardPayload as MonthlyAmexPayload } from './scrapers/amex.js';
-import { scrapeCal } from './scrapers/cal.js';
+import { calProgressLabel, scrapeCal } from './scrapers/cal.js';
 import { scrapeCurrencyRates } from './scrapers/currency-rates.js';
 import { scrapeDiscount } from './scrapers/discount.js';
 import {
@@ -824,18 +824,20 @@ function buildTask(
           let result: ScraperUploadResult;
           switch (src.type) {
             case 'cal': {
+              const severalCards = new Set((payload as CalPayload).map(e => e.card)).size > 1;
               for (const entry of payload as CalPayload) {
+                const label = calProgressLabel(entry.month, entry.card, severalCards);
                 emit({
                   type: 'task-month-uploading',
                   sourceId: src.id,
-                  month: entry.month,
+                  month: label,
                   transactionCount: entry.transactions.length,
                 });
                 result = await uploadClient.uploadCal([entry]);
                 emit({
                   type: 'task-month-uploaded',
                   sourceId: src.id,
-                  month: entry.month,
+                  month: label,
                   inserted: result.inserted,
                   skipped: result.skipped,
                 });

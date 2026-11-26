@@ -13,27 +13,32 @@ const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT =
   'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
 
-const last4DigitsToCardIds: Record<string, string> = {}; // last4Digits -> cardId
-
-function getCardId(last4Digits: string) {
-  return last4DigitsToCardIds[last4Digits];
-}
-
 export async function cal(page: Page, credentials: CalCredentials, options: CalOptions = {}) {
   await login(credentials, page);
 
   const authToken = await getAuthorizationHeader(page);
   const xSiteId = await getXSiteId();
 
-  const cards = await getCards(page);
-  for (const card of cards) {
-    last4DigitsToCardIds[card.last4Digits] = card.cardUniqueId;
+  // Kept per login: a map shared by the module would keep the cards of whoever signed in
+  // before, and hand one user's card ID to another's request.
+  const cardIdByLast4Digits = new Map<string, string>();
+  for (const card of await getCards(page)) {
+    cardIdByLast4Digits.set(card.last4Digits, card.cardUniqueId);
   }
 
   return {
+    /** Last four digits of every card on the signed-in account. */
+    getCards: () => [...cardIdByLast4Digits.keys()],
     getMonthTransactions: async (last4Digits: string, month: Date) => {
-      const cardId = getCardId(last4Digits);
-      if (!cardId) throw new Error(`Card ID not found for last 4 digits: ${last4Digits}`);
+      const cardId = cardIdByLast4Digits.get(last4Digits);
+      if (!cardId) {
+        const found = [...cardIdByLast4Digits.keys()];
+        throw new Error(
+          `No card ending in ${last4Digits} on this CAL account. ${
+            found.length > 0 ? `Cards found: ${found.join(', ')}` : 'No cards were found'
+          }`,
+        );
+      }
       return fetchMonthCompletedTransactions(page, cardId, authToken, xSiteId, month);
     },
     getTransactions: async () => {

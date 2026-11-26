@@ -310,12 +310,113 @@ async function waitForRedirect(
   );
 }
 
-function redirectOrDialog(page: Page) {
-  return Promise.race([
+const LOGIN_FORM_SELECTOR = '#login-password app-user-login-form';
+/** Any field of the password form other than the two it always has. */
+const EXTRA_LOGIN_INPUT_SELECTOR = `${LOGIN_FORM_SELECTOR} input:not(#user-name):not(#password)`;
+
+/**
+ * After failed attempts Max adds a field to the password form and asks for the card
+ * holder's ID number as well ("בשל מספר ניסיונות לא טובים, נבקש למלא את מספר תעודת הזהות
+ * שלך"). The field only exists once Max decides to ask, so it is found by what it is not.
+ */
+async function waitForIdNumberPrompt(page: Page): Promise<'id-number'> {
+  await page.waitForSelector(EXTRA_LOGIN_INPUT_SELECTOR, { visible: true, timeout: 20_000 });
+  return 'id-number';
+}
+
+async function waitForLoginOutcome(page: Page, watchForIdPrompt: boolean) {
+  const outcomes: Promise<unknown>[] = [
     waitForRedirect(page, 20_000, false, [BASE_WELCOME_URL, `${BASE_WELCOME_URL}/`]),
     waitUntilElementFound(page, INVALID_DETAILS_SELECTOR, true),
     waitUntilElementFound(page, LOGIN_ERROR_SELECTOR, true),
-  ]);
+  ];
+  if (watchForIdPrompt) outcomes.push(waitForIdNumberPrompt(page));
+  // The losers of the race time out later; they must not surface as unhandled rejections.
+  for (const outcome of outcomes) outcome.catch(() => undefined);
+  return Promise.race(outcomes);
+}
+
+async function redirectOrDialog(page: Page, credentials: MaxCredentials) {
+  try {
+    const outcome = await waitForLoginOutcome(page, true);
+    if (outcome !== 'id-number') return;
+
+    if (!credentials.idNumber) {
+      throw new Error(
+        'Max is asking for the card holder ID number as well (it does after failed sign-in attempts). Add the ID number to this source and run again.',
+      );
+    }
+    console.debug('Max asked for the ID number; filling it in');
+    // Max may clear what was typed when it adds the field.
+    for (const field of createLoginFields(credentials)) {
+      const current = await page.$eval(field.selector, input => (input as HTMLInputElement).value);
+      if (current === '') await page.type(field.selector, field.value);
+    }
+    await page.type(EXTRA_LOGIN_INPUT_SELECTOR, credentials.idNumber);
+    await clickButton(page, `${LOGIN_FORM_SELECTOR} .button-wrapper > button`);
+    await waitForLoginOutcome(page, false);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Max is asking')) throw error;
+    // Neither a redirect nor one of the known dialogs: say what the page is showing, so a
+    // code sent to the phone, a new dialog or a changed page can be told apart.
+    throw new Error(`Max did not finish signing in. ${await describeLoginPage(page)}`, {
+      cause: error,
+    });
+  }
+}
+
+/**
+ * What the login page shows, for an error message. Digits are masked: the text can hold a
+ * phone number or a card number.
+ */
+async function describeLoginPage(page: Page): Promise<string> {
+  try {
+    const seen = await page.evaluate(() => {
+      const shown = (element: Element) =>
+        (element as HTMLElement).offsetParent !== null &&
+        getComputedStyle(element).visibility === 'visible';
+      const popup = document.querySelector('.login-popup, .modal.show, [role="dialog"]');
+      return {
+        asksForCode: Array.from(
+          document.querySelectorAll(
+            'input[autocomplete="one-time-code"], input[name*="otp" i], input[id*="otp" i], input[formcontrolname*="otp" i], input[formcontrolname*="code" i]',
+          ),
+        ).some(shown),
+        dialogs: Array.from(document.querySelectorAll('[id^="popup"]'))
+          .filter(shown)
+          .map(element => element.id),
+        errors: Array.from(
+          document.querySelectorAll('.error, .invalid-feedback, [class*="error-msg"]'),
+        )
+          .filter(shown)
+          .map(element => (element as HTMLElement).innerText.trim())
+          .filter(text => text !== '')
+          .slice(0, 3),
+        fields: Array.from(document.querySelectorAll('.login-popup input, form input'))
+          .filter(shown)
+          .map(
+            element =>
+              element.getAttribute('formcontrolname') ??
+              element.id ??
+              element.getAttribute('placeholder') ??
+              'input',
+          ),
+        text: ((popup ?? document.body) as HTMLElement).innerText,
+      };
+    });
+    const mask = (text: string) => text.replace(/\d/g, '#').replace(/\s+/g, ' ').trim();
+    return [
+      seen.asksForCode ? 'The page is asking for a one-time code.' : '',
+      seen.dialogs.length > 0 ? `Open dialogs: ${seen.dialogs.join(', ')}.` : '',
+      seen.errors.length > 0 ? `Messages: ${seen.errors.map(mask).join(' | ')}.` : '',
+      seen.fields.length > 0 ? `Fields shown: ${seen.fields.join(', ')}.` : '',
+      `Page text: "${mask(seen.text).slice(0, 300)}"`,
+    ]
+      .filter(part => part !== '')
+      .join(' ');
+  } catch {
+    return 'The page could not be read.';
+  }
 }
 
 function getTransactionsUrl(date: Date) {
@@ -448,6 +549,8 @@ function createLoginFields(credentials: MaxCredentials) {
 export type MaxCredentials = {
   username: string;
   password: string;
+  /** The card holder's ID number. Max asks for it only after failed sign-in attempts. */
+  idNumber?: string | undefined;
 };
 
 const OK_STATUS = 200;
@@ -494,6 +597,11 @@ async function getLoginOptions(page: Page, credentials: MaxCredentials): Promise
       await clickButton(page, '.personal-area > a.go-to-personal-area');
       await waitUntilElementFound(page, '#private', true);
       await clickButton(page, '#private');
+      // Clicking "private" loads the login page. A wait for the tab link to be *visible*
+      // that starts while that page is still loading never resolves (it timed out every
+      // time, with the link on screen), while waiting for the link to exist first and
+      // only then for it to be visible resolves at once.
+      await waitUntilElementFound(page, '#login-password-link');
       await waitUntilElementFound(page, '#login-password-link', true);
       await clickButton(page, '#login-password-link');
       await waitUntilElementFound(
@@ -505,7 +613,7 @@ async function getLoginOptions(page: Page, credentials: MaxCredentials): Promise
     checkReadiness: async () => {
       await waitUntilElementFound(page, '.personal-area > a.go-to-personal-area', true);
     },
-    postAction: async () => redirectOrDialog(page),
+    postAction: async () => redirectOrDialog(page, credentials),
     possibleResults: getPossibleLoginResults(page),
     waitUntil: 'domcontentloaded',
   };

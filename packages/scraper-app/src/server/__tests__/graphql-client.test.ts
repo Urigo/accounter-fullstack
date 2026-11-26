@@ -413,13 +413,59 @@ describe('uploadCal', () => {
     expect(lastMutationName).toBe('UploadCalTransactions');
   });
 
-  it('flattens to per-transaction rows with card attached', async () => {
+  it('flattens to per-transaction rows with the card attached as a number', async () => {
     await client().uploadCal(CAL_PAYLOAD);
     const txns = lastVariables['transactions'] as unknown[];
     expect(Array.isArray(txns)).toBe(true);
     expect(txns).toHaveLength(1);
-    expect((txns[0] as Record<string, unknown>)['card']).toBe('1234');
+    // The server's input declares `card: Int!`.
+    expect((txns[0] as Record<string, unknown>)['card']).toBe(1234);
     expect((txns[0] as Record<string, unknown>)['trnIntId']).toBe('TRN-1');
+  });
+
+  it('sends what the server stores: ISO currency, day-first dates, known fields only', async () => {
+    await client().uploadCal([
+      {
+        card: '1234',
+        month: '2026-07',
+        transactions: [
+          {
+            ...CAL_PAYLOAD[0]!.transactions[0]!,
+            trnPurchaseDate: '2026-07-31T12:05:11',
+            debCrdDate: '2026-08-02T00:00:00',
+            trnCurrencySymbol: '₪',
+            debCrdCurrencySymbol: '$',
+            isImmediateHHKInd: true,
+            // Fields CAL sends that the server's input type does not have.
+            comments: [{ key: 'k', value: 'v' }],
+            transTypeCommentDetails: [],
+          },
+        ],
+      },
+    ]);
+    const [row] = lastVariables['transactions'] as Record<string, unknown>[];
+    expect(row).toMatchObject({
+      trnPurchaseDate: '31/07/2026',
+      debCrdDate: '02/08/2026',
+      trnCurrencySymbol: 'ILS',
+      debCrdCurrencySymbol: 'USD',
+      isImmediateHhkInd: true,
+    });
+    expect(row).not.toHaveProperty('comments');
+    expect(row).not.toHaveProperty('transTypeCommentDetails');
+    expect(row).not.toHaveProperty('isImmediateHHKInd');
+  });
+
+  it('refuses a currency symbol it does not know', async () => {
+    await expect(
+      client().uploadCal([
+        {
+          card: '1234',
+          month: '2026-07',
+          transactions: [{ ...CAL_PAYLOAD[0]!.transactions[0]!, trnCurrencySymbol: '¤' }],
+        },
+      ]),
+    ).rejects.toThrow(/unknown currency/);
   });
 
   it('returns UploadResult', async () => {
