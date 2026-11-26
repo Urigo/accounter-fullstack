@@ -185,6 +185,12 @@ export const sidelinks: SideLink[] = [
         icon: <FileText size={18} />,
       },
       {
+        title: 'Form 1214 Report',
+        label: '',
+        href: ROUTES.REPORTS.FORM_1214(),
+        icon: <FileText size={18} />,
+      },
+      {
         title: 'IRS Codes Report',
         label: '',
         href: ROUTES.REPORTS.IRS_CODES,

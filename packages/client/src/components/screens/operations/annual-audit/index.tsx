@@ -23,6 +23,7 @@ import { Step10ExportTrialBalance } from './step-10-export-trial-balance/index.j
 import { Step11DepreciationReport } from './step-11-depreciation-report/index.js';
 import { Step13TaxReport } from './step-13-tax-report/index.js';
 import { Step14TaxComplianceReport } from './step-14-tax-compliance-report/index.js';
+import { Step18Form1214 } from './step-18-form-1214/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
 import { isLoadingStepStatuses } from './step-statuses-loading.js';
@@ -258,8 +259,11 @@ export const AnnualAuditFlow = (): ReactNode => {
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
               actions={[
-                { label: 'Manage Shareholders', href: '/shareholders/manage' },
-                { label: 'Import Data', href: '/shareholders/import' },
+                {
+                  label: 'Manage Shareholders',
+                  href: `${ROUTES.REPORTS.FORM_1214(year)}#shareholders`,
+                  openInNewTab: true,
+                },
               ]}
             />
 
@@ -398,13 +402,14 @@ export const AnnualAuditFlow = (): ReactNode => {
               actions={[{ label: 'Generate Dividend Report', href: '/reports/dividend-1214b' }]}
             />
 
-            <SimpleStep
+            <Step18Form1214
               id="18"
               title="Generate 1214 Report"
               icon={<FileText className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
-              actions={[{ label: 'Generate 1214', href: '/reports/1214' }]}
             />
 
             <SimpleStep

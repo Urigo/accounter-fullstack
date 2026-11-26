@@ -145,6 +145,11 @@ const Shaam6111Report = lazy(() =>
     default: m.Shaam6111Report,
   })),
 );
+const Form1214Report = lazy(() =>
+  import('../components/screens/reports/form-1214-report/index.js').then(m => ({
+    default: m.Form1214Report,
+  })),
+);
 const IrsCodesReport = lazy(() =>
   import('../components/screens/reports/irs-codes-report/index.js').then(m => ({
     default: m.IrsCodesReport,
@@ -604,6 +609,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Shaam 6111 Report',
                   breadcrumb: 'Shaam 6111',
+                },
+              },
+              {
+                path: '1214',
+                element: withSuspense(Form1214Report, <ReportSkeleton />),
+                handle: {
+                  title: 'Form 1214 Report',
+                  breadcrumb: 'Form 1214',
                 },
               },
               {
