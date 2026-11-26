@@ -337,6 +337,8 @@ export function Form1214DeclarationsEditor({
     control,
     name: ['isFamilyCompany', 'isBeneficiaryEnterprise', 'isSpecialYear'],
   });
+  // The positions stay in form state while hidden; they are only checked and saved on "yes"
+  const tookReportablePosition = useWatch({ control, name: 'answers.tookReportablePosition' });
 
   const onSubmit = async (values: DeclarationsFormState): Promise<void> => {
     const saved = await updateReport1214Profile(
@@ -426,7 +428,7 @@ export function Form1214DeclarationsEditor({
             )}
           </div>
 
-          <ReportablePositions control={control} />
+          {tookReportablePosition === 'yes' && <ReportablePositions control={control} />}
         </fieldset>
         <EditorActions isDirty={form.formState.isDirty} saving={fetching} onCancel={cancel} />
       </form>

@@ -189,14 +189,19 @@ describe('declarations form', () => {
   });
 
   it('allows more reportable positions than the form holds', () => {
-    const form = declarationsToForm({ reportablePositions: [1, 2, 3, 4, 5, 6] });
+    const form = declarationsToForm({
+      tookReportablePosition: true,
+      reportablePositions: [1, 2, 3, 4, 5, 6],
+    });
     expect(declarationsFormSchema.safeParse(form).success).toBe(true);
     expect(declarationsFormToInput(form)?.reportablePositions).toHaveLength(6);
   });
 
   it('checks positions, the representative file number and the nested dates', () => {
+    const empty = declarationsToForm(null);
     const form = {
-      ...declarationsToForm(null),
+      ...empty,
+      answers: { ...empty.answers, tookReportablePosition: 'yes' as const },
       isFamilyCompany: true,
       representativeFileNumber: '',
       isBeneficiaryEnterprise: true,
@@ -215,5 +220,36 @@ describe('declarations form', () => {
       'representativeFileNumber',
       'specialYearBalanceSheetDate',
     ]);
+  });
+
+  it('saves reportable positions only while 1030 is answered yes', () => {
+    const form = declarationsToForm({ tookReportablePosition: true, reportablePositions: [3, 17] });
+    const withAnswer = (answer: 'yes' | 'no' | '') => ({
+      ...form,
+      answers: { ...form.answers, tookReportablePosition: answer },
+    });
+    expect(declarationsFormToInput(withAnswer('yes'))).toEqual({
+      tookReportablePosition: true,
+      reportablePositions: [3, 17],
+    });
+    expect(declarationsFormToInput(withAnswer('no'))).toEqual({ tookReportablePosition: false });
+    expect(declarationsFormToInput(withAnswer(''))).toBeNull();
+  });
+
+  it('does not check reportable positions while 1030 is not answered yes', () => {
+    const form = { ...declarationsToForm(null), reportablePositions: [{ value: '1000' }] };
+    expect(declarationsFormSchema.safeParse(form).success).toBe(true);
+    expect(
+      declarationsFormSchema.safeParse({
+        ...form,
+        answers: { ...form.answers, tookReportablePosition: 'no' },
+      }).success,
+    ).toBe(true);
+    expect(
+      declarationsFormSchema.safeParse({
+        ...form,
+        answers: { ...form.answers, tookReportablePosition: 'yes' },
+      }).success,
+    ).toBe(false);
   });
 });

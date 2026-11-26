@@ -526,7 +526,9 @@ export const declarationsFormSchema = z
         message: 'Pick a date',
       });
     }
-    for (const [index, position] of form.reportablePositions.entries()) {
+    // The positions are shown, saved and checked only while 1030 is answered yes
+    const positions = form.answers.tookReportablePosition === 'yes' ? form.reportablePositions : [];
+    for (const [index, position] of positions.entries()) {
       const value = position.value.trim();
       if (value === '') {
         continue;
@@ -586,7 +588,8 @@ export function reportablePositionsFromForm(
 /**
  * The whole `declarations` block to save; `null` (clear) when nothing is answered. A flag that is
  * not marked and an unanswered yes/no are left out; a nested object is sent only while its toggle
- * is on.
+ * is on. The reportable positions are sent only while 1030 (`tookReportablePosition`) is answered
+ * yes; otherwise they are left out, which clears any stored ones.
  */
 export function declarationsFormToInput(
   form: DeclarationsFormState,
@@ -622,7 +625,10 @@ export function declarationsFormToInput(
       balanceSheetDate: form.specialYearBalanceSheetDate.trim() as TimelessDateString,
     };
   }
-  const positions = reportablePositionsFromForm(form.reportablePositions);
+  const positions =
+    form.answers.tookReportablePosition === 'yes'
+      ? reportablePositionsFromForm(form.reportablePositions)
+      : [];
   if (positions.length > 0) {
     input.reportablePositions = positions;
   }
