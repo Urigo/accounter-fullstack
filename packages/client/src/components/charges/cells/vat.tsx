@@ -3,6 +3,23 @@ import { Currency } from '../../../gql/graphql.js';
 import { formatAmountWithCurrency } from '../../../helpers/index.js';
 import { Indicator } from '../../ui/indicator.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableVatFields on Charge {
+    id
+    vat {
+      raw
+    }
+    totalAmount {
+      raw
+      currency
+    }
+    validationData {
+      missingInfo
+    }
+  }
+`;
+
 export type VatProps = {
   value?: number;
   currency?: Currency;

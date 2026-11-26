@@ -7,6 +7,27 @@ import { Indicator } from '../../ui/indicator.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 import { shouldHaveCounterparty } from '../utils.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableCounterpartyFields on Charge {
+    id
+    __typename
+    counterparty {
+      name
+      id
+    }
+    ... on ForeignSecuritiesCharge {
+      counterparties {
+        id
+        name
+      }
+    }
+    validationData {
+      missingInfo
+    }
+  }
+`;
+
 type CounterpartyEntity = {
   name: string;
   id: string;

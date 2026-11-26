@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 import {
   flexRender,
   useTable,
@@ -12,7 +13,19 @@ import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import {
   AccountantStatus,
   ChargeForChargesTableFieldsFragmentDoc,
+  ChargesTableAmountFieldsFragmentDoc,
+  ChargesTableApprovalFieldsFragmentDoc,
+  ChargesTableBusinessTripFieldsFragmentDoc,
+  ChargesTableCounterpartyFieldsFragmentDoc,
+  ChargesTableDateFieldsFragmentDoc,
+  ChargesTableDescriptionFieldsFragmentDoc,
+  ChargesTableMoreInfoFieldsFragmentDoc,
+  ChargesTableRowFieldsFragmentDoc,
   ChargesTableSuggestionsFieldsFragmentDoc,
+  ChargesTableTagsFieldsFragmentDoc,
+  ChargesTableTaxCategoryFieldsFragmentDoc,
+  ChargesTableTypeFieldsFragmentDoc,
+  ChargesTableVatFieldsFragmentDoc,
   MissingChargeInfo,
   type ChargeForChargesTableFieldsFragment,
 } from '../../gql/graphql.js';
@@ -51,67 +64,48 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
   }
 `;
 
+// The fields the accountant-status control in the select column shows. The other columns' fields
+// are in a fragment next to each cell (`cells/`).
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableApprovalFields on Charge {
+    id
+    accountantApproval
+  }
+`;
+
+// What a row shows as soon as the charge loads: one fragment per cell. A charge mutation returns
+// exactly this (`ChargeMutationResultFields`, hooks/charge-mutation-result.graphql.ts), which is
+// how the client cache updates a row from the mutation's result, with no refetch.
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableRowFields on Charge {
+    id
+    ...ChargesTableApprovalFields
+    ...ChargesTableTypeFields
+    ...ChargesTableDateFields
+    ...ChargesTableAmountFields
+    ...ChargesTableVatFields
+    ...ChargesTableCounterpartyFields
+    ...ChargesTableDescriptionFields
+    ...ChargesTableTagsFields
+    ...ChargesTableTaxCategoryFields
+    ...ChargesTableBusinessTripFields
+    ...ChargesTableMoreInfoFields
+  }
+`;
+
+// The row's fields, plus the two parts that are slow to compute and arrive later (`@defer`): the
+// ledger validation and the suggestions. Those are not in mutation results, so that a save does
+// not wait for them.
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment ChargeForChargesTableFields on Charge {
     id
-    __typename
-    minEventDate
-    minDebitDate
-    minDocumentsDate
-    maxDebitDate
-    maxEventDate
-    maxDocumentsDate
-    totalAmount {
-      raw
-      currency
-    }
-    vat {
-      raw
-    }
-    counterparty {
-      name
-      id
-    }
-    userDescription
-    tags {
-      id
-      name
-      namePath
-    }
-    taxCategory {
-      id
-      name
-    }
-    ... on BusinessTripCharge {
-      businessTrip {
-        id
-        name
-      }
-    }
-    ... on ForeignSecuritiesCharge {
-      counterparties {
-        id
-        name
-      }
-    }
+    ...ChargesTableRowFields
     metadata {
-      transactionsCount
-      documentsCount
-      ledgerCount
-      miscExpensesCount
-      depreciationRecordsCount
       ... on ChargeMetadata @defer {
         invalidLedger
-      }
-    }
-    accountantApproval
-    ... on CreditcardBankCharge {
-      validCreditCardAmount
-    }
-    ... on Charge {
-      validationData {
-        missingInfo
       }
     }
     ...ChargesTableSuggestionsFields @defer
@@ -120,7 +114,14 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
 
 export interface ChargeRow {
   id: string;
+  /** Loads the charge again from the server. For an action that did not hand back the row. */
   onChange: () => void;
+  /**
+   * For an edit whose mutation result already carried the row's fields (see `ChargesTableRowFields`):
+   * shows the charge as the client cache now has it, and asks the server only when the cache
+   * cannot answer, which is the case in a table whose list did not go through the cache.
+   */
+  onSaved: () => void;
   /**
    * `onChange`, plus a refresh of the charge's expansion in expand-all mode. For actions that
    * change what the expansion shows, such as a document upload.
@@ -141,77 +142,103 @@ export interface ChargeRow {
   accountantApproval: AccountantStatus;
 }
 
+/**
+ * Reads one fragment's fields off a charge that spreads it.
+ *
+ * `getFragmentData` cannot take the charge as it is typed: `Charge` is an interface, so codegen
+ * gives each concrete type its own reference to the fragment, and the overloads don't distribute
+ * over that union. At runtime the unwrap is an identity either way.
+ */
+function fieldsOf<TFields>(
+  document: DocumentTypeDecoration<TFields, unknown>,
+  charge: unknown,
+): TFields {
+  return getFragmentData(
+    document,
+    charge as FragmentType<DocumentTypeDecoration<TFields, unknown>>,
+  );
+}
+
 export function convertChargeFragmentToTableRow(
   fragmentData: ChargeForChargesTableFieldsFragment,
 ): ChargeRow {
+  const row = fieldsOf(ChargesTableRowFieldsFragmentDoc, fragmentData);
+  const type = fieldsOf(ChargesTableTypeFieldsFragmentDoc, row).__typename as ChargeType;
+  const dates = fieldsOf(ChargesTableDateFieldsFragmentDoc, row);
+  const amount = fieldsOf(ChargesTableAmountFieldsFragmentDoc, row);
+  const vat = fieldsOf(ChargesTableVatFieldsFragmentDoc, row);
+  const counterparty = fieldsOf(ChargesTableCounterpartyFieldsFragmentDoc, row);
+  const description = fieldsOf(ChargesTableDescriptionFieldsFragmentDoc, row);
+  const tags = fieldsOf(ChargesTableTagsFieldsFragmentDoc, row);
+  const taxCategory = fieldsOf(ChargesTableTaxCategoryFieldsFragmentDoc, row);
+  const businessTrip = fieldsOf(ChargesTableBusinessTripFieldsFragmentDoc, row);
+  const moreInfo = fieldsOf(ChargesTableMoreInfoFieldsFragmentDoc, row);
+  const approval = fieldsOf(ChargesTableApprovalFieldsFragmentDoc, row);
   // The suggestions fragment is deferred — its fields are absent from the
   // payload until the patch arrives, so unwrap defensively.
-  const missingInfoSuggestions = getFragmentData(
+  const missingInfoSuggestions = fieldsOf(
     ChargesTableSuggestionsFieldsFragmentDoc,
-    // each charge subtype carries its own variant ref, which the overloads
-    // can't distribute over — the runtime is an identity unwrap either way
-    fragmentData as FragmentType<typeof ChargesTableSuggestionsFieldsFragmentDoc>,
+    fragmentData,
   )?.missingInfoSuggestions;
   return {
     id: fragmentData.id,
     onChange: () => {},
+    onSaved: () => {},
     onChangeWithExpansion: () => {},
     onDelete: () => {},
-    type: fragmentData.__typename as ChargeType,
+    type,
     date: getDateProps({
-      minDebitDate: fragmentData.minDebitDate,
-      minEventDate: fragmentData.minEventDate,
-      minDocumentsDate: fragmentData.minDocumentsDate,
-      maxDebitDate: fragmentData.maxDebitDate,
-      maxEventDate: fragmentData.maxEventDate,
-      maxDocumentsDate: fragmentData.maxDocumentsDate,
+      minDebitDate: dates.minDebitDate,
+      minEventDate: dates.minEventDate,
+      minDocumentsDate: dates.minDocumentsDate,
+      maxDebitDate: dates.maxDebitDate,
+      maxEventDate: dates.maxEventDate,
+      maxDocumentsDate: dates.maxDocumentsDate,
     }),
-    amount: fragmentData.totalAmount
+    amount: amount.totalAmount
       ? {
-          value: fragmentData.totalAmount.raw,
-          currency: fragmentData.totalAmount.currency,
-          shouldValidate: fragmentData.__typename === 'CreditcardBankCharge',
+          value: amount.totalAmount.raw,
+          currency: amount.totalAmount.currency,
+          shouldValidate: amount.__typename === 'CreditcardBankCharge',
           isValid:
-            fragmentData.__typename === 'CreditcardBankCharge'
-              ? fragmentData.validCreditCardAmount
-              : undefined,
+            amount.__typename === 'CreditcardBankCharge' ? amount.validCreditCardAmount : undefined,
         }
       : undefined,
-    vat: shouldHaveVat(fragmentData.__typename)
+    vat: shouldHaveVat(type)
       ? {
-          value: fragmentData.vat?.raw,
-          currency: fragmentData.totalAmount?.currency,
-          missingInfo: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Vat),
-          amountValue: fragmentData.totalAmount?.raw,
+          value: vat.vat?.raw,
+          currency: vat.totalAmount?.currency,
+          missingInfo: vat.validationData?.missingInfo.includes(MissingChargeInfo.Vat),
+          amountValue: vat.totalAmount?.raw,
         }
       : undefined,
-    counterparty: shouldHaveCounterparty(fragmentData.__typename)
+    counterparty: shouldHaveCounterparty(type)
       ? {
-          counterparty: fragmentData.counterparty
+          counterparty: counterparty.counterparty
             ? {
-                name: fragmentData.counterparty.name,
-                id: fragmentData.counterparty.id,
+                name: counterparty.counterparty.name,
+                id: counterparty.counterparty.id,
               }
             : undefined,
           counterparties:
-            fragmentData.__typename === 'ForeignSecuritiesCharge'
-              ? fragmentData.counterparties.map(({ id, name }) => ({ id, name }))
+            counterparty.__typename === 'ForeignSecuritiesCharge'
+              ? counterparty.counterparties.map(({ id, name }) => ({ id, name }))
               : undefined,
-          type: fragmentData.__typename as ChargeType,
-          isMissing: fragmentData.validationData?.missingInfo.includes(
+          type,
+          isMissing: counterparty.validationData?.missingInfo.includes(
             MissingChargeInfo.Counterparty,
           ),
         }
       : undefined,
     description: {
       chargeId: fragmentData.id,
-      value: fragmentData.userDescription?.trim() ?? undefined,
-      isMissing: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Description),
+      value: description.userDescription?.trim() ?? undefined,
+      isMissing: description.validationData?.missingInfo.includes(MissingChargeInfo.Description),
       suggestedDescription: missingInfoSuggestions?.description?.trim() ?? undefined,
     },
     tags: {
       chargeId: fragmentData.id,
-      tags: fragmentData.tags.map(tag => ({
+      tags: tags.tags.map(tag => ({
         id: tag.id,
         name: tag.name,
         namePath: tag.namePath ?? undefined,
@@ -222,49 +249,50 @@ export function convertChargeFragmentToTableRow(
           name: tag.name,
           namePath: tag.namePath ?? undefined,
         })) ?? [],
-      isMissing: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Tags),
+      isMissing: tags.validationData?.missingInfo.includes(MissingChargeInfo.Tags),
     },
-    taxCategory: shouldHaveTaxCategory(fragmentData.__typename)
+    taxCategory: shouldHaveTaxCategory(type)
       ? {
-          taxCategory: fragmentData.taxCategory
+          taxCategory: taxCategory.taxCategory
             ? {
-                id: fragmentData.taxCategory.id,
-                name: fragmentData.taxCategory.name,
+                id: taxCategory.taxCategory.id,
+                name: taxCategory.taxCategory.name,
               }
             : undefined,
-          isMissing: fragmentData.validationData?.missingInfo.includes(
+          isMissing: taxCategory.validationData?.missingInfo.includes(
             MissingChargeInfo.TaxCategory,
           ),
         }
       : undefined,
     businessTrip:
-      'businessTrip' in fragmentData && fragmentData.businessTrip
+      'businessTrip' in businessTrip && businessTrip.businessTrip
         ? {
-            id: fragmentData.businessTrip.id,
-            name: fragmentData.businessTrip.name,
+            id: businessTrip.businessTrip.id,
+            name: businessTrip.businessTrip.name,
           }
         : undefined,
     moreInfo: {
       chargeId: fragmentData.id,
-      type: fragmentData.__typename as ChargeType,
-      isTransactionsMissing: fragmentData.validationData?.missingInfo.includes(
+      type,
+      isTransactionsMissing: moreInfo.validationData?.missingInfo.includes(
         MissingChargeInfo.Transactions,
       ),
-      isDocumentsMissing: fragmentData.validationData?.missingInfo.includes(
+      isDocumentsMissing: moreInfo.validationData?.missingInfo.includes(
         MissingChargeInfo.Documents,
       ),
-      info: fragmentData.metadata
+      info: moreInfo.metadata
         ? {
-            transactionsCount: fragmentData.metadata.transactionsCount,
-            documentsCount: fragmentData.metadata.documentsCount,
-            ledgerCount: fragmentData.metadata.ledgerCount,
-            miscExpensesCount: fragmentData.metadata.miscExpensesCount,
-            depreciationRecordsCount: fragmentData.metadata.depreciationRecordsCount,
-            invalidLedger: fragmentData.metadata.invalidLedger,
+            transactionsCount: moreInfo.metadata.transactionsCount,
+            documentsCount: moreInfo.metadata.documentsCount,
+            ledgerCount: moreInfo.metadata.ledgerCount,
+            miscExpensesCount: moreInfo.metadata.miscExpensesCount,
+            depreciationRecordsCount: moreInfo.metadata.depreciationRecordsCount,
+            // Deferred, so it is read off the row itself and is absent until its part arrives.
+            invalidLedger: fragmentData.metadata?.invalidLedger,
           }
         : undefined,
     },
-    accountantApproval: fragmentData.accountantApproval,
+    accountantApproval: approval.accountantApproval,
   };
 }
 

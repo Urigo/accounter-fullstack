@@ -71,6 +71,10 @@ vi.mock('../helpers/mutation-dedupe.js', () => ({
   resetMutationDedupe: resetMutationDedupeMock,
 }));
 
+vi.mock('../providers/urql-cache.js', () => ({
+  chargesCacheExchange: () => ({ mockCacheExchange: true }),
+}));
+
 vi.mock('@urql/exchange-retry', () => ({
   retryExchange: retryExchangeMock,
 }));
@@ -411,6 +415,27 @@ describe('URQL auth exchange hardening', () => {
     expect(authIndex).toBeGreaterThanOrEqual(0);
     expect(retryIndex).toBeGreaterThan(authIndex);
     expect(fetchIndex).toBeGreaterThan(retryIndex);
+  });
+
+  it('places the cache after the error handler and before authExchange', async () => {
+    // Before auth, so an operation the cache answers is never held up waiting for a token; after
+    // the error handler, so that still sees every result, cached ones included.
+    await initializeAuth(async () => 'token-123');
+
+    const { exchanges } = createClientMock.mock.calls[0][0];
+    const errorHandlerIndex = exchanges.findIndex(
+      (e: unknown) => e === mapExchangeMock.mock.results[0].value,
+    );
+    const cacheIndex = exchanges.findIndex(
+      (e: unknown) => (e as { mockCacheExchange?: boolean })?.mockCacheExchange === true,
+    );
+    const authIndex = exchanges.findIndex(
+      (e: unknown) => e === authExchangeMock.mock.results[0].value,
+    );
+
+    expect(errorHandlerIndex).toBeGreaterThanOrEqual(0);
+    expect(cacheIndex).toBeGreaterThan(errorHandlerIndex);
+    expect(authIndex).toBeGreaterThan(cacheIndex);
   });
 
   it('retries network errors but never GraphQL errors', async () => {

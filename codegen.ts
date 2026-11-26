@@ -233,6 +233,16 @@ const config: CodegenConfig = {
         },
       },
     },
+    // Which concrete types each interface and union covers, for the client's normalized cache
+    // (`packages/client/src/providers/urql-cache.ts`): it files an entity under its concrete
+    // type, so it cannot match a fragment on `Charge` without this. Inside the client preset's
+    // output folder, so the same git-ignore rule and `generate:graphql:clear` cover it.
+    'packages/client/src/gql/possible-types.ts': {
+      plugins: ['fragment-matcher'],
+      config: {
+        useExplicitTyping: true,
+      },
+    },
     'packages/gmail-listener/src/gql/': {
       preset: 'client',
       config: {
