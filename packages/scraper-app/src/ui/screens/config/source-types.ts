@@ -70,6 +70,7 @@ export type MaxSource = {
   nickname?: string;
   username: string;
   password: string;
+  idNumber?: string;
   options?: { acceptedCardNumbers?: string[]; ignoredCardNumbers?: string[] };
 };
 

@@ -396,10 +396,9 @@ export function CalForm({ initial = {}, onSave, onCancel }: CalFormProps): React
         onChange={set}
       />
       <Field
-        label="Last 4 Digits"
+        label="Last 4 Digits (leave empty to read every card)"
         name="last4Digits"
         value={fields.last4Digits}
-        required
         onChange={set}
       />
       <ListField
@@ -435,6 +434,7 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
     nickname: initial.nickname ?? '',
     username: initial.username ?? '',
     password: initial.password ?? '',
+    idNumber: initial.idNumber ?? '',
     acceptedCardNumbers: fromList(initial.options?.acceptedCardNumbers),
     ignoredCardNumbers: fromList(initial.options?.ignoredCardNumbers),
   });
@@ -456,6 +456,7 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
           nickname: fields.nickname || undefined,
           username: fields.username,
           password: fields.password,
+          idNumber: fields.idNumber.trim() || undefined,
           options: hasOpts ? opts : undefined,
         });
       }}
@@ -468,6 +469,12 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
         value={fields.password}
         required
         password
+        onChange={set}
+      />
+      <Field
+        label="ID Number (only if Max asks for it when signing in)"
+        name="idNumber"
+        value={fields.idNumber}
         onChange={set}
       />
       <ListField

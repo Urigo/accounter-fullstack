@@ -983,20 +983,92 @@ export function amexVars(
   return { transactions: flattenIsracardAmexPayloads(payloads) };
 }
 
+const CAL_CURRENCY_BY_SYMBOL: Record<string, string> = {
+  '₪': 'ILS',
+  NIS: 'ILS',
+  'ש"ח': 'ILS',
+  $: 'USD',
+  '€': 'EUR',
+  '£': 'GBP',
+};
+
+/**
+ * CAL sends a currency as a symbol (`₪`, `$`); the server stores an ISO code. A symbol that
+ * is not known is refused: storing a guess would put the wrong currency on a transaction.
+ */
+export function calCurrency(symbol: string): string {
+  const trimmed = symbol.trim();
+  const currency = CAL_CURRENCY_BY_SYMBOL[trimmed] ?? (/^[A-Z]{3}$/.test(trimmed) ? trimmed : null);
+  if (!currency) throw new Error(`CAL transaction uses an unknown currency: "${symbol}"`);
+  return currency;
+}
+
+/**
+ * `2026-07-31T12:05:11` → `31/07/2026`: the day-first form the server's CAL handler reads
+ * (`to_date(..., 'DD/MM/YYYY')`). The calendar date is taken as CAL wrote it, not converted
+ * through a time zone.
+ */
+export function calDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})(T|$)/.exec(value);
+  if (!match) throw new Error(`Not a CAL date: "${value}"`);
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
 export function calVars(payload: CalPayload) {
   // CalPayload is { card, month, transactions[] }[] — flatten to per-transaction rows.
   // Each row gets `card` from the outer entry so the server knows which card it belongs to.
-  const transactions = payload.flatMap(entry =>
-    entry.transactions.map(t => ({
-      ...t,
-      card: entry.card,
+  //
+  // Fields are named one by one, not spread: CAL adds fields to its response over time
+  // (`comments`, `transTypeCommentDetails`), and a field the server's input type does not
+  // know fails the whole upload.
+  const transactions = payload.flatMap(entry => {
+    if (!/^\d+$/.test(entry.card)) {
+      throw new Error(`CAL card identifier is not a number: "${entry.card}"`);
+    }
+    const card = Number(entry.card);
+    return entry.transactions.map(t => ({
+      card,
+      trnIntId: t.trnIntId,
+      merchantName: t.merchantName,
+      merchantAddress: t.merchantAddress,
+      merchantPhoneNo: t.merchantPhoneNo,
+      merchantId: t.merchantId,
+      branchCodeDesc: t.branchCodeDesc,
+      trnPurchaseDate: calDate(t.trnPurchaseDate),
+      debCrdDate: calDate(t.debCrdDate),
       // Coerce numeric string fields
       trnAmt: t.trnAmt == null ? null : String(t.trnAmt),
       amtBeforeConvAndIndex:
         t.amtBeforeConvAndIndex == null ? null : String(t.amtBeforeConvAndIndex),
       cashAccountTrnAmt: t.cashAccountTrnAmt == null ? null : String(t.cashAccountTrnAmt),
-    })),
-  );
+      trnCurrencySymbol: calCurrency(t.trnCurrencySymbol),
+      debCrdCurrencySymbol: calCurrency(t.debCrdCurrencySymbol),
+      trnType: t.trnType,
+      trnTypeCode: t.trnTypeCode,
+      trnNumaretor: t.trnNumaretor,
+      trnExacWay: t.trnExacWay,
+      curPaymentNum: t.curPaymentNum,
+      numOfPayments: t.numOfPayments,
+      transCardPresentInd: t.transCardPresentInd,
+      transSource: t.transSource,
+      tokenInd: t.tokenInd,
+      tokenNumberPart4: t.tokenNumberPart4,
+      walletProviderCode: t.walletProviderCode,
+      walletProviderDesc: t.walletProviderDesc,
+      crdExtIdNumTypeCode: t.crdExtIdNumTypeCode,
+      chargeExternalToCardComment: t.chargeExternalToCardComment,
+      onGoingTransactionsComment: t.onGoingTransactionsComment,
+      refundInd: t.refundInd,
+      earlyPaymentInd: t.earlyPaymentInd,
+      debitSpreadInd: t.debitSpreadInd,
+      isAbroadTransaction: t.isAbroadTransaction,
+      isImmediateCommentInd: t.isImmediateCommentInd,
+      // The bank spells it `isImmediateHHKInd`; the server's input field is `isImmediateHhkInd`.
+      isImmediateHhkInd: t.isImmediateHHKInd,
+      isMargarita: t.isMargarita,
+      isSpreadPaymenstAbroad: t.isSpreadPaymenstAbroad,
+    }));
+  });
   return { transactions };
 }
 

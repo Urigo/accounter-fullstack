@@ -75,13 +75,16 @@ export class ExchangeProvider {
     ]);
 
     // adjust rate and convert to local default currency if base or quote are not local
-    if (baseCurrency !== defaultLocalCurrency) {
-      const baseRate = getRateForCurrency(baseCurrency, rates, defaultLocalCurrency);
-      rate = rate * baseRate;
-    }
-    if (quoteCurrency !== defaultLocalCurrency) {
-      const quoteRate = getRateForCurrency(quoteCurrency, rates, defaultLocalCurrency);
-      rate = rate / quoteRate;
+    if (baseCurrency !== defaultLocalCurrency || quoteCurrency !== defaultLocalCurrency) {
+      if (!rates) {
+        throw new Error(`No exchange rates are stored on or before ${day}`);
+      }
+      if (baseCurrency !== defaultLocalCurrency) {
+        rate = rate * getRateForCurrency(baseCurrency, rates, defaultLocalCurrency);
+      }
+      if (quoteCurrency !== defaultLocalCurrency) {
+        rate = rate / getRateForCurrency(quoteCurrency, rates, defaultLocalCurrency);
+      }
     }
     return rate;
   }
