@@ -2601,33 +2601,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.68.7":
-  version: 0.68.7
-  resolution: "@graphql-hive/cli@npm:0.68.7"
+"@graphql-hive/cli@npm:0.69.0":
+  version: 0.69.0
+  resolution: "@graphql-hive/cli@npm:0.69.0"
   dependencies:
-    "@graphql-hive/core": "npm:0.24.0"
+    "@graphql-hive/core": "npm:0.25.0"
     "@graphql-inspector/core": "npm:^8.0.3"
-    "@graphql-tools/code-file-loader": "npm:^8.1.41"
-    "@graphql-tools/graphql-file-loader": "npm:^8.1.22"
-    "@graphql-tools/json-file-loader": "npm:^8.0.36"
-    "@graphql-tools/load": "npm:^8.1.19"
-    "@graphql-tools/url-loader": "npm:^9.1.12"
-    "@graphql-tools/utils": "npm:^12.0.3"
+    "@graphql-tools/code-file-loader": "npm:^9.1.2"
+    "@graphql-tools/graphql-file-loader": "npm:^9.1.2"
+    "@graphql-tools/json-file-loader": "npm:^9.0.9"
+    "@graphql-tools/load": "npm:^9.1.3"
+    "@graphql-tools/url-loader": "npm:^10.0.9"
+    "@graphql-tools/utils": "npm:^13.2.2"
     "@graphql-typed-document-node/core": "npm:3.2.0"
     "@oclif/core": "npm:3.27.0"
     "@oclif/plugin-help": "npm:6.3.0"
     "@oclif/plugin-update": "npm:4.8.0"
-    "@theguild/federation-composition": "npm:0.27.2"
+    "@theguild/federation-composition": "npm:0.27.3"
     cli-table3: "npm:0.6.5"
     colors: "npm:1.4.0"
     env-ci: "npm:7.3.0"
-    graphql: "npm:^16.8.1"
-    graphql-tag: "npm:^2.12.6"
+    graphql: "npm:^17.1.0"
+    graphql-tag: "npm:^2.12.7"
     tslib: "npm:^2.8.1"
     zod: "npm:^4.6.6"
   bin:
     hive: bin/run
-  checksum: 10c0/0234df12f198a31e4a655b78b47472430d23c4ecd682ef2dbbb9337e2e8c88b32974191bd334de7f5695e46d1f71f6ad8a28deab967145ad5e818c3f9fb07c82
+  checksum: 10c0/eb65165627f58b78bd1b78f31b086a61af56fe614f9df8224cc78f290e0761e31349ec3313cf9f0e114fa8b35bf6d1a9e7d27ee604e9609ceaa03b4d06cc7407
   languageName: node
   linkType: hard
 
@@ -2651,6 +2651,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-hive/core@npm:0.25.0":
+  version: 0.25.0
+  resolution: "@graphql-hive/core@npm:0.25.0"
+  dependencies:
+    "@graphql-hive/logger": "npm:^1.1.1"
+    "@graphql-hive/signal": "npm:^3.0.0"
+    "@graphql-tools/utils": "npm:^13.2.2"
+    "@whatwg-node/fetch": "npm:^0.10.13"
+    async-retry: "npm:^1.3.3"
+    events: "npm:^3.3.0"
+    js-md5: "npm:0.8.3"
+    lodash.sortby: "npm:^4.7.0"
+    tiny-lru: "npm:^11.4.7"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/8e18505a95bb22849414370c495345573f5371e3e31697f5d9ca4a70ba6a15fe1a2be18ee2f1de60e92d3e0c4708564cfdd995ef5115d83e364044ce95aa2958
+  languageName: node
+  linkType: hard
+
 "@graphql-hive/importer@npm:^2.0.0":
   version: 2.0.0
   resolution: "@graphql-hive/importer@npm:2.0.0"
@@ -2658,7 +2678,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/logger@npm:1.2.0, @graphql-hive/logger@npm:^1.1.0, @graphql-hive/logger@npm:^1.2.0":
+"@graphql-hive/logger@npm:1.2.0, @graphql-hive/logger@npm:^1.1.0, @graphql-hive/logger@npm:^1.1.1, @graphql-hive/logger@npm:^1.2.0":
   version: 1.2.0
   resolution: "@graphql-hive/logger@npm:1.2.0"
   peerDependencies:
@@ -3275,7 +3295,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/code-file-loader@npm:^9.0.3":
+"@graphql-tools/code-file-loader@npm:^9.0.3, @graphql-tools/code-file-loader@npm:^9.1.2":
   version: 9.1.2
   resolution: "@graphql-tools/code-file-loader@npm:9.1.2"
   dependencies:
@@ -3550,7 +3570,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/graphql-file-loader@npm:^9.0.2, @graphql-tools/graphql-file-loader@npm:^9.0.6":
+"@graphql-tools/graphql-file-loader@npm:^9.0.2, @graphql-tools/graphql-file-loader@npm:^9.0.6, @graphql-tools/graphql-file-loader@npm:^9.1.2":
   version: 9.1.2
   resolution: "@graphql-tools/graphql-file-loader@npm:9.1.2"
   dependencies:
@@ -3637,7 +3657,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/json-file-loader@npm:^9.0.2, @graphql-tools/json-file-loader@npm:^9.0.6":
+"@graphql-tools/json-file-loader@npm:^9.0.2, @graphql-tools/json-file-loader@npm:^9.0.6, @graphql-tools/json-file-loader@npm:^9.0.9":
   version: 9.0.9
   resolution: "@graphql-tools/json-file-loader@npm:9.0.9"
   dependencies:
@@ -3678,7 +3698,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/load@npm:^9.0.2, @graphql-tools/load@npm:^9.0.6":
+"@graphql-tools/load@npm:^9.0.2, @graphql-tools/load@npm:^9.0.6, @graphql-tools/load@npm:^9.1.3":
   version: 9.1.3
   resolution: "@graphql-tools/load@npm:9.1.3"
   dependencies:
@@ -3812,7 +3832,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/url-loader@npm:^10.0.2, @graphql-tools/url-loader@npm:^10.0.6":
+"@graphql-tools/url-loader@npm:^10.0.2, @graphql-tools/url-loader@npm:^10.0.6, @graphql-tools/url-loader@npm:^10.0.9":
   version: 10.0.9
   resolution: "@graphql-tools/url-loader@npm:10.0.9"
   dependencies:
@@ -9735,9 +9755,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@theguild/federation-composition@npm:0.27.2":
-  version: 0.27.2
-  resolution: "@theguild/federation-composition@npm:0.27.2"
+"@theguild/federation-composition@npm:0.27.3":
+  version: 0.27.3
+  resolution: "@theguild/federation-composition@npm:0.27.3"
   dependencies:
     constant-case: "npm:^3.0.4"
     debug: "npm:4.4.3"
@@ -9745,7 +9765,7 @@ __metadata:
     lodash.sortby: "npm:^4.7.0"
   peerDependencies:
     graphql: ^16.0.0 || ^17.0.0
-  checksum: 10c0/5a23d75713259b24e6387b1715e5ddd03a1315439016e8531a192c3f9d894b83cdf3782053972f938009a17ebb72bea6facb86ea8dcc63f0c433eecb5927156e
+  checksum: 10c0/3870ca1714c15d97bd8807a20763517cef3c08c747edbf543ec5281514bcdc65b37d6cd300b06f3779dd4f42be0ce96859ba08c9b9c7141966ae4c1390b609fb
   languageName: node
   linkType: hard
 
@@ -11127,7 +11147,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:7.0.2"
     "@graphql-codegen/typescript-resolvers": "npm:7.0.1"
     "@graphql-eslint/eslint-plugin": "npm:4.4.2"
-    "@graphql-hive/cli": "npm:0.68.7"
+    "@graphql-hive/cli": "npm:0.69.0"
     "@graphql-inspector/cli": "npm:7.0.8"
     "@graphql-tools/mock": "npm:10.1.4"
     "@parcel/watcher": "npm:2.6.0"
@@ -16694,7 +16714,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-tag@npm:^2.12.6, graphql-tag@npm:^2.12.7":
+"graphql-tag@npm:^2.12.7":
   version: 2.12.7
   resolution: "graphql-tag@npm:2.12.7"
   dependencies:
