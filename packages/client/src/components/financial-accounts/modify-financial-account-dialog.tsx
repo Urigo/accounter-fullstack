@@ -55,31 +55,49 @@ const optionalInt = z.preprocess<
   return Number.isNaN(num) ? undefined : num;
 }, z.number().int().optional());
 
-const financialAccountSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  number: z.string().min(1, 'Account number is required'),
-  isBusiness: z.boolean().default(false).optional(),
-  type: z.enum(Object.values(FinancialAccountType), 'Account type is required'),
-  // currencies are display-only and managed separately by the server
-  currencies: z.array(currencyTaxCategorySchema),
-  bankNumber: optionalInt,
-  branchNumber: optionalInt,
-  iban: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
-  swiftCode: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
-  extendedBankNumber: optionalInt,
-  partyPreferredIndication: optionalInt,
-  partyAccountInvolvementCode: optionalInt,
-  accountDealDate: optionalInt,
-  accountUpdateDate: optionalInt,
-  metegDoarNet: optionalInt,
-  kodHarshaatPeilut: optionalInt,
-  accountClosingReasonCode: optionalInt,
-  accountAgreementOpeningDate: optionalInt,
-  serviceAuthorizationDesc: z.string().optional(),
-  branchTypeCode: optionalInt,
-  mymailEntitlementSwitch: optionalInt,
-  productLabel: z.string().optional(),
-});
+const financialAccountSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    number: z.string().min(1, 'Account number is required'),
+    isBusiness: z.boolean().default(false).optional(),
+    type: z.enum(Object.values(FinancialAccountType), 'Account type is required'),
+    // currencies are display-only and managed separately by the server
+    currencies: z.array(currencyTaxCategorySchema),
+    bankNumber: optionalInt,
+    branchNumber: optionalInt,
+    iban: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
+    swiftCode: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
+    extendedBankNumber: optionalInt,
+    partyPreferredIndication: optionalInt,
+    partyAccountInvolvementCode: optionalInt,
+    accountDealDate: optionalInt,
+    accountUpdateDate: optionalInt,
+    metegDoarNet: optionalInt,
+    kodHarshaatPeilut: optionalInt,
+    accountClosingReasonCode: optionalInt,
+    accountAgreementOpeningDate: optionalInt,
+    serviceAuthorizationDesc: z.string().optional(),
+    branchTypeCode: optionalInt,
+    mymailEntitlementSwitch: optionalInt,
+    productLabel: z.string().optional(),
+  })
+  // The server reads a bank account together with its bank details, so both numbers are
+  // needed for one; asking here puts the message next to the field.
+  .superRefine((values, context) => {
+    if (values.type !== FinancialAccountType.BankAccount) return;
+    for (const [field, label] of [
+      ['bankNumber', 'Bank number'],
+      ['branchNumber', 'Branch number'],
+    ] as const) {
+      if (values[field] === undefined) {
+        context.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `${label} is required for a bank account`,
+        });
+      }
+    }
+  });
 
 function convertToFinancialAccountForm(account: FinancialAccount): FinancialAccountForm {
   return {
@@ -457,7 +475,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                       name="bankNumber"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel>Bank Number</FormLabel>
+                          <FormLabel>Bank Number *</FormLabel>
                           <FormControl>
                             <Input
                               inputMode="numeric"
@@ -475,7 +493,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                       name="branchNumber"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel>Branch Number</FormLabel>
+                          <FormLabel>Branch Number *</FormLabel>
                           <FormControl>
                             <Input
                               inputMode="numeric"

@@ -27,7 +27,7 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       try {
         await injector.get(AdminBusinessesProvider).updateAdminBusiness({
           id: businessId,
-          businessRegistrationStartDate: fields.registrationDate,
+          registrationDate: fields.registrationDate,
           companyTaxId: fields.withholdingTaxCompanyId,
           taxAdvancesIds: fields.taxAdvancesAnnualIds
             ? [...fields.taxAdvancesAnnualIds]
@@ -68,18 +68,11 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
   AdminBusiness: {
     id: admin => admin.id,
     name: admin => admin.name,
-    governmentId: admin => {
-      if (!admin.vat_number) {
-        throw new GraphQLError(`Admin business ID="${admin.id}" has no VAT number`);
-      }
-      return admin.vat_number;
-    },
-    registrationDate: admin => {
-      if (!admin.registration_date) {
-        throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
-      }
-      return admin.registration_date;
-    },
+    // Both are null for a business that was just created and has not filled them in yet.
+    // Throwing here instead would null out the whole admin record, and with it the screens
+    // where these two values are entered.
+    governmentId: admin => admin.vat_number ?? null,
+    registrationDate: admin => admin.registration_date ?? null,
     business: async (admin, _, { injector }) => {
       const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(admin.id);
       if (!business) {
@@ -91,7 +84,9 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
     taxAdvancesRates: admin => taxAdvancesRatesSchema.parse(admin.advance_tax_rates),
     withholdingTaxCompanyId: admin => admin.company_tax_id,
     withholdingTaxAnnualIds: admin => yearlyIdsSchema.parse(admin.withholding_tax_annual_ids),
-    socialSecurityDeductionsId: admin => `${admin.company_tax_id}00`,
+    // Derived from the company tax ID; there is none to derive from until that is filled in.
+    socialSecurityDeductionsId: admin =>
+      admin.company_tax_id ? `${admin.company_tax_id}00` : null,
     socialSecurityEmployerIds: admin => yearlyIdsSchema.parse(admin.social_security_employer_ids),
   },
   LtdFinancialEntity: {

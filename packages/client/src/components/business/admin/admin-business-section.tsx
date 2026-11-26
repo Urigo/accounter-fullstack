@@ -133,7 +133,7 @@ function BusinessAdminSectionFragmentToFormValues(
   }
 
   return {
-    registrationDate: admin.adminInfo.registrationDate,
+    registrationDate: admin.adminInfo.registrationDate ?? '',
     withholdingTaxAnnualIds: admin.adminInfo.withholdingTaxAnnualIds.sort(
       (a, b) => b.year - a.year,
     ),
