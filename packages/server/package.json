@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "cleanup:expired-invitations": "tsx src/scripts/run-invitation-cleanup.ts",
-    "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty || exit 1\" --watch 'src/**/*' --watch '../green-invoice-graphql/dist/**' --watch '../pcn874-generator/dist/**' --watch '../shaam6111-generator/dist/**' --watch '../shaam-uniform-format-generator/dist/**' --delay 1 -e ts,tsx,mts,js",
+    "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty || exit 1\" --watch 'src/**/*' --watch '../green-invoice-graphql/dist/**' --watch '../opcn1214-generator/dist/**' --watch '../pcn874-generator/dist/**' --watch '../shaam6111-generator/dist/**' --watch '../shaam-uniform-format-generator/dist/**' --delay 1 -e ts,tsx,mts,js",
     "generate": "yarn generate:all",
     "generate:sql": "yarn pgtyped",
     "generate:sql:watch": "yarn pgtyped:watch",
@@ -28,7 +28,7 @@
     "seed:admin-context": "tsx scripts/seed-admin-context.ts",
     "seed:super-admin": "tsx scripts/seed-super-admin.ts",
     "server:build": "yarn build",
-    "server:build:prod": "yarn generate && yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build && yarn build",
+    "server:build:prod": "yarn generate && yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql --include @accounter/opcn1214-generator --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build && yarn build",
     "server:dev": "yarn dev",
     "start": "node --import ./dist/bootstrap-telemetry.js dist/index.js",
     "typecheck": "tsc --noEmit",
@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@accounter/green-invoice-graphql": "workspace:^",
+    "@accounter/opcn1214-generator": "workspace:^",
     "@accounter/pcn874-generator": "workspace:^",
     "@accounter/shaam-uniform-format-generator": "workspace:^",
     "@accounter/shaam6111-generator": "workspace:^",

@@ -23,9 +23,10 @@ The build config exists because the test helpers under `src/__tests__` import
 
 ### Build the workspace generators first
 
-The server imports four sibling packages by name:
+The server imports five sibling packages by name:
 
 - `@accounter/green-invoice-graphql`
+- `@accounter/opcn1214-generator`
 - `@accounter/pcn874-generator`
 - `@accounter/shaam6111-generator`
 - `@accounter/shaam-uniform-format-generator`
@@ -38,7 +39,7 @@ both read the same module resolution. Either one, run against unbuilt generators
 came from a generator).
 
 Every pipeline already orders this correctly — root `yarn build` runs `build:tools` before
-`build:main`, and `yarn workspace @accounter/server server:build:prod` builds the four explicitly.
+`build:main`, and `yarn workspace @accounter/server server:build:prod` builds the five explicitly.
 Only hand-run commands in a fresh clone need care:
 
 ```bash
@@ -49,7 +50,7 @@ yarn workspace @accounter/server typecheck
 
 ### The dev loop and the generators
 
-`yarn dev` watches the server's own `src` **and** the four generators' `dist` directories, so the
+`yarn dev` watches the server's own `src` **and** the five generators' `dist` directories, so the
 loop differs depending on what you edit:
 
 | You edit                 | What happens                                                            |
@@ -62,7 +63,7 @@ yarn workspace @accounter/pcn874-generator build # server rebuilds and restarts 
 ```
 
 There is no watch on the generators' _source_: `bob build` has no watch mode, and rebuilding all
-four on every server-source save would cost more than it saves. Watching their build output instead
+five on every server-source save would cost more than it saves. Watching their build output instead
 means one explicit generator build is all it takes.
 
 Note that nodemon's `--ignore` patterns are **not** anchored to the package directory — an
