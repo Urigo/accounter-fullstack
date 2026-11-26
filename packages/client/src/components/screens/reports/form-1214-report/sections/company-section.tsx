@@ -1,7 +1,9 @@
 import type { ReactElement } from 'react';
 import { Form1214CompanySectionFragmentDoc } from '../../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../../gql/index.js';
-import { DetailList, Empty, Section } from './section-layout.js';
+import { Form1214CompanyEditor, Form1214PreparerEditor } from '../company-editor.js';
+import { useForm1214Report } from '../report-context.js';
+import { Section } from './section-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -15,6 +17,10 @@ import { DetailList, Empty, Section } from './section-layout.js';
           prefix
           number
         }
+        fax {
+          prefix
+          number
+        }
         email
         occupationDescription
         mailingAddress
@@ -24,7 +30,15 @@ import { DetailList, Empty, Section } from './section-layout.js';
       }
       preparer {
         officeName
+        contactName
         name
+        profession
+        licensedDealerNumber
+        address
+        phone {
+          prefix
+          number
+        }
       }
     }
   }
@@ -34,28 +48,20 @@ type Props = {
   data: FragmentType<typeof Form1214CompanySectionFragmentDoc>;
 };
 
-/** The company details saved on top of the books, and the report's preparer. */
+/**
+ * The company details saved on top of the books, and the report's preparer. Each has its own
+ * editor and is saved on its own.
+ */
 export function Form1214CompanySection({ data }: Props): ReactElement {
   const { company, preparer } = getFragmentData(Form1214CompanySectionFragmentDoc, data).profile;
-  const items: Array<[string, string | null | undefined]> = [
-    ['Registered name', company.registeredName],
-    ['Phone', company.phone ? `${company.phone.prefix}-${company.phone.number}` : null],
-    ['Email', company.email],
-    ['Occupation', company.occupationDescription],
-    ['Mailing address', company.mailingAddress],
-    ['Business address', company.businessAddress],
-    ['Books address', company.booksAddress],
-    ['Withholding file number', company.withholdingFileNumber],
-    ['Preparer', preparer ? (preparer.officeName ?? preparer.name) : null],
-  ];
-  const setItems = items.filter((item): item is [string, string] => !!item[1]);
+  // A draft belongs to its year: another year starts a fresh one
+  const { year } = useForm1214Report();
   return (
     <Section id="company" title="Company details">
-      {setItems.length === 0 ? (
-        <Empty>The company details come from the books; no additions are saved.</Empty>
-      ) : (
-        <DetailList items={setItems} />
-      )}
+      <div className="space-y-6">
+        <Form1214CompanyEditor key={`company-${year}`} company={company} />
+        <Form1214PreparerEditor key={`preparer-${year}`} preparer={preparer} />
+      </div>
     </Section>
   );
 }
