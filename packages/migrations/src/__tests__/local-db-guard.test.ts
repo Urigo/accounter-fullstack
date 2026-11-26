@@ -230,6 +230,19 @@ describe('assertLocalDatabaseOnly', () => {
     );
   });
 
+  it('says why there is no override, in the caller\'s words when it gives them', () => {
+    expect(messageFor(REMOTE)).toContain('It resets the database it connects to');
+
+    let message = '';
+    try {
+      assertLocalDatabaseOnly(REMOTE, 'yarn local:tenant', {}, 'It writes a dev-only tenant.');
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain('It writes a dev-only tenant.');
+    expect(message).not.toContain('It resets the database');
+  });
+
   it('says there is no override instead of advertising one', () => {
     const message = messageFor(REMOTE);
 

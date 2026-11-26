@@ -255,14 +255,18 @@ export function assertLocalDatabase(
  * switch, the refusal above prints it as the way through, and whoever sets it to get an
  * unrelated suite past the guard has not agreed to a reset.
  *
- * Use this where the caller wipes what it connects to and a deployed database is never the
- * target. Today that is the demo seed test, which starts a script that truncates the domain
- * tables.
+ * Use this where a deployed database is never the target: the demo seed test, which starts a
+ * script that truncates the domain tables, and `yarn local:tenant`, which writes a dev-only
+ * tenant (a dev-auth user and a scraper API key) that has no business in a deployed database.
+ *
+ * `reason` is the line of the refusal that says why there is no override. The default fits a
+ * caller that resets its target.
  */
 export function assertLocalDatabaseOnly(
   target: DatabaseTarget,
   context: string,
   env: NodeJS.ProcessEnv = process.env,
+  reason = 'It resets the database it connects to, so it only runs against a local Postgres.',
 ): void {
   // The same host `pg` would use, PGHOST fallback included. `env` is read for that and for
   // nothing else: no variable in it lets a remote target through.
@@ -275,7 +279,7 @@ export function assertLocalDatabaseOnly(
       `Refusing to run ${context} against a non-local database: ${describeDatabaseTarget(resolved.target)}`,
       ...pgHostNote(resolved),
       '',
-      `It resets the database it connects to, so it only runs against a local Postgres.`,
+      reason,
       `${ALLOW_REMOTE_DB_ENV} does not apply here and there is no other override.`,
       '',
       'Point the command at a local database by overriding the target for this command only:',

@@ -55,6 +55,10 @@ const ALLOWED = new Map([
     'unit tests of the database-name rule; flags go into plain objects passed as `env`',
   ],
   [
+    'scripts/__tests__/local-tenant.test.ts',
+    'proves ALLOW_REMOTE_DB has no effect; it goes into plain `env` objects and a scratch child env',
+  ],
+  [
     'scripts/__tests__/seed-demo-data.test.ts',
     'runs the seed in-process with `pg` replaced by a recorder; env is stubbed per test and restored',
   ],

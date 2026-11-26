@@ -31,6 +31,7 @@
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint --cache --cache-location node_modules/.cache/.eslintcache .",
     "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn setup",
+    "local:tenant": "tsx scripts/local-tenant.ts",
     "migration:check-conflicts": "node --import ./scripts/register-esm.js ./scripts/check-migration-conflicts.ts",
     "mock:client": "concurrently -c magenta,cyan -n MOCK,CLIENT \"yarn mock:server\" \"ALLOW_DEV_AUTH=1 DEV_AUTH_USER_ID=00000000-0000-0000-0000-000000000000 yarn workspace @accounter/client dev\"",
     "mock:server": "node scripts/graphql-mock-server.mjs",

@@ -17,10 +17,13 @@ import {
  * - user_context row with ILS defaults
  *
  * @param client - PostgreSQL client (should be in a transaction for rollback safety)
+ * @param options.name - Name of the admin business. Its id is derived from it with
+ *   `makeUUID('business', name)`, as `bootstrapNewClient` does. Default: `Admin Business`.
  * @returns Promise resolving to admin entity ID
  */
 export async function seedAdminCore(
   client: PoolClient | Client,
+  { name: adminName = 'Admin Business' }: { name?: string } = {},
 ): Promise<{ adminEntityId: string }> {
   console.log('🌱 Starting admin context seed...');
 
@@ -44,10 +47,10 @@ export async function seedAdminCore(
   console.log('Creating admin business entity...');
 
   // First check if admin entity already exists (by name and type, ignoring owner_id for admin)
-  const adminId = makeUUID('business', 'Admin Business');
+  const adminId = makeUUID('business', adminName);
   const { id } = await ensureFinancialEntity(client, {
     id: adminId,
-    name: 'Admin Business',
+    name: adminName,
     type: 'business',
   });
   const adminEntityId = id;
