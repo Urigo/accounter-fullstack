@@ -15,7 +15,8 @@ scrapers but needed to get:
 I believe this project could be integrated into the original bank scrapers. Or as a dependency (all
 the additions above are optional with a config) or directly integrating the code.
 
-Currently this library supports Bank Hapoalim, Bank Hapoalim business (with SMS login) and Isracard.
+Currently this library supports Bank Hapoalim, Bank Hapoalim business (with SMS login), Bank Leumi
+(personal accounts), Discount, Otsar Hahayal, Isracard, Amex, CAL and Max.
 
 Should be easy to migrate more scrapers from
 [israeli-bank-scrapers](https://github.com/eshaham/israeli-bank-scrapers) into this new form.

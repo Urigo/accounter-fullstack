@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { leumi, type LeumiCredentials, type LeumiOptions } from './scrapers/leumi/index.js';
 import { max, MaxOptions, type MaxCredentials } from './scrapers/max.js';
 import {
   otsarHahayal,
@@ -71,6 +72,10 @@ export async function init({
       const page = await newPage(browser);
       return max(page, credentials, options);
     },
+    leumi: async (credentials: LeumiCredentials | undefined, options?: LeumiOptions) => {
+      const page = await newPage(browser);
+      return leumi(page, credentials, options);
+    },
     otsarHahayal: async (credentials: OtsarHahayalCredentials, options?: OtsarHahayalOptions) => {
       return otsarHahayal(credentials, options);
     },
@@ -82,3 +87,4 @@ export async function init({
 
 export * from './zod-schemas/types.js';
 export { HapoalimOptions } from './scrapers/hapoalim.js';
+export type * from './scrapers/leumi/index.js';
