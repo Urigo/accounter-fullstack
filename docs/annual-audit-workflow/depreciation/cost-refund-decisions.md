@@ -37,7 +37,8 @@ The user picks the mode per refund:
   arises only when the refund exceeds the book value.
 
 A refund of an asset recorded in a foreign currency is entered in that currency. From activation, it
-converts at the asset's cost-basis rate; from the refund date, at the refund charge's rate.
+converts at the asset's cost-basis rate; from the refund date, at the rate of the debit date of the
+refund charge's main (non-fee) transaction, or of the refund date before the refund is received.
 
 ## Found by the scenario test
 
