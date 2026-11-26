@@ -1,20 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Injector } from 'graphql-modules';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
-import { getChargeDocumentsMeta } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import {
   convertForeignRefund,
   convertForeignRefunds,
   resolveAssetLocalCost,
   type AssetCostRecord,
 } from '../asset-cost.helper.js';
-
-vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
-  ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
-  getChargeDocumentsMeta: vi.fn(),
-}));
 
 /*
  * All IDs, amounts, rates and dates below are made up.
@@ -31,7 +26,28 @@ const RATES: Record<TimelessDateString, number> = {
   '2023-08-20': 3.7,
   '2023-08-27': 3.68,
   '2024-04-14': 3.65,
+  // a later rebate: its credit note, its receipt in the bank and its refund date
+  '2024-04-10': 3.62,
+  '2024-04-16': 3.66,
+  '2024-04-20': 3.64,
 };
+
+type RefundChargeTransaction = {
+  is_fee: boolean;
+  debit_date: TimelessDateString | null;
+  debit_date_override: TimelessDateString | null;
+  debit_timestamp: Date | null;
+};
+
+function transaction(overrides: Partial<RefundChargeTransaction> = {}): RefundChargeTransaction {
+  return {
+    is_fee: false,
+    debit_date: null,
+    debit_date_override: null,
+    debit_timestamp: null,
+    ...overrides,
+  };
+}
 
 function record(overrides: Partial<AssetCostRecord> = {}): AssetCostRecord {
   return {
@@ -45,7 +61,8 @@ function record(overrides: Partial<AssetCostRecord> = {}): AssetCostRecord {
   };
 }
 
-function buildInjector() {
+function buildInjector(refundChargeTransactions: RefundChargeTransaction[] = []) {
+  const loadTransactions = vi.fn(async (_chargeId: string) => refundChargeTransactions);
   const getExchangeRates = vi.fn(async (base: string, quote: string, date: TimelessDateString) => {
     const rate = RATES[date];
     if (base !== 'USD' || quote !== 'ILS' || rate === undefined) {
@@ -61,21 +78,16 @@ function buildInjector() {
       if (token === ExchangeProvider) {
         return { getExchangeRates };
       }
+      if (token === TransactionsProvider) {
+        return { transactionsByChargeIDLoader: { load: loadTransactions } };
+      }
       throw new Error('unexpected provider requested');
     },
   } as unknown as Injector;
-  return { injector, getExchangeRates };
-}
-
-function mockRefundChargeDocumentsDate(documentsMinDate: TimelessDateString | null) {
-  vi.mocked(getChargeDocumentsMeta).mockResolvedValue({ documentsMinDate } as never);
+  return { injector, getExchangeRates, loadTransactions };
 }
 
 describe('resolveAssetLocalCost', () => {
-  beforeEach(() => {
-    vi.mocked(getChargeDocumentsMeta).mockReset();
-  });
-
   it('takes the local cost override as is', async () => {
     const { injector, getExchangeRates } = buildInjector();
 
@@ -100,15 +112,16 @@ describe('resolveAssetLocalCost', () => {
   it('converts a foreign-currency amount at the rate of its activation date', async () => {
     // the purchase charge's invoice (2025-01-10, ₪3.60), misc expenses and payment (2025-01-20,
     // ₪3.70) are dated otherwise: only the activation date (2025-02-01, ₪3.80) counts
-    mockRefundChargeDocumentsDate('2025-01-10');
-    const { injector, getExchangeRates } = buildInjector();
+    const { injector, getExchangeRates, loadTransactions } = buildInjector([
+      transaction({ debit_date: '2025-01-20' }),
+    ]);
 
     const result = await resolveAssetLocalCost(injector, record());
 
     expect(result).toMatchObject({ rate: 3.8, rateDate: '2025-02-01', source: 'CONVERTED' });
     expect(result.cost).toBeCloseTo(3800);
     expect(getExchangeRates).toHaveBeenCalledWith('USD', 'ILS', '2025-02-01');
-    expect(getChargeDocumentsMeta).not.toHaveBeenCalled();
+    expect(loadTransactions).not.toHaveBeenCalled();
   });
 
   it('takes a local cost override over the activation-date conversion', async () => {
@@ -155,10 +168,6 @@ describe('resolveAssetLocalCost', () => {
 });
 
 describe('convertForeignRefund', () => {
-  beforeEach(() => {
-    vi.mocked(getChargeDocumentsMeta).mockReset();
-  });
-
   // the acquired assets, paid in USD and activated on 2023-08-20 (₪3.700)
   const assets = {
     goodwill: record({ id: 'goodwill', amount: '60000', activation_date: '2023-08-20' }),
@@ -224,19 +233,69 @@ describe('convertForeignRefund', () => {
     expect(getExchangeRates).not.toHaveBeenCalled();
   });
 
-  it("converts a later rebate at the refund charge's rate", async () => {
-    mockRefundChargeDocumentsDate('2024-04-14');
-    const { injector } = buildInjector();
+  const rebate = {
+    originalAmount: 16_000,
+    refundMode: 'FROM_REFUND_DATE' as const,
+    chargeId: 'refund-charge',
+    refundDate: '2024-04-20' as const,
+  };
 
-    const result = await convertForeignRefund(injector, assets.software, {
-      originalAmount: 16_000,
-      refundMode: 'FROM_REFUND_DATE',
-      chargeId: 'refund-charge',
-      refundDate: '2024-04-20',
-    });
+  it("converts a later rebate at the debit date of the refund charge's main transaction", async () => {
+    // the credit note is dated 2024-04-10 and the refund date is 2024-04-20: the money arriving on
+    // 2024-04-14 (₪3.65) counts, not the bank fee debited on 2024-04-10
+    const { injector, loadTransactions } = buildInjector([
+      transaction({ is_fee: true, debit_date: '2024-04-10' }),
+      transaction({ debit_date: '2024-04-14' }),
+    ]);
+
+    const result = await convertForeignRefund(injector, assets.software, rebate);
 
     expect(result).toEqual({ cost: 58_400, rate: 3.65, rateDate: '2024-04-14' });
-    expect(getChargeDocumentsMeta).toHaveBeenCalledWith('refund-charge', injector);
+    expect(loadTransactions).toHaveBeenCalledWith('refund-charge');
+  });
+
+  it("takes the main transaction's debit date override, like its ledger entry", async () => {
+    const { injector } = buildInjector([
+      transaction({ debit_date: '2024-04-14', debit_date_override: '2024-04-16' }),
+    ]);
+
+    const result = await convertForeignRefund(injector, assets.software, rebate);
+
+    expect(result).toEqual({ cost: 58_560, rate: 3.66, rateDate: '2024-04-16' });
+  });
+
+  it('takes the earliest of several main transactions', async () => {
+    const { injector } = buildInjector([
+      transaction({ debit_date: '2024-04-16' }),
+      transaction({ debit_date: '2024-04-14' }),
+    ]);
+
+    const result = await convertForeignRefund(injector, assets.software, rebate);
+
+    expect(result.rateDate).toBe('2024-04-14');
+  });
+
+  it('falls back to the refund date before the refund is received', async () => {
+    const { injector } = buildInjector([
+      transaction({ is_fee: true, debit_date: '2024-04-10' }),
+      transaction({ debit_date: null }),
+    ]);
+
+    const result = await convertForeignRefund(injector, assets.software, rebate);
+
+    expect(result).toEqual({ cost: 58_240, rate: 3.64, rateDate: '2024-04-20' });
+  });
+
+  it('converts a later rebate without a charge at the refund date', async () => {
+    const { injector, loadTransactions } = buildInjector();
+
+    const result = await convertForeignRefund(injector, assets.software, {
+      ...rebate,
+      chargeId: null,
+    });
+
+    expect(result).toEqual({ cost: 58_240, rate: 3.64, rateDate: '2024-04-20' });
+    expect(loadTransactions).not.toHaveBeenCalled();
   });
 
   it('rejects a refund of an asset without an amount', async () => {

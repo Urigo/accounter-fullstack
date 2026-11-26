@@ -1,11 +1,12 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { Currency } from '../../../shared/enums.js';
-import { roundToAgorot } from '../../../shared/helpers/index.js';
+import { dateToTimelessDateString, roundToAgorot } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import { getChargeDocumentsMeta } from '../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { transactionExchangeRateDate } from '../../ledger/helpers/utils.helper.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { IGetDepreciationRecordsByIdsResult } from '../types.js';
 import type { CostRefundMode } from './asset-depreciation.helper.js';
 
@@ -165,7 +166,8 @@ function byRefundOrder(a: ForeignRefund, b: ForeignRefund): number {
  *   round(refunded so far × cost ÷ amount) less what the earlier ones took. Refunds of the whole
  *   amount, however split, then add up to exactly the asset's (whole-shekel) cost.
  * - `FROM_REFUND_DATE` is a later rebate, a receivable arising on the refund date: it converts at
- *   the refund charge's rate (its earliest document date, else the refund date), rounded to agorot.
+ *   the refund charge's rate (its main transaction's debit date, else the refund date; see
+ *   `getRefundChargeRateDate`), rounded to agorot.
  *
  * Pass all of the asset's refunds entered in its currency, so the allocation sees the earlier ones.
  */
@@ -229,6 +231,39 @@ export async function convertForeignRefund(
   return conversion;
 }
 
+/**
+ * The date a later rebate converts at: the debit date of the refund charge's main transaction, the
+ * date the refund was received, at the rate the charge's ledger books that transaction at. The main
+ * transactions are the charge's non-fee ones; of several, the earliest. Without a charge, or before
+ * the charge has a main transaction with a debit date, the refund date.
+ */
+async function getRefundChargeRateDate(
+  injector: Injector,
+  refund: ForeignRefund,
+): Promise<TimelessDateString | Date> {
+  if (!refund.chargeId) {
+    return refund.refundDate;
+  }
+  const transactions = await injector
+    .get(TransactionsProvider)
+    .transactionsByChargeIDLoader.load(refund.chargeId);
+  let earliest: { day: TimelessDateString; date: TimelessDateString | Date } | null = null;
+  for (const transaction of transactions) {
+    if (transaction.is_fee) {
+      continue;
+    }
+    const date = transactionExchangeRateDate(transaction);
+    if (!date) {
+      continue;
+    }
+    const day = typeof date === 'string' ? date : dateToTimelessDateString(date);
+    if (!earliest || day < earliest.day) {
+      earliest = { day, date };
+    }
+  }
+  return earliest?.date ?? refund.refundDate;
+}
+
 async function convertAtRefundChargeRate(
   injector: Injector,
   record: AssetCostRecord,
@@ -240,15 +275,13 @@ async function convertAtRefundChargeRate(
   if (!record.currency) {
     throw new GraphQLError(`Depreciation record ${record.id} has no currency`);
   }
-  const rateDate = refund.chargeId
-    ? ((await getChargeDocumentsMeta(refund.chargeId, injector)).documentsMinDate ??
-      refund.refundDate)
-    : refund.refundDate;
+  const date = await getRefundChargeRateDate(injector, refund);
+  const rateDate = typeof date === 'string' ? date : dateToTimelessDateString(date);
   let rate: number;
   try {
     rate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(record.currency as Currency, defaultLocalCurrency, rateDate);
+      .getExchangeRates(record.currency as Currency, defaultLocalCurrency, date);
   } catch (error) {
     console.error(error);
     throw new GraphQLError(
