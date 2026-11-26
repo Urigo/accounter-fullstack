@@ -116,6 +116,31 @@ mutation {
 }
 ```
 
+## Local tenant without Auth0
+
+`yarn local:tenant` creates a tenant in a local database that is ready to receive a scrape: the
+business with its admin context (the same one `yarn seed:admin-context` creates), an owner user and
+the owner's membership, a scraper-role API key, and the full countries table. It prints the ids, the
+API key (once: only its hash is stored), and the commands that start the server and the client with
+dev auth as that owner, so neither Auth0 nor a super-admin is needed.
+
+```sh
+docker compose -f docker/docker-compose.dev.yml up -d db
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=accounter POSTGRES_USER=postgres \
+  POSTGRES_PASSWORD=postgres POSTGRES_SSL=0 yarn workspace @accounter-helper/migrations migration:run
+yarn local:tenant --name "Acme Ltd"
+```
+
+- The connection comes from the `POSTGRES_*` variables of the command and defaults to the docker
+  compose database; the repo `.env` is not used for it. A host that is not local is refused, and
+  nothing overrides that.
+- Running it again with the same `--name` reports the existing tenant. The API key cannot be shown
+  again; `--rotate-api-key` revokes it and prints a new one.
+- The server honours the printed `X-Dev-Auth` header only when it is started with
+  `ALLOW_DEV_AUTH=1`, as the printed command does. Never set that on a deployed server.
+- It creates no bank accounts or credit cards; add those as in step 7 of
+  [Getting started](#getting-started) or through the app.
+
 ## Authentication
 
 Accounter uses Auth0 for user authentication. See:
@@ -199,6 +224,7 @@ The tooling also checks its target, as a second line of defence. The checks are 
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | DB-backed tests, the vitest global setup, `yarn seed:production` | Refused, unless `ALLOW_REMOTE_DB=1` is set for that one command.                                   |
 | `yarn test:demo-seed`                                            | Refused. Nothing overrides it.                                                                     |
+| `yarn local:tenant`                                              | Refused. Nothing overrides it.                                                                     |
 | `yarn seed:staging-demo`                                         | Refused, unless `ALLOW_REMOTE_DB=1` is set for that one command and it is a demo database (below). |
 | `migration:run`                                                  | Warns and proceeds, because deploys run it. Refused with `ENFORCE_LOCAL_DB=1`.                     |
 | `yarn generate`                                                  | Not checked. It only reads.                                                                        |
