@@ -147,7 +147,9 @@ export function filterPayload(
 
     case 'otsar-hahayal':
     case 'otsar-hahayal-credit-card':
-      // Otsar HaHayal accounts are filtered at scrape time by the caller, which checks each
+    case 'leumi':
+    case 'leumi-credit-card':
+      // Otsar HaHayal and Leumi accounts are filtered at scrape time by the caller, which checks each
       // discovered account against the vault before uploading — nothing to filter here.
       return payload;
   }

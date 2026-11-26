@@ -76,6 +76,7 @@ const STUB_VAULT = {
   calAccounts: [],
   maxAccounts: [],
   otsarHahayalAccounts: [],
+  leumiAccounts: [],
   accountRecords: [
     {
       sourceType: 'poalim',

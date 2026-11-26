@@ -13,6 +13,7 @@ import type { MaxPayload } from '../payload-schemas/max.schema.js';
 import type { PoalimDepositsTaxEventsPayload } from '../payload-schemas/poalim-deposits-tax-events.schema.js';
 import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
 import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
+import type { LeumiCreditCardData, LeumiForeignData, LeumiIlsData } from '../scrapers/leumi.js';
 import type {
   ForeignAccountData,
   OtsarHahayalCreditCardData,
@@ -25,6 +26,9 @@ import {
   currencyRatesVars,
   discountVars,
   isracardVars,
+  leumiCreditCardVars,
+  leumiForeignVars,
+  leumiIlsVars,
   maxVars,
   otsarCreditCardVars,
   otsarForeignVars,
@@ -40,6 +44,9 @@ import {
   UPLOAD_CURRENCY_RATES,
   UPLOAD_DISCOUNT,
   UPLOAD_ISRACARD,
+  UPLOAD_LEUMI_CREDITCARD,
+  UPLOAD_LEUMI_FOREIGN,
+  UPLOAD_LEUMI_ILS,
   UPLOAD_MAX,
   UPLOAD_OTSAR_CREDITCARD,
   UPLOAD_OTSAR_FOREIGN,
@@ -189,6 +196,28 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
         UPLOAD_OTSAR_CREDITCARD,
         otsarCreditCardVars(creditCardData),
         'uploadOtsarHahayalCreditCardTransactions',
+      );
+    },
+
+    async uploadLeumiIls(ilsData: LeumiIlsData[]): Promise<ScraperUploadResult> {
+      return request(UPLOAD_LEUMI_ILS, leumiIlsVars(ilsData), 'uploadLeumiIlsTransactions');
+    },
+
+    async uploadLeumiForeign(foreignData: LeumiForeignData[]): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_LEUMI_FOREIGN,
+        leumiForeignVars(foreignData),
+        'uploadLeumiForeignTransactions',
+      );
+    },
+
+    async uploadLeumiCreditCard(
+      creditCardData: LeumiCreditCardData[],
+    ): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_LEUMI_CREDITCARD,
+        leumiCreditCardVars(creditCardData),
+        'uploadLeumiCreditCardTransactions',
       );
     },
   };

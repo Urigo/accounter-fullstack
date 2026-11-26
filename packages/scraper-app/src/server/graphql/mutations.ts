@@ -9,6 +9,9 @@ import {
   MaxTransactionInput,
   UploadAmexTransactionsMutationVariables,
   UploadIsracardTransactionsMutationVariables,
+  UploadLeumiCreditCardTransactionsMutationVariables,
+  UploadLeumiForeignTransactionsMutationVariables,
+  UploadLeumiIlsTransactionsMutationVariables,
   UploadOtsarHahayalCreditCardTransactionsMutationVariables,
   UploadOtsarHahayalForeignTransactionsMutationVariables,
   UploadOtsarHahayalIlsTransactionsMutationVariables,
@@ -26,6 +29,7 @@ import type { MaxPayload } from '../payload-schemas/max.schema.js';
 import type { PoalimDepositsTaxEventsPayload } from '../payload-schemas/poalim-deposits-tax-events.schema.js';
 import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
 import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
+import type { LeumiCreditCardData, LeumiForeignData, LeumiIlsData } from '../scrapers/leumi.js';
 import type {
   ForeignAccountData,
   OtsarHahayalCreditCardData,
@@ -1114,6 +1118,176 @@ export function maxVars(payload: MaxPayload) {
       };
       return transaction;
     }),
+  );
+  return { transactions };
+}
+
+export const UPLOAD_LEUMI_ILS = /* GraphQL */ `
+  mutation UploadLeumiIlsTransactions($transactions: [LeumiIlsTransactionInput!]!) {
+    uploadLeumiIlsTransactions(transactions: $transactions) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_LEUMI_FOREIGN = /* GraphQL */ `
+  mutation UploadLeumiForeignTransactions($transactions: [LeumiForeignTransactionInput!]!) {
+    uploadLeumiForeignTransactions(transactions: $transactions) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_LEUMI_CREDITCARD = /* GraphQL */ `
+  mutation UploadLeumiCreditCardTransactions($transactions: [LeumiCreditCardTransactionInput!]!) {
+    uploadLeumiCreditCardTransactions(transactions: $transactions) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+/** `24/11/2026` or `24/11/26` → `2026-11-24`. */
+function leumiSlashDate(value: string): string {
+  const match = /^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/.exec(value);
+  if (!match) throw new Error(`Not a Leumi date: "${value}"`);
+  const [, day, month, year] = match;
+  return `${year!.length === 2 ? `20${year}` : year}-${month}-${day}`;
+}
+
+const ISRAEL_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' });
+
+/**
+ * The bank sends card dates as the UTC instant of midnight in Israel
+ * (`2026-10-05T21:00:00.003Z` is 6 October). The calendar day is read in Israel time, so it
+ * does not depend on where this app runs.
+ */
+function leumiIsraelDate(instant: string): string {
+  const date = new Date(instant);
+  if (Number.isNaN(date.getTime())) throw new Error(`Not a Leumi timestamp: "${instant}"`);
+  return ISRAEL_DATE.format(date);
+}
+
+/** `1,234.56` → `1234.56`; an empty cell is 0. */
+function leumiAmount(value: string): number {
+  if (value === '') return 0;
+  if (!/^-?\d{1,3}(,\d{3})*\.\d{2}$/.test(value)) throw new Error(`Not a Leumi amount: "${value}"`);
+  return Number(value.replace(/,/g, ''));
+}
+
+export function leumiIlsVars(ilsData: LeumiIlsData[]): UploadLeumiIlsTransactionsMutationVariables {
+  const transactions = ilsData.flatMap(({ accountNumber, transactions: txns }) =>
+    txns.map(t => ({
+      accountNumber,
+      date: leumiSlashDate(t.DateSO),
+      effectiveDate: leumiSlashDate(t.EffectiveDateSO),
+      amount: t.Amount,
+      credit: t.Credit,
+      debit: t.Debit,
+      description: t.Description,
+      additionalData: t.AdditionalData ?? undefined,
+      runningBalance: t.RunningBalance,
+      referenceNumber: String(t.ReferenceNumberLong),
+      checkNumber: String(t.CheckNumberLong),
+      fitid: t.FITID,
+      typeCode: t.TypeInt,
+      additionalActivityType: t.AdditionalActivityTypeInt,
+      extensionTypeCode: t.ExtensionTypeCode,
+      segmentationFlag: t.SegmentationFlagInt,
+      creditCardIndex: t.CreditCardIndex,
+      ifLink: t.IfLinkInt,
+    })),
+  );
+  return { transactions };
+}
+
+export function leumiForeignVars(
+  foreignData: LeumiForeignData[],
+): UploadLeumiForeignTransactionsMutationVariables {
+  const transactions = foreignData.flatMap(({ accountNumber, activity }) =>
+    activity.transactions.map(t => ({
+      accountNumber,
+      currency: activity.currency,
+      date: leumiSlashDate(t.date),
+      description: t.description,
+      reference: t.reference,
+      debit: leumiAmount(t.debit),
+      credit: leumiAmount(t.credit),
+      balance: leumiAmount(t.balance),
+    })),
+  );
+  return { transactions };
+}
+
+export function leumiCreditCardVars(
+  creditCardData: LeumiCreditCardData[],
+): UploadLeumiCreditCardTransactionsMutationVariables {
+  const transactions = creditCardData.flatMap(card =>
+    card.transactions.map(({ chargeCurrency, tableId, transaction: t }) => ({
+      cardLast4: card.cardLast4,
+      relatedAccountNumber: card.relatedAccountNumber,
+      cardTransactionId: t.CardTransactionId,
+      dealDate: leumiIsraelDate(t.DateDealUTC),
+      debitDate: leumiIsraelDate(t.DebitCardDebitPeriodUTC),
+      merchantName: t.DebitCardFirmName.trim(),
+      dealDescription: t.DealDescription,
+      dealAmount: t.AmountDouble,
+      dealCurrencyCode: t.TransactionCurrency,
+      chargeAmount: t.NextPaymentAmountDouble,
+      chargeCurrency,
+      transactionType: t.TypeOfTransaction,
+      tableId,
+    })),
   );
   return { transactions };
 }

@@ -14,6 +14,7 @@ const STUB_VAULT = {
   calAccounts: [],
   maxAccounts: [],
   otsarHahayalAccounts: [],
+  leumiAccounts: [],
   accountRecords: [],
   settings: {
     showBrowser: false,

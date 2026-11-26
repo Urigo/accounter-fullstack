@@ -24,3 +24,4 @@ export type {
   IUploadOtsarHahayalCreditCardTransactionsResult,
   IUploadOtsarHahayalCreditCardTransactionsQuery,
 } from './__generated__/otsar-hahayal-scraper-ingestion.types.js';
+export type * from './__generated__/leumi-scraper-ingestion.types.js';

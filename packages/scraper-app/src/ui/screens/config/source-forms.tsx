@@ -5,6 +5,7 @@ import type {
   ConfigurableSourceType,
   DiscountSource,
   IsracardSource,
+  LeumiSource,
   MaxSource,
   OtsarHahayalSource,
   PoalimSource,
@@ -543,6 +544,54 @@ export function OtsarHahayalForm({
   );
 }
 
+type LeumiFormProps = {
+  initial?: Partial<LeumiSource>;
+  onSave(data: Omit<LeumiSource, 'id' | 'type'>): void;
+  onCancel(): void;
+};
+
+export function LeumiForm({ initial = {}, onSave, onCancel }: LeumiFormProps): ReactElement {
+  const [fields, setFields] = useState({
+    nickname: initial.nickname ?? '',
+    username: initial.username ?? '',
+    password: initial.password ?? '',
+  });
+
+  function set(e: ChangeEvent<HTMLInputElement>) {
+    setFields(f => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  return (
+    <form
+      onSubmit={e => {
+        e.preventDefault();
+        onSave({
+          nickname: fields.nickname || undefined,
+          username: fields.username,
+          password: fields.password,
+        });
+      }}
+    >
+      <Field label="Nickname" name="nickname" value={fields.nickname} onChange={set} />
+      <Field label="Username" name="username" value={fields.username} required onChange={set} />
+      <Field
+        label="Password"
+        name="password"
+        value={fields.password}
+        required
+        password
+        onChange={set}
+      />
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button type="submit">Save</button>
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 type SourceFormProps = {
   sourceType: ConfigurableSourceType;
   initial?: Partial<SourceConfig>;
@@ -590,6 +639,10 @@ export function SourceForm({
     case 'max':
       return (
         <MaxForm initial={initial as Partial<MaxSource>} onSave={onSave} onCancel={onCancel} />
+      );
+    case 'leumi':
+      return (
+        <LeumiForm initial={initial as Partial<LeumiSource>} onSave={onSave} onCancel={onCancel} />
       );
     case 'otsar-hahayal':
       return (

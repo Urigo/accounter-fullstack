@@ -81,6 +81,14 @@ export type OtsarHahayalSource = {
   password: string;
 };
 
+export type LeumiSource = {
+  id: string;
+  type: 'leumi';
+  nickname?: string;
+  username: string;
+  password: string;
+};
+
 export type SourceConfig =
   | PoalimSource
   | DiscountSource
@@ -88,13 +96,15 @@ export type SourceConfig =
   | AmexSource
   | CalSource
   | MaxSource
-  | OtsarHahayalSource;
+  | OtsarHahayalSource
+  | LeumiSource;
 
 export type { SourceType } from '../../../shared/source-types.js';
 
 /**
- * Source types the user can configure directly. Excludes 'otsar-hahayal-credit-card', which is
- * not a login of its own — those cards are discovered through an Otsar HaHayal source.
+ * Source types the user can configure directly. Excludes 'otsar-hahayal-credit-card' and
+ * 'leumi-credit-card', which are not logins of their own — those cards are discovered through
+ * an Otsar HaHayal or Leumi source.
  */
 export type ConfigurableSourceType = SourceConfig['type'];
 
@@ -106,6 +116,7 @@ export const CONFIGURABLE_SOURCE_TYPES = [
   'cal',
   'max',
   'otsar-hahayal',
+  'leumi',
 ] as const satisfies readonly ConfigurableSourceType[];
 
 export const SOURCE_LABELS: Record<SourceType, string> = {
@@ -117,4 +128,6 @@ export const SOURCE_LABELS: Record<SourceType, string> = {
   max: 'Max',
   'otsar-hahayal': 'Otsar HaHayal',
   'otsar-hahayal-credit-card': 'Otsar HaHayal - Credit Card',
+  leumi: 'Bank Leumi',
+  'leumi-credit-card': 'Bank Leumi - Credit Card',
 };

@@ -92,6 +92,13 @@ export const OtsarHahayalAccountSchema = z.object({
   password: z.string(),
 });
 
+export const LeumiAccountSchema = z.object({
+  id: z.string(),
+  nickname: z.string().optional(),
+  username: z.string(),
+  password: z.string(),
+});
+
 export const SettingsSchema = z.object({
   showBrowser: z.boolean().default(false),
   fetchBankOfIsraelRates: z.boolean().default(true),
@@ -119,6 +126,8 @@ export const AccountRecordSchema = z.object({
     'max',
     'otsar-hahayal',
     'otsar-hahayal-credit-card',
+    'leumi',
+    'leumi-credit-card',
   ]),
   accountNumber: z.string(),
   branchNumber: z.string().optional(),
@@ -135,6 +144,7 @@ export const VaultSchema = z.object({
   calAccounts: z.array(CalAccountSchema).default([]),
   maxAccounts: z.array(MaxAccountSchema).default([]),
   otsarHahayalAccounts: z.array(OtsarHahayalAccountSchema).default([]),
+  leumiAccounts: z.array(LeumiAccountSchema).default([]),
   accountRecords: z.array(AccountRecordSchema).default([]),
   settings: SettingsSchema.default({
     showBrowser: false,

@@ -20,10 +20,16 @@ export type SourceType =
   | 'cal'
   | 'max'
   | 'otsar-hahayal'
-  | 'otsar-hahayal-credit-card';
+  | 'otsar-hahayal-credit-card'
+  | 'leumi'
+  | 'leumi-credit-card';
 
 export type OtsarHahayalAccountsPayload = { account: string; branch: string }[];
 export type OtsarHahayalCreditCardsPayload = Pick<OtsarHahayalCreditCardData, 'card'>[];
+
+/** Leumi accounts by full number: the shekel account and one per foreign currency. */
+export type LeumiAccountsPayload = { accountNumber: string }[];
+export type LeumiCreditCardsPayload = { cardLast4: string }[];
 
 export type ValidatedPayload =
   | HapoalimAccountData[number]
@@ -36,7 +42,9 @@ export type ValidatedPayload =
   | CalPayload
   | MaxPayload
   | OtsarHahayalAccountsPayload
-  | OtsarHahayalCreditCardsPayload;
+  | OtsarHahayalCreditCardsPayload
+  | LeumiAccountsPayload
+  | LeumiCreditCardsPayload;
 
 export type { AccountRecord } from './vault.js';
 
@@ -77,6 +85,14 @@ export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPa
     case 'otsar-hahayal-credit-card': {
       const p = payload as OtsarHahayalCreditCardsPayload;
       return [...new Set(p.map(({ card }) => card.maskedPan))];
+    }
+    case 'leumi': {
+      const p = payload as LeumiAccountsPayload;
+      return [...new Set(p.map(a => a.accountNumber))];
+    }
+    case 'leumi-credit-card': {
+      const p = payload as LeumiCreditCardsPayload;
+      return [...new Set(p.map(c => c.cardLast4))];
     }
   }
 }

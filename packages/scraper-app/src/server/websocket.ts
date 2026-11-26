@@ -32,6 +32,7 @@ import {
   scrapeIsracard,
   type MonthlyIsracardPayload,
 } from './scrapers/isracard.js';
+import { leumiProgressId, scrapeLeumi } from './scrapers/leumi.js';
 import { scrapeMax } from './scrapers/max.js';
 import { scrapeOtsarHahayal } from './scrapers/otsar-hahayal.js';
 import { scrapePoalim } from './scrapers/poalim.js';
@@ -56,6 +57,7 @@ function collectSourceRefs(vault: Vault): SourceRef[] {
     ...vault.calAccounts.map(a => ({ id: a.id, type: 'cal' as const })),
     ...vault.maxAccounts.map(a => ({ id: a.id, type: 'max' as const })),
     ...vault.otsarHahayalAccounts.map(a => ({ id: a.id, type: 'otsar-hahayal' as const })),
+    ...vault.leumiAccounts.map(a => ({ id: a.id, type: 'leumi' as const })),
   ];
 }
 
@@ -246,6 +248,158 @@ function buildTask(
           };
         } catch (err) {
           console.error({ err }, '[task] Otsar HaHayal scrape error');
+          throw err;
+        }
+      }
+
+      if (src.type === 'leumi') {
+        try {
+          const creds = vault.leumiAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Leumi account ${src.id} not found in vault`);
+
+          const { ilsData, foreignData, creditCardData } = await scrapeLeumi(
+            creds,
+            dateFrom,
+            dateTo,
+            headless,
+            emit,
+          );
+
+          // Register the discovered accounts and check that each one is approved. The shekel
+          // account and every foreign-currency account are separate accounts at Leumi.
+          const accountPayload = [
+            ...ilsData.map(d => ({ accountNumber: d.accountNumber })),
+            ...foreignData.map(d => ({ accountNumber: d.accountNumber })),
+          ];
+          await registerDiscoveredAccounts('leumi', creds.id, [accountPayload]);
+          const check = checkAccounts('leumi', accountPayload, getVault().accountRecords);
+          if (check.unknown.length > 0) {
+            emit({
+              type: 'task-blocked',
+              sourceId: src.id,
+              sourceType: 'leumi',
+              unknownAccounts: check.unknown,
+            });
+            throw new BlockedError(check.unknown);
+          }
+          const ignoredAccounts = new Set(check.ignored);
+          const acceptedIlsData = ilsData.filter(d => !ignoredAccounts.has(d.accountNumber));
+          const acceptedForeignData = foreignData.filter(
+            d => !ignoredAccounts.has(d.accountNumber),
+          );
+
+          const creditCardPayload = creditCardData.map(d => ({ cardLast4: d.cardLast4 }));
+          let acceptedCreditCardData = creditCardData;
+          if (creditCardPayload.length > 0) {
+            await registerDiscoveredAccounts('leumi-credit-card', creds.id, [creditCardPayload]);
+            const ccCheck = checkAccounts(
+              'leumi-credit-card',
+              creditCardPayload,
+              getVault().accountRecords,
+            );
+            if (ccCheck.unknown.length > 0) {
+              emit({
+                type: 'task-blocked',
+                sourceId: src.id,
+                sourceType: 'leumi',
+                unknownAccounts: ccCheck.unknown,
+              });
+              throw new BlockedError(ccCheck.unknown);
+            }
+            const ignoredCards = new Set(ccCheck.ignored);
+            acceptedCreditCardData = creditCardData.filter(d => !ignoredCards.has(d.cardLast4));
+          }
+
+          if (!uploadClient)
+            return {
+              inserted: 0,
+              skipped: 0,
+              insertedIds: [],
+              insertedTransactions: [],
+              changedTransactions: [],
+            };
+
+          let totalInserted = 0;
+          let totalSkipped = 0;
+          const allIds: string[] = [];
+          const insertedTransactions: InsertedTransactionSummary[] = [];
+          const changedTransactions: ChangedTransaction[] = [];
+          const add = (r: Awaited<ReturnType<UploadClient['uploadLeumiIls']>>) => {
+            totalInserted += r.inserted;
+            totalSkipped += r.skipped;
+            allIds.push(...r.insertedIds);
+            insertedTransactions.push(...(r.insertedTransactions ?? []));
+            changedTransactions.push(...(r.changedTransactions ?? []));
+          };
+
+          for (const d of acceptedIlsData) {
+            emit({
+              type: 'task-account-txns-uploading',
+              sourceId: src.id,
+              accountId: leumiProgressId(d.branchNumber, d.accountNumber),
+              txnType: 'ils',
+              count: d.transactions.length,
+            });
+            const r = await uploadClient.uploadLeumiIls([d]);
+            emit({
+              type: 'task-account-txns-done',
+              sourceId: src.id,
+              accountId: leumiProgressId(d.branchNumber, d.accountNumber),
+              txnType: 'ils',
+              inserted: r.inserted,
+              skipped: r.skipped,
+            });
+            add(r);
+          }
+
+          for (const d of acceptedForeignData) {
+            emit({
+              type: 'task-account-txns-uploading',
+              sourceId: src.id,
+              accountId: leumiProgressId(d.branchNumber, d.accountNumber),
+              txnType: 'foreign',
+              count: d.activity.transactions.length,
+            });
+            const r = await uploadClient.uploadLeumiForeign([d]);
+            emit({
+              type: 'task-account-txns-done',
+              sourceId: src.id,
+              accountId: leumiProgressId(d.branchNumber, d.accountNumber),
+              txnType: 'foreign',
+              inserted: r.inserted,
+              skipped: r.skipped,
+            });
+            add(r);
+          }
+
+          if (acceptedCreditCardData.length > 0) {
+            const count = acceptedCreditCardData.reduce((sum, d) => sum + d.transactions.length, 0);
+            emit({
+              type: 'task-month-uploading',
+              sourceId: src.id,
+              month: 'credit-cards',
+              transactionCount: count,
+            });
+            const r = await uploadClient.uploadLeumiCreditCard(acceptedCreditCardData);
+            emit({
+              type: 'task-month-uploaded',
+              sourceId: src.id,
+              month: 'credit-cards',
+              inserted: r.inserted,
+              skipped: r.skipped,
+            });
+            add(r);
+          }
+
+          return {
+            inserted: totalInserted,
+            skipped: totalSkipped,
+            insertedIds: allIds,
+            insertedTransactions,
+            changedTransactions,
+          };
+        } catch (err) {
+          console.error({ err }, '[task] Leumi scrape error');
           throw err;
         }
       }

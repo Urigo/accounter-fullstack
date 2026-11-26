@@ -6,6 +6,7 @@ import {
   CalAccountSchema,
   DiscountAccountSchema,
   IsracardAmexAccountSchema,
+  LeumiAccountSchema,
   MaxAccountSchema,
   OtsarHahayalAccountSchema,
   PoalimAccountSchema,
@@ -20,6 +21,7 @@ const SourceConfigSchema = z.discriminatedUnion('type', [
   CalAccountSchema.extend({ type: z.literal('cal') }),
   MaxAccountSchema.extend({ type: z.literal('max') }),
   OtsarHahayalAccountSchema.extend({ type: z.literal('otsar-hahayal') }),
+  LeumiAccountSchema.extend({ type: z.literal('leumi') }),
 ]);
 
 export type SourceConfig = z.infer<typeof SourceConfigSchema>;
@@ -34,6 +36,7 @@ function collectSources(vault: Vault): SourceConfig[] {
     ...vault.calAccounts.map(a => ({ ...a, type: 'cal' as const })),
     ...vault.maxAccounts.map(a => ({ ...a, type: 'max' as const })),
     ...vault.otsarHahayalAccounts.map(a => ({ ...a, type: 'otsar-hahayal' as const })),
+    ...vault.leumiAccounts.map(a => ({ ...a, type: 'leumi' as const })),
   ];
 }
 
@@ -71,6 +74,9 @@ function appendSource(vault: Vault, source: SourceConfig): Vault {
         rest as (typeof vault.otsarHahayalAccounts)[number],
       ];
       break;
+    case 'leumi':
+      v.leumiAccounts = [...vault.leumiAccounts, rest as (typeof vault.leumiAccounts)[number]];
+      break;
   }
   return v;
 }
@@ -84,6 +90,7 @@ type ArrayKey = Extract<
   | 'calAccounts'
   | 'maxAccounts'
   | 'otsarHahayalAccounts'
+  | 'leumiAccounts'
 >;
 
 const typeToKey: Record<SourceType, ArrayKey> = {
@@ -94,6 +101,7 @@ const typeToKey: Record<SourceType, ArrayKey> = {
   cal: 'calAccounts',
   max: 'maxAccounts',
   'otsar-hahayal': 'otsarHahayalAccounts',
+  leumi: 'leumiAccounts',
 };
 
 const typeToPatchSchema: Record<SourceType, z.ZodType> = {
@@ -104,6 +112,7 @@ const typeToPatchSchema: Record<SourceType, z.ZodType> = {
   cal: CalAccountSchema.omit({ id: true }).partial(),
   max: MaxAccountSchema.omit({ id: true }).partial(),
   'otsar-hahayal': OtsarHahayalAccountSchema.omit({ id: true }).partial(),
+  leumi: LeumiAccountSchema.omit({ id: true }).partial(),
 };
 
 function findSourceKey(

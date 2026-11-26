@@ -18,6 +18,8 @@ const SOURCE_TYPE_TO_VAULT_KEY: Record<AccountRecord['sourceType'], keyof Vault 
   max: 'maxAccounts',
   'otsar-hahayal': 'otsarHahayalAccounts',
   'otsar-hahayal-credit-card': 'otsarHahayalAccounts',
+  leumi: 'leumiAccounts',
+  'leumi-credit-card': 'leumiAccounts',
 };
 
 export async function registerAccountsRoutes(app: FastifyInstance): Promise<void> {

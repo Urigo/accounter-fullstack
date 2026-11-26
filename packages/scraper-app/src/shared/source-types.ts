@@ -7,6 +7,8 @@ export const SOURCE_TYPES = [
   'max',
   'otsar-hahayal',
   'otsar-hahayal-credit-card',
+  'leumi',
+  'leumi-credit-card',
 ] as const satisfies [string, ...string[]];
 
 export type SourceType = (typeof SOURCE_TYPES)[number];
