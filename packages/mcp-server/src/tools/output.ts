@@ -34,7 +34,9 @@ import type { ToolResult } from './registry.js';
 export function resultEnvelopeDescription(itemsKey: string): string {
   return (
     `Rows come back under \`${itemsKey}\`, alongside \`returnedCount\`, \`totalCount\` and ` +
-    '`truncated`; when not everything fit, a `continuation` hint says why and what to narrow.'
+    '`truncated`; when not everything fit, a `continuation` hint says why. A `continuation.reason` of ' +
+    '`payload_size` means rows of the page you asked for were dropped (`droppedCount`) and the next ' +
+    'page does not have them: repeat the call with a smaller page size.'
   );
 }
 
@@ -93,6 +95,12 @@ export interface ContinuationHint {
   reason: 'payload_size' | 'result_cap';
   returnedCount: number;
   totalCount: number;
+  /**
+   * Rows that were fetched for this call and then dropped to fit the response size
+   * (`payload_size` only). They are the tail of the page just requested, so the
+   * next page does not contain them.
+   */
+  droppedCount?: number;
   hint: string;
 }
 
@@ -170,12 +178,30 @@ export function shapeListResult<T>(params: ShapeListParams<T>): ToolResult {
       truncated,
     };
     if (truncated) {
-      const continuation: ContinuationHint = {
-        reason: shown < params.items.length ? 'payload_size' : 'result_cap',
-        returnedCount: shown,
-        totalCount: total,
-        hint: 'Not all results were returned. Narrow your filters or request a smaller/next page to see more.',
-      };
+      const dropped = params.items.length - shown;
+      // The two reasons need opposite advice. Under `result_cap` everything fetched was
+      // returned and more exists, so asking for the next page is right. Under
+      // `payload_size` the rows cut are the END of the page just fetched: a caller that
+      // moves on to the next page never sees them, and loses rows without any error.
+      const continuation: ContinuationHint =
+        dropped > 0
+          ? {
+              reason: 'payload_size',
+              returnedCount: shown,
+              totalCount: total,
+              droppedCount: dropped,
+              hint:
+                `Only the first ${shown} of the ${params.items.length} rows fetched fit in the response; ` +
+                `the last ${dropped} were dropped and are NOT on the next page. Repeat this request ` +
+                `with a page size or limit of ${Math.max(shown, 1)} or less (page numbers shift when ` +
+                'the page size changes, so restart from the first page), or ask for less detail per row.',
+            }
+          : {
+              reason: 'result_cap',
+              returnedCount: shown,
+              totalCount: total,
+              hint: 'Not all results were returned. Narrow your filters or request the next page to see more.',
+            };
       structured.continuation = continuation;
     }
     return structured;

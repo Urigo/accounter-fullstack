@@ -97,6 +97,33 @@ describe('shapeListResult — payload-size guard', () => {
     expect(structured.continuation.reason).toBe('payload_size');
   });
 
+  it('says how many fetched rows were dropped, and that the next page does not have them', () => {
+    const items = Array.from({ length: 100 }, (_, i) => ({ id: i, pad: 'x'.repeat(200) }));
+    const result = shapeListResult({ items, itemsKey: 'rows', total: 1000, maxBytes: 4000 });
+    const structured = result.structuredContent as {
+      returnedCount: number;
+      continuation: { reason: string; droppedCount?: number; hint: string };
+    };
+
+    expect(structured.continuation.reason).toBe('payload_size');
+    expect(structured.continuation.droppedCount).toBe(100 - structured.returnedCount);
+    expect(structured.continuation.hint).toContain('NOT on the next page');
+    expect(structured.continuation.hint).toContain(`${structured.returnedCount} or less`);
+  });
+
+  it('points at the next page when everything fetched was returned', () => {
+    const items = Array.from({ length: 10 }, (_, i) => ({ id: i }));
+    const result = shapeListResult({ items, itemsKey: 'rows', total: 1000 });
+    const structured = result.structuredContent as {
+      continuation: { reason: string; droppedCount?: number; hint: string };
+    };
+
+    expect(structured.continuation.reason).toBe('result_cap');
+    expect(structured.continuation.droppedCount).toBeUndefined();
+    expect(structured.continuation.hint).toContain('next page');
+    expect(structured.continuation.hint).not.toContain('NOT');
+  });
+
   it('exposes a sane default byte cap', () => {
     expect(MAX_TOOL_RESULT_BYTES).toBeGreaterThan(0);
   });
