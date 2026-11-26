@@ -43,6 +43,7 @@ import { miscExpensesModule } from './modules/misc-expenses/index.js';
 import { onboardingModule } from './modules/onboarding/index.js';
 import { priceIndexesModule } from './modules/price-indexes/index.js';
 import { providerCredentialsModule } from './modules/provider-credentials/index.js';
+import { report1214Module } from './modules/report-1214/index.js';
 import { reportsModule } from './modules/reports/index.js';
 import { salariesModule } from './modules/salaries/index.js';
 import { scraperIngestionModule } from './modules/scraper-ingestion/index.js';
@@ -90,6 +91,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       foreignSecuritiesModule,
       adminContextModule,
       annualAuditModule,
+      report1214Module,
       emailIngestionModule,
       scraperIngestionModule,
       onboardingModule,

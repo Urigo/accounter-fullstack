@@ -228,6 +228,7 @@ import migration_2026_11_24T10_30_00_depreciation_category_percentage_100 from '
 import migration_2026_11_24T11_00_00_depreciation_local_amount from './actions/2026-11-24T11-00-00.depreciation-local-amount.js';
 import migration_2026_11_24T11_30_00_depreciation_disposal_original_amount from './actions/2026-11-24T11-30-00.depreciation-disposal-original-amount.js';
 import migration_2026_11_24T12_00_00_depreciation_asset_tax_category from './actions/2026-11-24T12-00-00.depreciation-asset-tax-category.js';
+import migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders from './actions/2026-11-25T12-00-00.report-1214-profile-and-shareholders.js';
 import migration_2026_11_26T12_00_00_add_leumi_tables from './actions/2026-11-26T12-00-00.add-leumi-tables.js';
 import { runMigrations } from './pg-migrator.js';
 
@@ -461,6 +462,7 @@ export const MIGRATIONS = [
   migration_2026_11_24T11_00_00_depreciation_local_amount,
   migration_2026_11_24T11_30_00_depreciation_disposal_original_amount,
   migration_2026_11_24T12_00_00_depreciation_asset_tax_category,
+  migration_2026_11_25T12_00_00_report_1214_profile_and_shareholders,
   migration_2026_11_26T12_00_00_add_leumi_tables,
 ] as const;
 
