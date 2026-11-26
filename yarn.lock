@@ -349,7 +349,7 @@ __metadata:
     "@ai-sdk/anthropic": "npm:4.0.107"
     "@envelop/core": "npm:5.6.1"
     "@envelop/graphql-modules": "npm:9.2.1"
-    "@graphql-hive/yoga": "npm:0.50.2"
+    "@graphql-hive/yoga": "npm:0.51.0"
     "@graphql-tools/utils": "npm:13.2.2"
     "@graphql-yoga/plugin-defer-stream": "npm:3.24.6"
     "@opentelemetry/api": "npm:1.10.0"
@@ -2651,6 +2651,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-hive/core@npm:0.25.0":
+  version: 0.25.0
+  resolution: "@graphql-hive/core@npm:0.25.0"
+  dependencies:
+    "@graphql-hive/logger": "npm:^1.1.1"
+    "@graphql-hive/signal": "npm:^3.0.0"
+    "@graphql-tools/utils": "npm:^13.2.2"
+    "@whatwg-node/fetch": "npm:^0.10.13"
+    async-retry: "npm:^1.3.3"
+    events: "npm:^3.3.0"
+    js-md5: "npm:0.8.3"
+    lodash.sortby: "npm:^4.7.0"
+    tiny-lru: "npm:^11.4.7"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^16.0.0 || ^17.0.0
+  checksum: 10c0/8e18505a95bb22849414370c495345573f5371e3e31697f5d9ca4a70ba6a15fe1a2be18ee2f1de60e92d3e0c4708564cfdd995ef5115d83e364044ce95aa2958
+  languageName: node
+  linkType: hard
+
 "@graphql-hive/importer@npm:^2.0.0":
   version: 2.0.0
   resolution: "@graphql-hive/importer@npm:2.0.0"
@@ -2658,7 +2678,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/logger@npm:1.2.0, @graphql-hive/logger@npm:^1.1.0, @graphql-hive/logger@npm:^1.2.0":
+"@graphql-hive/logger@npm:1.2.0, @graphql-hive/logger@npm:^1.1.0, @graphql-hive/logger@npm:^1.1.1, @graphql-hive/logger@npm:^1.2.0":
   version: 1.2.0
   resolution: "@graphql-hive/logger@npm:1.2.0"
   peerDependencies:
@@ -2711,16 +2731,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/yoga@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@graphql-hive/yoga@npm:0.50.2"
+"@graphql-hive/yoga@npm:0.51.0":
+  version: 0.51.0
+  resolution: "@graphql-hive/yoga@npm:0.51.0"
   dependencies:
-    "@graphql-hive/core": "npm:0.24.0"
-    "@graphql-hive/logger": "npm:^1.1.0"
+    "@graphql-hive/core": "npm:0.25.0"
+    "@graphql-hive/logger": "npm:^1.1.1"
   peerDependencies:
-    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+    graphql: ^16.0.0 || ^17.0.0
     graphql-yoga: ^5.24.4 || ^6.0.1
-  checksum: 10c0/9fc50b2aec2fb3650417d487ef36228c37d7088df38000403370d6e36d153b15f1caeeb6f8a7a6b3cc1b7640397c90ee1acb40ac878f070cf666e7f951024567
+  checksum: 10c0/a8c4cc00ece9955823a7cc0f1323f37fac9d5d12a0ec1d584002b68e058619b7da074ac346aa95faf6fb7ab121e9aa6392b3f1711ddf40abd7510d799e04f2d0
   languageName: node
   linkType: hard
 
