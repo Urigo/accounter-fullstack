@@ -2,6 +2,7 @@
 
 import { useQuery } from 'urql';
 import { DocumentType, RecentIssuedDocumentsOfSameTypeDocument } from '../../../../gql/graphql.js';
+import { useReconcileViewerRows } from '../../../documents-table/data-table.js';
 import { DocumentsTable } from '../../../documents-table/index.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 
@@ -28,6 +29,9 @@ export function RecentDocsOfSameType({ documentType }: RecentDocsOfSameTypeProps
   });
 
   const documents = data?.recentIssuedDocumentsByType ?? [];
+  // The table unmounts while fetching, so the viewer's row reconcile runs here instead. Membership
+  // is all it compares, so the query's order serves.
+  useReconcileViewerRows(fetching ? null : documents.map(document => document.id));
 
   return (
     <Card>

@@ -85,7 +85,11 @@ import { DocumentsBatchActionsMenu } from './documents-batch-actions-menu.js';
 
 export type DocumentsTableRowType = TableDocumentsRowFieldsFragment & {
   onUpdate: () => void;
-  editDocument: () => void;
+  /**
+   * Opens the edit sheet on this document. `siblingIds` are the table's row ids in their current
+   * order, for Save & next.
+   */
+  editDocument: (siblingIds?: string[]) => void;
   /** Called when removing the document emptied its charge and the server deleted the charge too. */
   onChargeDeleted?: (chargeId: string) => void;
 };
@@ -149,8 +153,9 @@ export function getDocumentsTableColumns({
       // image URL would be meaningless.
       header: 'preview',
       enableSorting: false,
-      cell: ({ row }) => {
-        return <Preview document={row.original} />;
+      // `table` reaches every cell through the cell context; the viewer steps through its rows.
+      cell: ({ row, table }) => {
+        return <Preview document={row.original} table={table} />;
       },
     },
     {
@@ -362,16 +367,22 @@ export function getDocumentsTableColumns({
           </Button>
         );
       },
-      cell: ({ row }) => {
-        return <Files document={row.original} />;
+      cell: ({ row, table }) => {
+        return <Files document={row.original} table={table} />;
       },
     },
     {
       id: 'actions',
       enableHiding: false,
       enableSorting: false,
-      cell: ({ row }) => {
-        return <DocumentActionsMenu document={row.original} withChargeLink={withChargeLink} />;
+      cell: ({ row, table }) => {
+        return (
+          <DocumentActionsMenu
+            document={row.original}
+            table={table}
+            withChargeLink={withChargeLink}
+          />
+        );
       },
     },
   ];
