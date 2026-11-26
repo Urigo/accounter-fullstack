@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
+import type { SessionState } from '../../providers/user-provider.js';
 import { ROUTES } from '../../router/routes.js';
 
 const {
@@ -187,7 +188,22 @@ function contextWithRole(role: string): UserInfo {
   };
 }
 
-async function renderUserNav(userContext: UserInfo = baseUserContext) {
+function sessionWith(viewer: Partial<NonNullable<SessionState['viewer']>>): SessionState {
+  return {
+    loaded: true,
+    error: undefined,
+    viewer: {
+      email: 'john@example.com',
+      emailVerified: true,
+      status: 'ACTIVE',
+      isSuperAdmin: false,
+      hasPendingInvitation: false,
+      ...viewer,
+    } as SessionState['viewer'],
+  };
+}
+
+async function renderUserNav(userContext: UserInfo = baseUserContext, session?: SessionState) {
   const container = document.createElement('div');
   document.body.append(container);
 
@@ -201,6 +217,7 @@ async function renderUserNav(userContext: UserInfo = baseUserContext) {
           value: {
             userContext,
             setUserContext: () => void 0,
+            session,
           },
         },
         React.createElement(MemoryRouter, null, React.createElement(UserNav)),
@@ -220,6 +237,40 @@ async function renderUserNav(userContext: UserInfo = baseUserContext) {
 
   return { container, cleanup };
 }
+
+describe('UserNav super-admin entry', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useMyMembershipsMock.mockReturnValue({ fetching: false, memberships: [] });
+    getBusinessScopeIdsMock.mockReturnValue([]);
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: { name: 'John Doe', email: 'john@example.com' },
+      logout: logoutMock,
+    });
+  });
+
+  it('links a super-admin to the create-tenant screen', async () => {
+    const { container, cleanup } = await renderUserNav(
+      baseUserContext,
+      sessionWith({ isSuperAdmin: true }),
+    );
+
+    const link = container.querySelector(`a[href="${ROUTES.ADMIN.CREATE_TENANT}"]`);
+    expect(link?.textContent).toContain('Create Tenant');
+    await cleanup();
+  });
+
+  it.each([
+    ['a member who is not a super-admin', sessionWith({ isSuperAdmin: false })],
+    ['a session that has not loaded', undefined],
+  ])('hides the entry from %s', async (_label, session) => {
+    const { container, cleanup } = await renderUserNav(baseUserContext, session);
+
+    expect(container.textContent).not.toContain('Create Tenant');
+    await cleanup();
+  });
+});
 
 describe('UserNav menu', () => {
   beforeEach(() => {

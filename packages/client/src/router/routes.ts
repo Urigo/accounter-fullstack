@@ -215,6 +215,11 @@ export const ROUTES = {
   TAGS: '/tags',
   TAX_CATEGORIES: '/tax-categories',
   SORT_CODES: '/sort-codes',
+
+  ADMIN: {
+    /** Super-admin only: create a client tenant and its owner's invitation. */
+    CREATE_TENANT: '/admin/create-tenant',
+  },
 } as const;
 
 /**

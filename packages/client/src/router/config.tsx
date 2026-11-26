@@ -71,6 +71,12 @@ const AuthManagement = lazy(() =>
   })),
 );
 
+const CreateTenantScreen = lazy(() =>
+  import('../components/screens/admin/create-tenant.js').then(m => ({
+    default: m.CreateTenantScreen,
+  })),
+);
+
 // Business Trips
 const BusinessTrips = lazy(() =>
   import('../components/business-trips/index.js').then(m => ({ default: m.BusinessTrips })),
@@ -741,6 +747,11 @@ export const routes: RouteObject[] = [
             path: 'sort-codes',
             element: withSuspense(SortCodes),
             handle: { title: 'Sort Codes', breadcrumb: 'Sort Codes' },
+          },
+          {
+            path: 'admin/create-tenant',
+            element: withSuspense(CreateTenantScreen),
+            handle: { title: 'Create Tenant', breadcrumb: 'Create Tenant' },
           },
 
           // 404 catch-all

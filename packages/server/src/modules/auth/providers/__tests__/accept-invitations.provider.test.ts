@@ -13,6 +13,7 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     insertAuditLogRun: vi.fn(),
     isAuth0UserReferencedElsewhereRun: vi.fn(),
     deleteInvitationPlaceholderUserRun: vi.fn(),
+    hasPendingInvitationForEmailRun: vi.fn(),
   };
 
   const sql = vi.fn((strings: TemplateStringsArray) => {
@@ -45,6 +46,9 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
 
     if (query.includes('AS "referenced!"')) {
       return { run: runMocks.isAuth0UserReferencedElsewhereRun };
+    }
+    if (query.includes('SELECT EXISTS') && query.includes('lower(email) = lower($email)')) {
+      return { run: runMocks.hasPendingInvitationForEmailRun };
     }
     if (query.includes('DELETE FROM accounter_schema.business_users')) {
       return { run: runMocks.deleteInvitationPlaceholderUserRun };
@@ -89,6 +93,7 @@ const [
   updateBusinessUserAuth0IdRun,
   isAuth0UserReferencedElsewhereRun,
   deleteInvitationPlaceholderUserRun,
+  hasPendingInvitationForEmailRun,
 ] = [
   pgTypedRuntimeMock.runMocks.updateInvitationAcceptanceRun,
   pgTypedRuntimeMock.runMocks.getInvitationForAcceptanceRun,
@@ -98,6 +103,7 @@ const [
   pgTypedRuntimeMock.runMocks.updateBusinessUserAuth0IdRun,
   pgTypedRuntimeMock.runMocks.isAuth0UserReferencedElsewhereRun,
   pgTypedRuntimeMock.runMocks.deleteInvitationPlaceholderUserRun,
+  pgTypedRuntimeMock.runMocks.hasPendingInvitationForEmailRun,
 ];
 
 function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
@@ -324,7 +330,7 @@ describe('AcceptInvitationsProvider', () => {
     await expect(
       provider.acceptInvitation('token-mismatch', 'auth0|caller', 'caller@example.com'),
     ).rejects.toMatchObject({
-      extensions: { code: 'TOKEN_INVALID' },
+      extensions: { code: 'INVITATION_EMAIL_MISMATCH' },
     });
 
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
@@ -345,7 +351,8 @@ describe('AcceptInvitationsProvider', () => {
     await expect(
       provider.acceptInvitation('token-unverified', 'auth0|caller', null),
     ).rejects.toMatchObject({
-      extensions: { code: 'TOKEN_INVALID' },
+      message: expect.stringContaining('invitee@example.com'),
+      extensions: { code: 'EMAIL_NOT_VERIFIED', signedInEmail: 'invitee@example.com' },
     });
 
     expect(auth0ManagementProvider.getUserEmailById).toHaveBeenCalledWith('auth0|caller');
@@ -453,9 +460,16 @@ describe('AcceptInvitationsProvider', () => {
     getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation({ email: 'invitee@example.com' })]);
 
     await expect(
-      provider.acceptInvitation('token-8', 'auth0|caller', 'different@example.com'),
+      provider.acceptInvitation('token-8', 'auth0|caller', 'Different@Example.com'),
     ).rejects.toMatchObject({
-      extensions: { code: 'TOKEN_INVALID' },
+      message: expect.stringMatching(
+        /sent to invitee@example\.com, but you are signed in as different@example\.com/,
+      ),
+      extensions: {
+        code: 'INVITATION_EMAIL_MISMATCH',
+        invitedEmail: 'invitee@example.com',
+        signedInEmail: 'different@example.com',
+      },
     });
 
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
@@ -465,5 +479,56 @@ describe('AcceptInvitationsProvider', () => {
     expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
     expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
     expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
+  });
+
+  it('reports an unverified email without naming one when Auth0 returns none', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation()]);
+    auth0ManagementProvider.getUserEmailById.mockResolvedValue(null);
+
+    await expect(
+      provider.acceptInvitation('token-no-email', 'auth0|caller', null),
+    ).rejects.toMatchObject({
+      extensions: { code: 'EMAIL_NOT_VERIFIED', signedInEmail: null },
+    });
+    expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
+  });
+
+  it('does not reveal the invited email before the token matches an open invitation', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([]);
+    getInvitationByTokenRun.mockResolvedValue([]);
+
+    const error = await provider
+      .acceptInvitation('unknown-token', 'auth0|caller', 'different@example.com')
+      .catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ extensions: { code: 'TOKEN_INVALID' } });
+    expect((error as GraphQLError).message).not.toContain('@');
+  });
+
+  describe('hasPendingInvitationForEmail', () => {
+    it('reports an open invitation for the email', async () => {
+      hasPendingInvitationForEmailRun.mockResolvedValue([{ exists: true }]);
+
+      await expect(provider.hasPendingInvitationForEmail(' invitee@example.com ')).resolves.toBe(
+        true,
+      );
+      expect(hasPendingInvitationForEmailRun).toHaveBeenCalledWith(
+        { email: 'invitee@example.com' },
+        dbProvider.pool,
+      );
+    });
+
+    it('reports none when no open invitation exists', async () => {
+      hasPendingInvitationForEmailRun.mockResolvedValue([{ exists: false }]);
+
+      await expect(provider.hasPendingInvitationForEmail('nobody@example.com')).resolves.toBe(
+        false,
+      );
+    });
+
+    it('does not query for a blank email', async () => {
+      await expect(provider.hasPendingInvitationForEmail('  ')).resolves.toBe(false);
+      expect(hasPendingInvitationForEmailRun).not.toHaveBeenCalled();
+    });
   });
 });

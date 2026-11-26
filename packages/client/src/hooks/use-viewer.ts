@@ -10,6 +10,8 @@ import { UserContext } from '../providers/user-provider.js';
       email
       emailVerified
       status
+      isSuperAdmin
+      hasPendingInvitation
     }
   }
 `;

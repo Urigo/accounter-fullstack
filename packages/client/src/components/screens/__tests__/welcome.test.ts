@@ -100,6 +100,27 @@ describe('WelcomePage', () => {
     await cleanup();
   });
 
+  it.each(['EMAIL_UNVERIFIED', 'NO_WORKSPACE'])(
+    'sends a %s user with a pending invitation to their invitation link',
+    async status => {
+      const { html, cleanup } = await renderWelcome({
+        fetching: false,
+        error: undefined,
+        viewer: {
+          email: 'invitee@example.com',
+          emailVerified: status !== 'EMAIL_UNVERIFIED',
+          status,
+          hasPendingInvitation: true,
+        },
+      });
+
+      expect(html).toContain('Open your invitation link');
+      expect(html).not.toContain('Verify your email');
+      expect(html).not.toContain('We sent a verification link');
+      await cleanup();
+    },
+  );
+
   it('reports an unknown state instead of "no workspace" when the query fails', async () => {
     const { html, cleanup } = await renderWelcome({
       fetching: false,

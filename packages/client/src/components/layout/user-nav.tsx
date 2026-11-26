@@ -1,8 +1,9 @@
 import { useContext, useEffect, useState, type JSX } from 'react';
-import { CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
+import { Building2, CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useMyMemberships } from '../../hooks/use-my-memberships.js';
+import { useSessionViewer } from '../../hooks/use-viewer.js';
 import { UserContext } from '../../providers/index.js';
 import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
 import { ROUTES } from '../../router/routes.js';
@@ -40,6 +41,7 @@ let modalAwaitingRemount: UserNavModal | null = null;
 export function UserNav(): JSX.Element | null {
   const { userContext } = useContext(UserContext);
   const { isAuthenticated, user } = useAuth0();
+  const { viewer } = useSessionViewer();
   const [openModal, setOpenModal] = useState<UserNavModal | null>(() => modalAwaitingRemount);
   useEffect(() => {
     // This mount has taken over any modal handed down across a scope change.
@@ -198,6 +200,14 @@ export function UserNav(): JSX.Element | null {
                 </Link>
               </DropdownMenuItem>
             </>
+          )}
+          {viewer?.isSuperAdmin && (
+            <DropdownMenuItem asChild>
+              <Link to={ROUTES.ADMIN.CREATE_TENANT}>
+                <Building2 className="size-4" />
+                <span className="hidden sm:inline">Create Tenant</span>
+              </Link>
+            </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
             <Button variant="ghost" onClick={() => showModal('balance-charge')}>
