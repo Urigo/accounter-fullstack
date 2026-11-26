@@ -49,6 +49,27 @@ function authContext(): McpAuthContext {
 
 /** Upstream payloads keyed by the operation each tool issues. */
 function dataFor(query: string): unknown {
+  if (query.includes('McpUncategorizedTransactionGroups')) {
+    return {
+      uncategorizedTransactionGroups: {
+        totalGroups: 1,
+        totalTransactions: 2,
+        groups: [
+          {
+            key: 'acme #',
+            sampleDescription: 'ACME 1234',
+            transactionCount: 2,
+            chargeCount: 2,
+            totals: [{ currency: 'ILS', amount: -10, transactionCount: 2 }],
+            minEventDate: '2026-01-01',
+            maxEventDate: '2026-02-01',
+            transactionIds: ['t1', 't2'],
+            chargeIds: ['c1', 'c2'],
+          },
+        ],
+      },
+    };
+  }
   if (query.includes('mutation McpBatchUpdateChargesFields')) {
     return {
       updateChargesFields: {
@@ -249,6 +270,7 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
     documentUrls: ['https://example.com/invoice.pdf?token=hunter2'],
   },
   accounter_update_charge: { memberBusinessId: B1, chargeId: 'c1', userDescription: 'x' },
+  accounter_list_uncategorized_transaction_groups: { memberBusinessId: B1 },
   accounter_update_charges: {
     memberBusinessId: B1,
     updates: [{ chargeId: 'c1', userDescription: 'x' }],

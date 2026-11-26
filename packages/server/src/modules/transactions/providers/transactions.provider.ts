@@ -13,6 +13,8 @@ import type {
   IGetTransactionsByFiltersQuery,
   IGetTransactionsByIdsQuery,
   IGetTransactionsByMissingRequiredInfoQuery,
+  IGetUncategorizedTransactionGroupsParams,
+  IGetUncategorizedTransactionGroupsQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionsParams,
@@ -106,6 +108,71 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
         (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
       ) AND owner_id = $ownerId;`;
+
+/**
+ * Transactions with no counterparty, grouped by a normalised source description: lower case,
+ * runs of 4+ digits (card numbers, references, dates) replaced by '#', whitespace collapsed.
+ * One row per group, largest first, with per-currency totals and up to $sampleSize ids.
+ */
+const getUncategorizedTransactionGroups = sql<IGetUncategorizedTransactionGroupsQuery>`
+  WITH base AS (
+    SELECT
+      t.id,
+      t.charge_id,
+      t.amount,
+      t.currency,
+      t.event_date,
+      t.source_description,
+      lower(btrim(regexp_replace(
+        regexp_replace(COALESCE(t.source_description, ''), '[0-9]{4,}', '#', 'g'),
+        '[[:space:]]+', ' ', 'g'
+      ))) AS key
+    FROM accounter_schema.transactions t
+    WHERE t.business_id IS NULL
+      AND t.owner_id = ANY($ownerIds::uuid[])
+      AND ($fromEventDate::TEXT IS NULL OR t.event_date >= $fromEventDate::DATE)
+      AND ($toEventDate::TEXT IS NULL OR t.event_date <= $toEventDate::DATE)
+  ),
+  filtered AS (
+    SELECT * FROM base
+    WHERE $keys::text[] IS NULL OR key = ANY($keys::text[])
+  ),
+  totals AS (
+    SELECT key, jsonb_agg(
+      jsonb_build_object('currency', currency, 'amount', amount, 'count', n)
+      ORDER BY n DESC, currency
+    ) AS totals
+    FROM (
+      SELECT key, currency, SUM(amount) AS amount, COUNT(*)::int AS n
+      FROM filtered
+      GROUP BY key, currency
+    ) per_currency
+    GROUP BY key
+  ),
+  groups AS (
+    SELECT
+      key,
+      COUNT(*)::int AS transaction_count,
+      COUNT(DISTINCT charge_id)::int AS charge_count,
+      MIN(event_date) AS min_event_date,
+      MAX(event_date) AS max_event_date,
+      (ARRAY_AGG(source_description ORDER BY event_date DESC, id))[1] AS sample_description,
+      (ARRAY_AGG(id ORDER BY event_date DESC, id))[1:$sampleSize::int] AS transaction_ids,
+      (ARRAY_AGG(DISTINCT charge_id) FILTER (WHERE charge_id IS NOT NULL))[1:$sampleSize::int] AS charge_ids
+    FROM filtered
+    GROUP BY key
+    HAVING COUNT(*) >= COALESCE($minCount::int, 1)
+  )
+  SELECT
+    g.*,
+    t.totals,
+    COUNT(*) OVER ()::int AS total_groups,
+    (SUM(g.transaction_count) OVER ())::int AS total_transactions
+  FROM groups g
+  JOIN totals t ON t.key = g.key
+  ORDER BY g.transaction_count DESC, g.key
+  LIMIT $limit::int OFFSET $offset::int;
+`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -318,6 +385,10 @@ export class TransactionsProvider {
       await this.invalidateTransactionByChargeID(params.assertChargeID);
     }
     return replaceTransactionsChargeId.run(params, this.db);
+  }
+
+  public getUncategorizedTransactionGroups(params: IGetUncategorizedTransactionGroupsParams) {
+    return getUncategorizedTransactionGroups.run(params, this.db);
   }
 
   public async updateTransactions(params: IUpdateTransactionsParams) {
