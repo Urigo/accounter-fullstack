@@ -32,7 +32,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        'bg-gray-100/50 border-t font-medium [&>tr]:last:border-b-0 dark:bg-gray-800/50',
+        'border-t bg-gray-100/50 font-medium [&>tr]:last:border-b-0 dark:bg-gray-800/50',
         className,
       )}
       {...props}
@@ -45,7 +45,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot="table-row"
       className={cn(
-        'hover:bg-gray-100/50 data-[state=selected]:bg-gray-100 border-b transition-colors dark:hover:bg-gray-800/50 dark:data-[state=selected]:bg-gray-800',
+        'border-b transition-colors hover:bg-gray-100/50 has-aria-expanded:bg-gray-100/50 data-[state=selected]:bg-gray-100 dark:hover:bg-gray-800/50 dark:has-aria-expanded:bg-gray-800/50 dark:data-[state=selected]:bg-gray-800',
         className,
       )}
       {...props}
@@ -58,7 +58,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
     <th
       data-slot="table-head"
       className={cn(
-        'text-gray-950 h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-50',
+        'h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-gray-950 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-50',
         className,
       )}
       {...props}
@@ -83,7 +83,7 @@ function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) 
   return (
     <caption
       data-slot="table-caption"
-      className={cn('text-gray-500 mt-4 text-sm dark:text-gray-400', className)}
+      className={cn('mt-4 text-sm text-gray-500 dark:text-gray-400', className)}
       {...props}
     />
   );
