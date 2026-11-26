@@ -1,5 +1,20 @@
+import type {
+  CompanyDetails,
+  Declarations,
+  MainFormInputCode,
+  PreparerDetails,
+  RdInvestment,
+  RelatedCompany,
+  Report1214Input,
+} from '@accounter/opcn1214-generator';
+
 export type * from './__generated__/types.js';
 export type * from './__generated__/shareholders.types.js';
+export type {
+  IGetReport1214ProfilesByOwnerAndYearsQuery,
+  IGetReport1214ProfilesByOwnerAndYearsResult,
+  IUpsertReport1214ProfileQuery,
+} from './__generated__/report-1214-profile.types.js';
 
 /** GraphQL `Shareholder` parent: a `shareholders` row with numeric columns as numbers. */
 export interface ShareholderProto {
@@ -18,4 +33,61 @@ export interface ShareholderProto {
   salaryMonths10To12: number | null;
   otherPayments: number | null;
   sortOrder: number;
+}
+
+/**
+ * The JSONB blocks of a `report_1214_profiles` row. Each one is stored in the shape of the matching
+ * `@accounter/opcn1214-generator` input type (camelCase, unset members left out), so building the
+ * generator input is mostly a pass-through.
+ */
+
+/** `company`: overrides and extras for `CompanyDetails`; `fileNumber` always comes from the books. */
+export type Report1214CompanyOverridesData = Partial<
+  Pick<
+    CompanyDetails,
+    | 'registeredName'
+    | 'phone'
+    | 'fax'
+    | 'email'
+    | 'occupationDescription'
+    | 'mailingAddress'
+    | 'businessAddress'
+    | 'booksAddress'
+    | 'withholdingFileNumber'
+  >
+>;
+/** `declarations`: possibly partial, the report validation names missing required members. */
+export type Report1214DeclarationsData = Partial<Declarations>;
+export type Report1214PreparerData = PreparerDetails;
+export type Report1214AttachmentsData = NonNullable<Report1214Input['attachments']>;
+export type Report1214BankAccountData = NonNullable<Report1214Input['bankAccount']>;
+export type Report1214OtherTaxableIncomeData = NonNullable<Report1214Input['otherTaxableIncome']>;
+export type Report1214CapitalGainsSummaryData = NonNullable<Report1214Input['capitalGainsSummary']>;
+export type Report1214QualifyingCompanyData = NonNullable<Report1214Input['qualifyingCompany']>;
+export type Report1214RelatedCompanyData = RelatedCompany;
+export type Report1214RdInvestmentData = RdInvestment;
+/** `amount_overrides`: record 1000 input code → amount. */
+export type Report1214AmountOverridesData = Partial<Record<MainFormInputCode, number>>;
+
+/**
+ * GraphQL `Report1214Profile` parent: the stored profile of an owner and year (empty blocks when
+ * no row exists). `{}` means "not set" for every object block.
+ */
+export interface Report1214ProfileProto {
+  ownerId: string;
+  year: number;
+  company: Report1214CompanyOverridesData;
+  declarations: Report1214DeclarationsData;
+  preparer: Report1214PreparerData;
+  attachments: Report1214AttachmentsData;
+  /** `{}` when no changed bank account is stored. */
+  bankAccount: Partial<Report1214BankAccountData>;
+  otherTaxableIncome: Report1214OtherTaxableIncomeData;
+  capitalGainsSummary: Report1214CapitalGainsSummaryData;
+  qualifyingCompany: Report1214QualifyingCompanyData;
+  relatedCompanies: Report1214RelatedCompanyData[];
+  rdInvestments: Report1214RdInvestmentData[];
+  amountOverrides: Report1214AmountOverridesData;
+  /** `null` when no row is stored yet. */
+  updatedAt: Date | null;
 }

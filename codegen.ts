@@ -162,6 +162,7 @@ const config: CodegenConfig = {
           ProfitAndLossReportYear: '../modules/reports/types.js#ProfitAndLossReportYearProto',
           Proforma: '../modules/documents/types.js#IGetAllDocumentsResult',
           Receipt: '../modules/documents/types.js#IGetAllDocumentsResult',
+          Report1214Profile: '../modules/report-1214/types.js#Report1214ProfileProto',
           ReportCommentaryRecord: '../modules/reports/types.js#CommentaryRecordProto',
           ReportCommentarySubRecord: '../modules/reports/types.js#CommentarySubRecordProto',
           FinancialCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
