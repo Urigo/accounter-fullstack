@@ -18,7 +18,7 @@ export default {
     -- ── Shekel account ────────────────────────────────────────────────────────
 
     CREATE TABLE accounter_schema.leumi_ils_account_transactions (
-      id                        UUID    NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      id                        UUID    NOT NULL DEFAULT uuidv7() PRIMARY KEY,
       owner_id                  UUID    NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
 
       -- full account number, as in financial_accounts.account_number
@@ -68,7 +68,7 @@ export default {
     -- ── Foreign-currency accounts ─────────────────────────────────────────────
 
     CREATE TABLE accounter_schema.leumi_foreign_account_transactions (
-      id              UUID    NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      id              UUID    NOT NULL DEFAULT uuidv7() PRIMARY KEY,
       owner_id        UUID    NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
 
       -- each currency is its own account at Leumi, with its own number
@@ -105,7 +105,7 @@ export default {
     -- ── Credit cards ──────────────────────────────────────────────────────────
 
     CREATE TABLE accounter_schema.leumi_creditcard_transactions (
-      id                      UUID    NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      id                      UUID    NOT NULL DEFAULT uuidv7() PRIMARY KEY,
       owner_id                UUID    NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
 
       -- last four digits, as in financial_accounts.account_number
