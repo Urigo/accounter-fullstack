@@ -14,10 +14,6 @@ export const REPORT_1214_ROLES = ['business_owner', 'accountant'] as const;
 
 const REPORT_1214_ROLE_SET: ReadonlySet<string> = new Set(REPORT_1214_ROLES);
 
-/**
- * The request's active business: the one row-level security binds every write to. Derived exactly
- * as `TenantAwareDBClient` derives `app.current_business_id`, so the two cannot drift.
- */
 async function requireAuthContext(injector: Injector): Promise<AuthContext> {
   const authContext = await injector.get(AuthContextProvider).getAuthContext();
   if (!authContext) {
@@ -28,6 +24,10 @@ async function requireAuthContext(injector: Injector): Promise<AuthContext> {
   return authContext;
 }
 
+/**
+ * The request's active business: the one row-level security binds every write to. Derived exactly
+ * as `TenantAwareDBClient` derives `app.current_business_id`, so the two cannot drift.
+ */
 async function getActiveWriteTarget(injector: Injector): Promise<string> {
   const authContext = await requireAuthContext(injector);
   const writeTarget = resolveWriteTargetBusinessId(
@@ -44,8 +44,9 @@ async function getActiveWriteTarget(injector: Injector): Promise<string> {
 
 /**
  * Throws `FORBIDDEN` unless the caller's membership in `ownerId` carries one of
- * {@link REPORT_1214_ROLES}. The `@requiresAnyRole` directive only checks the role in the active
- * business, while an explicit `ownerId` may name another business in the caller's scope.
+ * {@link REPORT_1214_ROLES}. The `@requiresAnyRole` directive only checks the role of the caller's
+ * primary membership, while the business acted on may be another one: an explicit `ownerId`, or
+ * the active business an `x-business-scope` header switched to.
  */
 async function assertReport1214Role(injector: Injector, ownerId: string): Promise<void> {
   const authContext = await requireAuthContext(injector);
@@ -72,12 +73,13 @@ async function assertReport1214Role(injector: Injector, ownerId: string): Promis
  *   otherwise.
  * - For an explicit `ownerId`, reads and writes alike, the caller's membership in that business
  *   must also carry one of {@link REPORT_1214_ROLES}: the `@requiresAnyRole` directive only checks
- *   the role in the active business. Otherwise `FORBIDDEN`.
+ *   the role of the caller's primary membership. Otherwise `FORBIDDEN`.
  * - A write must also target the request's active business. Row-level security binds every write
  *   to it (`app.current_business_id`), so a write to another business the caller belongs to would
  *   otherwise delete nothing and still look like it succeeded.
- * - Without an `ownerId`, the request's active business is used; the directive already checked the
- *   caller's role there.
+ * - Without an `ownerId`, the request's active business is used, and the caller's role is checked
+ *   there too: the directive reads the primary membership's role, which an `x-business-scope`
+ *   switch to another business does not update.
  */
 export async function resolveReport1214Owner(
   injector: Injector,
@@ -86,7 +88,9 @@ export async function resolveReport1214Owner(
 ): Promise<string> {
   const ownerId = requestedOwnerId?.toLowerCase();
   if (!ownerId) {
-    return (await getActiveWriteTarget(injector)).toLowerCase();
+    const activeOwnerId = (await getActiveWriteTarget(injector)).toLowerCase();
+    await assertReport1214Role(injector, activeOwnerId);
+    return activeOwnerId;
   }
 
   const scopeProvider = injector.get(ScopeProvider);

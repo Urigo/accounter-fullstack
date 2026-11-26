@@ -14,3 +14,5 @@ to the caller's active business, and writes to any other business are refused wi
 Merging businesses moves shareholder links to the merge target.
 An explicit `ownerId` also requires the caller to be a `business_owner` or `accountant` of that
 business.
+Without an `ownerId`, the role is checked in the active business, so it holds after a business
+switch too.
