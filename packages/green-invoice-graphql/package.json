@@ -63,7 +63,7 @@
     "@graphql-codegen/cli": "8.0.0",
     "@graphql-codegen/typescript": "7.0.1",
     "@graphql-codegen/typescript-generic-sdk": "6.0.1",
-    "@graphql-codegen/typescript-operations": "7.0.2",
+    "@graphql-codegen/typescript-operations": "7.0.3",
     "@graphql-mesh/compose-cli": "1.8.4",
     "@graphql-tools/utils": "13.2.2",
     "@omnigraph/json-schema": "0.112.6",
