@@ -114,6 +114,7 @@ describe('tool descriptions document their own result', () => {
     ['accounter_update_charges_tags', 'charges'],
     ['accounter_upload_documents', 'results'],
     ['accounter_update_charge', 'charges'],
+    ['accounter_update_charges', 'charges'],
     ['accounter_merge_charges', 'charges'],
     ['accounter_update_transactions', 'transactions'],
     ['accounter_update_document', 'documents'],

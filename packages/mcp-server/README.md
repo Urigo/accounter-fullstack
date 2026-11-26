@@ -39,8 +39,9 @@ default**: `accounter_update_charges_tags` and `accounter_upload_documents` firs
 review/matching tools (`accounter_update_charge`, `accounter_merge_charges`,
 `accounter_update_transactions`, `accounter_update_document`, `accounter_delete_document`,
 `accounter_create_business`) that let a model act on what it finds in the missing-information views,
-and the two onboarding tools: `accounter_create_client`, which makes a directory business a client,
-and `accounter_create_contract`, which records a client's billing agreement. See
+`accounter_update_charges` for a categorisation pass over many charges, and the two onboarding
+tools: `accounter_create_client`, which makes a directory business a client, and
+`accounter_create_contract`, which records a client's billing agreement. See
 [Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what is
 still out of scope.
 
@@ -314,6 +315,13 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   (the field exists on `UpdateChargeInput` but the resolver ignores it), so the schema rejects it
   and points at the two tools below. The echo's `chargeType` uses the same typename map as the read
   tools (`chargeTypeFromTypename`), so PAYROLL / INTERNAL / VAT read back as sent.
+- **`accounter_update_charges`** — set `userDescription` and/or `type` on 1–50 charges in one
+  upstream mutation (`updateChargesFields`), each charge with its own values: `updates` is a list of
+  `{ chargeId, userDescription?, type? }`. This is the categorisation-pass counterpart of
+  `accounter_update_charge`, which takes one charge per call; the other charge fields stay there. An
+  entry with neither field or a charge listed twice is refused before any round trip; upstream
+  refuses the whole list, writing nothing, when an id does not resolve. A type change re-flags an
+  approved charge for review (as `accounter_update_charge` does); a description change does not.
 - **`accounter_merge_charges`** — fold 1–20 charges into a base charge: their transactions,
   documents and ledger records move onto it and they are deleted. This is the "receipt in its own
   charge ↔ card row in another" fix; the base should be the charge holding the transaction. Refuses
@@ -792,13 +800,14 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Write tools
 
-Ten mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
+Eleven mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
 | Tool                            | What it does                                                                             |
 | ------------------------------- | ---------------------------------------------------------------------------------------- |
 | `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names)             |
 | `accounter_upload_documents`    | Uploads documents — by URL or inline base64 — to an existing charge or a new one         |
 | `accounter_update_charge`       | Edits a charge's description, type, optional-documents/VAT flags and business trip       |
+| `accounter_update_charges`      | Sets description and/or type on up to 50 charges, each with its own values               |
 | `accounter_merge_charges`       | Folds charges into a base charge (transactions, documents and ledger move; rest deleted) |
 | `accounter_update_transactions` | Sets counterparty, charge and/or fee flag on a batch of bank/card rows                   |
 | `accounter_update_document`     | Moves a document to another charge and/or fixes its extracted fields and parties         |
@@ -807,7 +816,7 @@ Ten mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_
 | `accounter_create_client`       | Makes a directory business a client (and creates its Green Invoice customer)             |
 | `accounter_create_contract`     | Records a client billing contract (optionally retiring the previous term)                |
 
-Six of them exist for one workflow: a model reviews the missing-information charges (no
+Seven of them exist for one workflow: a model reviews the missing-information charges (no
 counterparty, no document, no tag, no transaction) with the read tools, proposes a fix per charge,
 and — once a person confirms — applies it through these rather than handing back a to-do list for
 the Accounter UI. `accounter_create_client` and `accounter_create_contract` serve the other,

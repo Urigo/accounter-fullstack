@@ -366,6 +366,7 @@ const WRITE_TOOLS = [
   'accounter_update_charges_tags',
   'accounter_upload_documents',
   'accounter_update_charge',
+  'accounter_update_charges',
   'accounter_merge_charges',
   'accounter_update_transactions',
   'accounter_update_document',
