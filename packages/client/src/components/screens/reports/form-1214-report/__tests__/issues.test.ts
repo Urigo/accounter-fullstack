@@ -11,6 +11,11 @@ describe('form1214SectionOfPath', () => {
     expect(form1214SectionOfPath('rdInvestments[5]')).toBe('rd-investments');
     expect(form1214SectionOfPath('amounts["165"]')).toBe('amounts');
     expect(form1214SectionOfPath('amounts.165')).toBe('amounts');
+    expect(form1214SectionOfPath('attachments.donationReceiptsCount')).toBe('other-details');
+    expect(form1214SectionOfPath('bankAccount.branch')).toBe('other-details');
+    expect(form1214SectionOfPath('otherTaxableIncome.amount')).toBe('other-details');
+    expect(form1214SectionOfPath('capitalGainsSummary.reasons.otherText')).toBe('other-details');
+    expect(form1214SectionOfPath('qualifyingCompany.amortizationAmount')).toBe('other-details');
   });
 
   it('has no section for unknown or missing paths', () => {

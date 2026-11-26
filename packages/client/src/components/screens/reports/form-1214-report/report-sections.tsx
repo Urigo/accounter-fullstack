@@ -4,6 +4,7 @@ import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { Form1214AmountsSection } from './sections/amounts-section.js';
 import { Form1214CompanySection } from './sections/company-section.js';
 import { Form1214DeclarationsSection } from './sections/declarations-section.js';
+import { Form1214OtherDetailsSection } from './sections/other-details-section.js';
 import { Form1214RdInvestmentsSection } from './sections/rd-investments-section.js';
 import { Form1214RelatedCompaniesSection } from './sections/related-companies-section.js';
 import { Form1214ShareholdersSection } from './sections/shareholders-section.js';
@@ -18,6 +19,7 @@ import { Form1214ShareholdersSection } from './sections/shareholders-section.js'
     ...Form1214RelatedCompaniesSection
     ...Form1214RdInvestmentsSection
     ...Form1214AmountsSection
+    ...Form1214OtherDetailsSection
   }
 `;
 
@@ -36,6 +38,7 @@ export function Form1214ReportSections({ report }: Props): ReactElement {
       <Form1214RelatedCompaniesSection data={data} />
       <Form1214RdInvestmentsSection data={data} />
       <Form1214AmountsSection data={data} />
+      <Form1214OtherDetailsSection data={data} />
     </div>
   );
 }

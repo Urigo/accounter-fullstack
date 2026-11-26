@@ -1,17 +1,23 @@
 /** The page sections (element ids) a form 1214 issue path can point to. */
 export type Form1214Section =
-  'shareholders' | 'company' | 'declarations' | 'related-companies' | 'rd-investments' | 'amounts';
+  | 'shareholders'
+  | 'company'
+  | 'declarations'
+  | 'related-companies'
+  | 'rd-investments'
+  | 'amounts'
+  | 'other-details';
 
 /** The top-level member of a report input path (`shareholders[0].fullName` -> `shareholders`). */
 const SECTION_BY_ROOT: Record<string, Form1214Section> = {
   shareholders: 'shareholders',
   company: 'company',
   preparer: 'company',
-  attachments: 'company',
-  bankAccount: 'company',
-  otherTaxableIncome: 'company',
-  capitalGainsSummary: 'company',
-  qualifyingCompany: 'company',
+  attachments: 'other-details',
+  bankAccount: 'other-details',
+  otherTaxableIncome: 'other-details',
+  capitalGainsSummary: 'other-details',
+  qualifyingCompany: 'other-details',
   declarations: 'declarations',
   relatedCompanies: 'related-companies',
   rdInvestments: 'rd-investments',
