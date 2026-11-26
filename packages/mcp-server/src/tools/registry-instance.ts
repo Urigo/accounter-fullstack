@@ -1,7 +1,7 @@
 import { createBusinessTool } from './businesses-write.js';
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
-import { mergeChargesTool, updateChargeTool } from './charges-write.js';
+import { mergeChargesTool, updateChargesTool, updateChargeTool } from './charges-write.js';
 import { searchChargesTool } from './charges.js';
 import { createClientTool } from './clients-write.js';
 import { listClientsTool } from './clients.js';
@@ -89,6 +89,8 @@ toolRegistry.register(uploadDocumentsTool);
 // is new, add it to the directory. Each is a thin wrapper over one upstream
 // mutation; none of them is retried, and all are hidden behind the same flag.
 toolRegistry.register(updateChargeTool);
+// The same edit across many charges, each with its own values: a categorisation pass.
+toolRegistry.register(updateChargesTool);
 toolRegistry.register(mergeChargesTool);
 toolRegistry.register(updateTransactionsTool);
 toolRegistry.register(updateDocumentTool);

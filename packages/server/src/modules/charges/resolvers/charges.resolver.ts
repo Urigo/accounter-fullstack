@@ -39,6 +39,9 @@ import type {
 } from '../types.js';
 import { commonChargeFields, commonDocumentsFields } from './common.js';
 
+/** Most charges `updateChargesFields` takes in one call. */
+export const MAX_CHARGES_FIELDS_UPDATES = 500;
+
 async function chargeTypeChecker(
   chargeType: ChargeTypeEnum,
   charge: IGetChargesByIdsResult,
@@ -467,6 +470,86 @@ export const chargesResolvers: ChargesModule.Resolvers &
         }
 
         return { charges };
+      } catch (e) {
+        let message = 'Error updating charges';
+        if (e instanceof GraphQLError) {
+          message = e.message;
+        } else {
+          console.error(e);
+        }
+        return {
+          __typename: 'CommonError',
+          message,
+        };
+      }
+    },
+    updateChargesFields: async (_, { updates }, { injector }) => {
+      try {
+        if (updates.length === 0) {
+          throw new GraphQLError('No charges provided for update');
+        }
+        if (updates.length > MAX_CHARGES_FIELDS_UPDATES) {
+          throw new GraphQLError(
+            `Too many charges in one update (${updates.length}); the limit is ${MAX_CHARGES_FIELDS_UPDATES}`,
+          );
+        }
+        const chargeIds = updates.map(update => update.chargeId);
+        const duplicates = chargeIds.filter((id, index) => chargeIds.indexOf(id) !== index);
+        if (duplicates.length > 0) {
+          throw new GraphQLError(
+            `Charges listed more than once: "${Array.from(new Set(duplicates)).join('", "')}"`,
+          );
+        }
+        const empty = updates.filter(
+          update => update.userDescription == null && update.type == null,
+        );
+        if (empty.length > 0) {
+          throw new GraphQLError(
+            `No userDescription or type given for charges "${empty.map(update => update.chargeId).join('", "')}"`,
+          );
+        }
+
+        // Refuse the whole list before writing anything if a charge is missing (or not visible
+        // to the caller), so a typo in one id does not leave the rest half-applied.
+        const existing = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.loadMany(chargeIds);
+        const missing = chargeIds.filter(
+          (_id, index) => !existing[index] || existing[index] instanceof Error,
+        );
+        if (missing.length > 0) {
+          throw new GraphQLError(`Charges not found: "${missing.join('", "')}"`);
+        }
+
+        const updated = await injector
+          .get(ChargesProvider)
+          .updateChargesDescriptionAndType({
+            chargeIds,
+            userDescriptions: updates.map(update => update.userDescription ?? null),
+            types: updates.map(update => update.type ?? null),
+          })
+          .catch(e => {
+            console.error(e);
+            throw new GraphQLError('Error updating charges');
+          });
+        const updatedById = new Map<string, IGetChargesByIdsResult>(
+          updated.map(charge => [charge.id, charge as IGetChargesByIdsResult]),
+        );
+
+        // A type change is accountant-relevant (as in updateCharge); a description is not.
+        const retypedIds = updates.filter(update => update.type != null).map(u => u.chargeId);
+        if (retypedIds.length > 0) {
+          const degraded = await degradeChargesAccountantApproval(injector, retypedIds);
+          for (const [id, charge] of degraded) {
+            updatedById.set(id, charge);
+          }
+        }
+
+        const charges = chargeIds.map(id => updatedById.get(id));
+        if (charges.some(charge => !charge)) {
+          throw new GraphQLError('Some updated charges could not be read back');
+        }
+        return { charges: charges as IGetChargesByIdsResult[] };
       } catch (e) {
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {

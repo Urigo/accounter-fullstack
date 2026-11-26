@@ -20,6 +20,10 @@ export default gql`
     batchUpdateCharges(chargeIds: [UUID!]!, fields: UpdateChargeInput!): BatchUpdateChargesResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " set each listed charge's own description and/or type in one call (up to 500 charges) "
+    updateChargesFields(updates: [ChargeFieldsUpdateInput!]!): BatchUpdateChargesResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     mergeCharges(
       baseChargeID: UUID!
       chargeIdsToMerge: [UUID!]!
@@ -393,6 +397,14 @@ export default gql`
     yearsOfRelevance: [YearOfRelevanceInput!]
     optionalVAT: Boolean
     optionalDocuments: Boolean
+  }
+
+  " one charge's new values for updateChargesFields; an omitted or null field is left as it is "
+  input ChargeFieldsUpdateInput {
+    chargeId: UUID!
+    " user custom description "
+    userDescription: String
+    type: ChargeType
   }
 
   " input variables for charge spread "

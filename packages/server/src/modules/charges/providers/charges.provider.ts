@@ -5,6 +5,7 @@ import type { Optional, TimelessDateString } from '../../../shared/types/index.j
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   accountant_status,
+  charge_type,
   IBatchUpdateChargesParams,
   IBatchUpdateChargesQuery,
   IDeleteChargesByIdsParams,
@@ -23,6 +24,8 @@ import type {
   IUpdateAccountantApprovalQuery,
   IUpdateChargeParams,
   IUpdateChargeQuery,
+  IUpdateChargesDescriptionAndTypeParams,
+  IUpdateChargesDescriptionAndTypeQuery,
 } from '../types.js';
 import { ChargesAuthorizationProvider } from './charges-authorization.provider.js';
 
@@ -155,6 +158,24 @@ const batchUpdateCharges = sql<IBatchUpdateChargesQuery>`
   WHERE
     id in $$chargeIds
   RETURNING *;
+`;
+
+/**
+ * Per-charge description and type, one statement for the whole list. The three arrays are read
+ * position by position; a NULL entry keeps that charge's stored value.
+ */
+const updateChargesDescriptionAndType = sql<IUpdateChargesDescriptionAndTypeQuery>`
+  UPDATE accounter_schema.charges c
+  SET
+    user_description = COALESCE(u.user_description, c.user_description),
+    type = COALESCE(u.type, c.type)
+  FROM unnest(
+    $chargeIds::uuid[],
+    $userDescriptions::text[],
+    $types::accounter_schema.charge_type[]
+  ) AS u(id, user_description, type)
+  WHERE c.id = u.id
+  RETURNING c.*;
 `;
 
 const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
@@ -1321,6 +1342,33 @@ export class ChargesProvider {
     });
     const charges = await batchUpdateCharges.run(params, this.db);
     charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+    return charges;
+  }
+
+  /**
+   * Sets each listed charge's own description and/or type. `chargeIds`, `userDescriptions` and
+   * `types` are parallel arrays; a null entry leaves that field as it is. Returns the charges that
+   * exist (and that the caller may see); a missing id simply has no row.
+   */
+  public async updateChargesDescriptionAndType(params: {
+    chargeIds: string[];
+    userDescriptions: Array<string | null>;
+    types: Array<charge_type | null>;
+  }) {
+    await this.auth.canWriteCharge();
+
+    for (const chargeId of params.chargeIds) {
+      this.invalidateCharge(chargeId);
+    }
+    // pgtyped types array elements as non-null, but `pg` sends a JS null element as SQL NULL,
+    // which is exactly the "keep this field" the query's COALESCE reads.
+    const charges = await updateChargesDescriptionAndType.run(
+      params as IUpdateChargesDescriptionAndTypeParams,
+      this.db,
+    );
+    for (const charge of charges) {
+      this.getChargeByIdLoader.prime(charge.id, charge);
+    }
     return charges;
   }
 

@@ -49,6 +49,25 @@ function authContext(): McpAuthContext {
 
 /** Upstream payloads keyed by the operation each tool issues. */
 function dataFor(query: string): unknown {
+  if (query.includes('mutation McpBatchUpdateChargesFields')) {
+    return {
+      updateChargesFields: {
+        __typename: 'BatchUpdateChargesSuccessfulResult',
+        charges: [
+          {
+            __typename: 'CommonCharge',
+            id: 'c1',
+            userDescription: 'x',
+            optionalDocuments: null,
+            optionalVAT: null,
+            counterparty: null,
+            tags: [],
+            metadata: { transactionsCount: 1, documentsCount: 1, invalidLedger: 'VALID' },
+          },
+        ],
+      },
+    };
+  }
   if (query.includes('mutation McpUpdateCharge')) {
     return {
       updateCharge: {
@@ -230,6 +249,10 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
     documentUrls: ['https://example.com/invoice.pdf?token=hunter2'],
   },
   accounter_update_charge: { memberBusinessId: B1, chargeId: 'c1', userDescription: 'x' },
+  accounter_update_charges: {
+    memberBusinessId: B1,
+    updates: [{ chargeId: 'c1', userDescription: 'x' }],
+  },
   accounter_merge_charges: { memberBusinessId: B1, baseChargeId: 'c1', chargeIdsToMerge: ['c2'] },
   accounter_update_transactions: { memberBusinessId: B1, transactionIds: ['t1'], counterpartyId: 'b1' },
   accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },

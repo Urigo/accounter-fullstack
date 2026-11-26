@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
 import type {
+  McpBatchUpdateChargesFieldsMutation,
   McpChargeWriteEchoFragment,
   McpMergeChargesMutation,
   McpRereadChargeQuery,
@@ -37,6 +38,13 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
 
 export const UPDATE_CHARGE_TOOL_NAME = 'accounter_update_charge';
 export const MERGE_CHARGES_TOOL_NAME = 'accounter_merge_charges';
+export const UPDATE_CHARGES_TOOL_NAME = 'accounter_update_charges';
+
+/**
+ * Max charges per `accounter_update_charges` call, the same as the tag batch tool. Upstream takes
+ * up to 500; 50 keeps one call's echo readable.
+ */
+export const MAX_CHARGES_PER_BATCH_UPDATE = 50;
 
 /** Max charges folded into one base charge per call. */
 export const MAX_CHARGES_TO_MERGE = 20;
@@ -155,6 +163,31 @@ const mergeChargesInput = z.object({
 });
 type MergeChargesInput = z.infer<typeof mergeChargesInput>;
 
+/**
+ * The batch tool sets only the two fields a categorisation pass needs per charge. The rest of
+ * `UpdateChargeInput` (VAT and document flags, tax category, business trip, spread) is a
+ * per-charge review decision with `accounter_update_charge`, and the upstream mutation
+ * (`updateChargesFields`) takes only these two.
+ */
+const updateChargesInput = z.object({
+  memberBusinessId: writeTargetBusinessIdInput,
+  updates: z
+    .array(
+      z.object({
+        chargeId: z.string().min(1).describe('The charge to edit.'),
+        userDescription: userDescriptionInput,
+        type: chargeTypeInput,
+      }),
+    )
+    .min(1)
+    .max(MAX_CHARGES_PER_BATCH_UPDATE)
+    .describe(
+      `One entry per charge (1-${MAX_CHARGES_PER_BATCH_UPDATE} per call), each with its own ` +
+        '`userDescription` and/or `type`. A charge may appear only once.',
+    ),
+});
+type UpdateChargesInput = z.infer<typeof updateChargesInput>;
+
 /** The echo every charge write returns: enough to confirm the edit landed. */
 const CHARGE_ECHO_FRAGMENT = /* GraphQL */ `
   fragment McpChargeWriteEcho on Charge {
@@ -188,6 +221,23 @@ const UPDATE_CHARGE_MUTATION = /* GraphQL */ `
       __typename
       ... on UpdateChargeSuccessfulResult {
         charge {
+          ...McpChargeWriteEcho
+        }
+      }
+      ... on CommonError {
+        message
+      }
+    }
+  }
+  ${CHARGE_ECHO_FRAGMENT}
+`;
+
+const BATCH_UPDATE_CHARGES_FIELDS_MUTATION = /* GraphQL */ `
+  mutation McpBatchUpdateChargesFields($updates: [ChargeFieldsUpdateInput!]!) {
+    updateChargesFields(updates: $updates) {
+      __typename
+      ... on BatchUpdateChargesSuccessfulResult {
+        charges {
           ...McpChargeWriteEcho
         }
       }
@@ -324,6 +374,68 @@ async function updateChargeHandler(
   });
 }
 
+async function updateChargesHandler(
+  input: UpdateChargesInput,
+  context: ToolExecutionContext,
+): Promise<ToolResult> {
+  const issues: Array<{ path: string; message: string }> = [];
+  const seen = new Set<string>();
+  for (const [index, update] of input.updates.entries()) {
+    if (update.userDescription === undefined && update.type === undefined) {
+      issues.push({ path: `updates.${index}`, message: 'provide userDescription and/or type' });
+    }
+    if (seen.has(update.chargeId)) {
+      issues.push({
+        path: `updates.${index}.chargeId`,
+        message: `charge ${update.chargeId} is listed more than once`,
+      });
+    }
+    seen.add(update.chargeId);
+  }
+  if (issues.length > 0) {
+    throw new ToolInputError('Invalid charge updates', issues);
+  }
+
+  // Only the fields each entry carries are sent: upstream reads an absent field as "leave as is".
+  const updates = input.updates.map(update => ({
+    chargeId: update.chargeId,
+    ...(update.userDescription === undefined ? {} : { userDescription: update.userDescription }),
+    ...(update.type === undefined ? {} : { type: update.type }),
+  }));
+
+  const data = await context.client.mutate<McpBatchUpdateChargesFieldsMutation>(
+    { query: BATCH_UPDATE_CHARGES_FIELDS_MUTATION, variables: { updates } },
+    context.upstream,
+  );
+
+  const result = data.updateChargesFields;
+  if (result.__typename !== 'BatchUpdateChargesSuccessfulResult') {
+    throw new UpstreamError(
+      'UPSTREAM_ERROR',
+      result.__typename === 'CommonError' ? result.message : 'Charges update failed',
+      false,
+    );
+  }
+
+  const charges = result.charges.map(shapeChargeEcho);
+  const descriptionCount = input.updates.filter(u => u.userDescription !== undefined).length;
+  const typeCount = input.updates.filter(u => u.type !== undefined).length;
+  return shapeWriteResult({
+    action: 'update_charges',
+    outcome: {
+      updatedCount: charges.length,
+      requestedCount: input.updates.length,
+      descriptionsSet: descriptionCount,
+      typesSet: typeCount,
+      scope: { memberBusinessIds: context.readScope.memberBusinessIds },
+    },
+    items: { key: 'charges', values: charges },
+    summary:
+      `Updated ${charges.length} charge(s): ${descriptionCount} description(s), ` +
+      `${typeCount} type(s).`,
+  });
+}
+
 async function mergeChargesHandler(
   input: MergeChargesInput,
   context: ToolExecutionContext,
@@ -392,6 +504,16 @@ function observeUpdate(input: UpdateChargeInput): ToolObservation {
   return { fields: { updatedFieldCount: Object.keys(chargeFieldsOf(input)).length } };
 }
 
+function observeBatchUpdate(input: UpdateChargesInput): ToolObservation {
+  return {
+    fields: {
+      requestedChargeCount: input.updates.length,
+      descriptionCount: input.updates.filter(u => u.userDescription !== undefined).length,
+      typeCount: input.updates.filter(u => u.type !== undefined).length,
+    },
+  };
+}
+
 function observeMerge(input: MergeChargesInput): ToolObservation {
   return { fields: { mergedChargeCount: input.chargeIdsToMerge.length } };
 }
@@ -447,4 +569,33 @@ export const mergeChargesTool: ToolDefinition<typeof mergeChargesInput> = {
   },
   handler: mergeChargesHandler,
   observe: observeMerge,
+};
+
+export const updateChargesTool: ToolDefinition<typeof updateChargesInput> = {
+  name: UPDATE_CHARGES_TOOL_NAME,
+  description:
+    'Set the description and/or type on many charges in one call, each charge with its own ' +
+    `values: \`updates\` is a list of up to ${MAX_CHARGES_PER_BATCH_UPDATE} ` +
+    '`{ chargeId, userDescription?, type? }` entries. Use it for a categorisation pass, where ' +
+    '`accounter_update_charge` would take one call per charge; other charge fields (VAT and ' +
+    'document flags, tax category, business trip, spread) stay with that tool. The call is all ' +
+    'or nothing: an unknown charge id, a charge listed twice or an entry with neither field ' +
+    'refuses the whole list and nothing is written. A type change re-flags an approved charge ' +
+    'for accountant review; a description change does not. As with `accounter_update_charge`, ' +
+    'this does not set counterparties (`accounter_update_transactions`) or tags ' +
+    '(`accounter_update_charges_tags`). The echo under `charges` is each charge as it now ' +
+    'stands, in the order given, alongside `updatedCount`, `requestedCount`, ' +
+    '`descriptionsSet` and `typesSet`. ' +
+    writeResultDescription('charges') +
+    ' ' +
+    WRITE_SCOPE_DESCRIPTION_SUFFIX,
+  inputSchema: updateChargesInput,
+  policy: {
+    requiredRoles: ['business_owner', 'accountant'],
+    requiresBusinessScope: true,
+    dataClassification: 'business',
+    mutating: true,
+  },
+  handler: updateChargesHandler,
+  observe: observeBatchUpdate,
 };
