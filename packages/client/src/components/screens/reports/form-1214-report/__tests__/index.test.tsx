@@ -14,6 +14,7 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => location,
   useNavigate: () => navigateMock,
   useSearchParams: () => [new URLSearchParams(location.search)],
+  useBlocker: () => ({ state: 'unblocked' }),
 }));
 
 vi.mock('../../../../../gql/graphql.js', () => ({

@@ -10,6 +10,7 @@ import { useQueryErrorToast } from './use-query-error-toast.js';
       nodes {
         id
         name
+        ownerId
       }
     }
   }
