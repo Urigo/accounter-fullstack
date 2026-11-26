@@ -1,5 +1,29 @@
 # @accounter/shaam6111-generator
 
+## 0.2.0
+
+### Minor Changes
+
+- [#5028](https://github.com/Urigo/accounter-fullstack/pull/5028) [`aaedde4`](https://github.com/Urigo/accounter-fullstack/commit/aaedde4f33c006636c52536359ecc43f16ef8ae4) Thanks [@gilgardosh](https://github.com/gilgardosh)! - New `frameReportFile` / `encodeReportFile`: each record followed by CR LF, the file closed with
+  X'0D0A1A', at most 10 reports of exactly 8612 characters each, encoded as Windows-1255, per the
+  SHAAM specification. `convertReportToFile` now writes the framed file (8615 bytes for one report
+  instead of the bare 8612-byte record). `isValidIsraeliID` and `REPORT_RECORD_LENGTH` are exported.
+
+### Patch Changes
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.6.7` ↗︎](https://www.npmjs.com/package/zod/v/4.6.7) (from `4.6.5`, in `dependencies`)
+
+- [#5027](https://github.com/Urigo/accounter-fullstack/pull/5027) [`7c85ab4`](https://github.com/Urigo/accounter-fullstack/commit/7c85ab4a473223d6df6d61051f45283e4090dd2e) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Align the code labels and formulas with the 2025 Form 6111:
+  
+  - The labels of P&L codes 2030-2085, 3020-3120 and 3600-3632 did not match the form's rows (e.g.
+    "כיבודים, מתנות, תרומות, קנסות" is 3625, not 3620, and 3040 "תמלוגים (זכויות הפצה)" was
+    missing), 2570 read "תגמולים" instead of "תמלוגים", and several tax-adjustment labels had their
+    words out of order.
+  - Code 6666 subtracts financing expenses (5000) per rule 3.1; it added them, so any report with
+    financing expenses failed validation.
+  - Code 370 subtracts 184, as the specification requires.
+
 ## 0.1.9
 
 ### Patch Changes
