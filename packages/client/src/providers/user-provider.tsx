@@ -14,6 +14,8 @@ import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
       email
       emailVerified
       status
+      isSuperAdmin
+      hasPendingInvitation
     }
     userContext {
       memberships {

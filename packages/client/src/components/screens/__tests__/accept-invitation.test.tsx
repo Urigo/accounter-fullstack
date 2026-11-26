@@ -12,6 +12,7 @@ const {
   useAcceptInvitationMock,
   loginWithRedirectMock,
   acceptInvitationMock,
+  logoutMock,
   navigateMock,
   hookState,
   routeToken,
@@ -20,6 +21,7 @@ const {
   useAcceptInvitationMock: vi.fn(),
   loginWithRedirectMock: vi.fn(),
   acceptInvitationMock: vi.fn(),
+  logoutMock: vi.fn(),
   navigateMock: vi.fn(),
   hookState: {
     fetching: false,
@@ -34,6 +36,10 @@ vi.mock('@auth0/auth0-react', () => ({
 
 vi.mock('../../../hooks/use-accept-invitation.js', () => ({
   useAcceptInvitation: useAcceptInvitationMock,
+}));
+
+vi.mock('../../../hooks/use-logout.js', () => ({
+  useLogout: () => logoutMock,
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -55,7 +61,7 @@ vi.mock('../../ui/button.js', () => ({
   true;
 
 type MutationError = {
-  graphQLErrors?: Array<{ message?: string }>;
+  graphQLErrors?: Array<{ message?: string; extensions?: Record<string, unknown> }>;
 };
 
 async function renderScreen(): Promise<{ container: HTMLDivElement; cleanup: () => Promise<void> }> {
@@ -210,13 +216,66 @@ describe('AcceptInvitationPage', () => {
     await cleanup();
   });
 
-  it('shows TOKEN_EXPIRED error when invitation token is expired', async () => {
+  it('falls back to a message for the error code when the server sends none', async () => {
     mockAuthState({ isAuthenticated: true });
-    mockMutationState({ error: { graphQLErrors: [{ message: 'TOKEN_EXPIRED' }] } });
+    mockMutationState({
+      error: { graphQLErrors: [{ message: '', extensions: { code: 'TOKEN_EXPIRED' } }] },
+    });
 
     const { container, cleanup } = await renderScreen();
 
     expect(container.textContent).toContain('This invitation link has expired');
+    expect(container.textContent).not.toContain('Sign out');
+
+    await cleanup();
+  });
+
+  it('names both addresses on an email mismatch and offers to sign out', async () => {
+    mockAuthState({ isAuthenticated: true });
+    mockMutationState({
+      error: {
+        graphQLErrors: [
+          {
+            message:
+              'This invitation was sent to owner@example.com, but you are signed in as alias@example.com.',
+            extensions: { code: 'INVITATION_EMAIL_MISMATCH' },
+          },
+        ],
+      },
+    });
+
+    const { container, cleanup } = await renderScreen();
+
+    expect(container.textContent).toContain('owner@example.com');
+    expect(container.textContent).toContain('alias@example.com');
+    const signOut = Array.from(container.querySelectorAll('button')).find(
+      button => button.textContent === 'Sign out',
+    );
+    expect(signOut).toBeTruthy();
+
+    await act(async () => {
+      signOut?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(logoutMock).toHaveBeenCalledOnce();
+
+    await cleanup();
+  });
+
+  it('offers to sign out when the signed-in email is not verified', async () => {
+    mockAuthState({ isAuthenticated: true });
+    mockMutationState({
+      error: {
+        graphQLErrors: [
+          { message: 'Your email is not verified', extensions: { code: 'EMAIL_NOT_VERIFIED' } },
+        ],
+      },
+    });
+
+    const { container, cleanup } = await renderScreen();
+
+    expect(container.textContent).toContain('Your email is not verified');
+    expect(container.textContent).toContain('Sign out');
 
     await cleanup();
   });

@@ -21,5 +21,9 @@ export default gql`
     email: String
     emailVerified: Boolean!
     status: ViewerStatus!
+    " whether the caller is a platform super-admin, who may create new client tenants; false for a caller linked to no business "
+    isSuperAdmin: Boolean!
+    " whether an open invitation exists for the caller's own email; computed only for a caller linked to no business (false otherwise), so the app can send them to their invitation link "
+    hasPendingInvitation: Boolean!
   }
 `;

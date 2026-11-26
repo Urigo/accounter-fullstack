@@ -5,6 +5,8 @@ import { DBProvider } from '../../app-providers/db.provider.js';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import {
   alreadyAcceptedError,
+  emailMismatchError,
+  emailNotVerifiedError,
   expiredTokenError,
   invalidTokenError,
   mapAuth0Error,
@@ -14,6 +16,7 @@ import type {
   IGetInvitationByTokenQuery,
   IGetInvitationForAcceptanceQuery,
   IGetUserIdByAuth0UserIdQuery,
+  IHasPendingInvitationForEmailQuery,
   IInsertAcceptedBusinessUserQuery,
   IUpdateBusinessUserAuth0IdQuery,
   IUpdateInvitationAcceptanceQuery,
@@ -61,6 +64,16 @@ const updateBusinessUserAuth0Id = sql<IUpdateBusinessUserAuth0IdQuery>`
     AND business_id = $ownerId;
 `;
 
+const hasPendingInvitationForEmail = sql<IHasPendingInvitationForEmailQuery>`
+  SELECT EXISTS (
+    SELECT 1
+    FROM accounter_schema.invitations
+    WHERE lower(email) = lower($email)
+      AND accepted_at IS NULL
+      AND expires_at > NOW()
+  ) AS "exists";
+`;
+
 // Removes the pending placeholder membership created alongside the invitation, once
 // the invitation has been accepted by a user who already had a membership elsewhere.
 // Guarded by `auth0_user_id IS NULL` so an accepted member is never deleted.
@@ -81,6 +94,24 @@ export class AcceptInvitationsProvider {
     private auth0ManagementProvider: Auth0ManagementProvider,
     private auditLogsProvider: AuditLogsProvider,
   ) {}
+
+  /**
+   * Whether any business has an open (not accepted, not expired) invitation for `email`.
+   *
+   * Used for a signed-in caller who belongs to no business yet, about their own address, so
+   * the app can tell them to open their invitation link. Says nothing about which business.
+   */
+  public async hasPendingInvitationForEmail(email: string): Promise<boolean> {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      return false;
+    }
+    const [row] = await hasPendingInvitationForEmail.run(
+      { email: normalizedEmail },
+      this.dbProvider.pool,
+    );
+    return row?.exists === true;
+  }
 
   /**
    * Accept an invitation for the signed-in caller. `authenticatedUserEmail` must be a
@@ -131,19 +162,26 @@ export class AcceptInvitationsProvider {
 
       // Access tokens for custom APIs often omit `email` claims.
       // In that case, resolve the primary email from Auth0 profile for comparison.
+      let unverifiedEmail: string | null = null;
       if (!normalizedAuthenticatedEmail) {
         const identity = await this.auth0ManagementProvider.getUserEmailById(auth0UserId);
         if (identity?.emailVerified && identity.email) {
           normalizedAuthenticatedEmail = identity.email.trim().toLowerCase();
+        } else {
+          unverifiedEmail = identity?.email?.trim().toLowerCase() || null;
         }
       }
 
-      if (
-        !normalizedInvitationEmail ||
-        !normalizedAuthenticatedEmail ||
-        normalizedInvitationEmail !== normalizedAuthenticatedEmail
-      ) {
+      if (!normalizedInvitationEmail) {
         throw invalidTokenError();
+      }
+
+      if (!normalizedAuthenticatedEmail) {
+        throw emailNotVerifiedError(unverifiedEmail);
+      }
+
+      if (normalizedInvitationEmail !== normalizedAuthenticatedEmail) {
+        throw emailMismatchError(normalizedInvitationEmail, normalizedAuthenticatedEmail);
       }
 
       if (!invitation.user_id) {

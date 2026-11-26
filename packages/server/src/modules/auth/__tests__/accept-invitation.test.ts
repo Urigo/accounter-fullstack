@@ -1,5 +1,11 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  alreadyAcceptedError,
+  emailMismatchError,
+  emailNotVerifiedError,
+  expiredTokenError,
+} from '../helpers/invitations.helper.js';
 import { invitationsResolvers } from '../resolvers/invitations.resolver.js';
 import { AcceptInvitationsProvider } from '../providers/accept-invitations.provider.js';
 import { AuthContextProvider } from '../providers/auth-context.provider.js';
@@ -230,4 +236,47 @@ describe('acceptInvitation resolver', () => {
       return error instanceof GraphQLError && error.extensions?.code === 'INVITATION_ACCEPT_FAILED';
     });
   });
+
+  it('passes the email-mismatch error through to the signed-in caller, naming both addresses', async () => {
+    mockAcceptInvitationsProvider.acceptInvitation.mockRejectedValueOnce(
+      emailMismatchError('invitee@example.com', 'alias@example.com'),
+    );
+
+    await expect(
+      acceptInvitation({}, { token: 'token-mismatch' }, createContext(), mockInfo),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('sent to invitee@example.com'),
+      extensions: {
+        code: 'INVITATION_EMAIL_MISMATCH',
+        invitedEmail: 'invitee@example.com',
+        signedInEmail: 'alias@example.com',
+      },
+    });
+  });
+
+  it.each([
+    ['TOKEN_EXPIRED', expiredTokenError, /expired/],
+    ['TOKEN_ALREADY_USED', alreadyAcceptedError, /already been used/],
+    ['EMAIL_NOT_VERIFIED', () => emailNotVerifiedError('alias@example.com'), /not verified/],
+  ])('passes %s through with a message that says which', async (code, makeError, message) => {
+    mockAcceptInvitationsProvider.acceptInvitation.mockRejectedValueOnce(makeError());
+
+    await expect(
+      acceptInvitation({}, { token: 'token-x' }, createContext(), mockInfo),
+    ).rejects.toMatchObject({ message: expect.stringMatching(message), extensions: { code } });
+  });
+
+  it('rejects an anonymous caller before looking up the invitation, so no email is revealed', async () => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce(null);
+    mockAuthProvider.getJwtIdentity.mockResolvedValueOnce(null);
+
+    const error = await acceptInvitation({}, { token: 'token-anon' }, createContext(), mockInfo).catch(
+      (e: unknown) => e,
+    );
+
+    expect(error).toMatchObject({ extensions: { code: 'UNAUTHENTICATED' } });
+    expect((error as GraphQLError).message).not.toContain('@');
+    expect(mockAcceptInvitationsProvider.acceptInvitation).not.toHaveBeenCalled();
+  });
 });
+

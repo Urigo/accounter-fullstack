@@ -70,21 +70,35 @@ export function WelcomePage(): ReactElement {
     );
   }
 
+  // An open invitation for this address decides the message: signing in alone never links an
+  // account, the invitation link does. Without this, an invitee whose address is not verified yet
+  // was told a verification email had been sent, which nothing had done.
+  const hasPendingInvitation = viewer?.hasPendingInvitation === true;
   const isEmailUnverified = viewer?.status === 'EMAIL_UNVERIFIED';
+
+  const title = hasPendingInvitation
+    ? 'Open your invitation link'
+    : isEmailUnverified
+      ? 'Verify your email'
+      : 'No workspace yet';
 
   return (
     <div className="flex items-center justify-center h-screen px-4">
       <div className="text-center max-w-md space-y-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">
-            {isEmailUnverified ? 'Verify your email' : 'No workspace yet'}
-          </h1>
+          <h1 className="text-3xl font-bold">{title}</h1>
           {viewer?.email ? (
             <p className="text-sm text-muted-foreground">Signed in as {viewer.email}</p>
           ) : null}
         </div>
 
-        {isEmailUnverified ? (
+        {hasPendingInvitation ? (
+          <p className="text-muted-foreground">
+            There is an invitation waiting for this email address, but signing in does not accept
+            it. Open the invitation link you were given and accept it there. If you cannot find the
+            link, ask the person who invited you to send it again.
+          </p>
+        ) : isEmailUnverified ? (
           <p className="text-muted-foreground">
             We sent a verification link to your email address. Open it, then reload this page to
             continue.
