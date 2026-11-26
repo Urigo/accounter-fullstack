@@ -156,6 +156,10 @@ let db: TestDatabase;
 let yoga: { fetch: (url: string, init: RequestInit) => Response | Promise<Response> };
 let otherYoga: typeof yoga;
 let weakMemberYoga: typeof yoga;
+/** The weak member with the business where they are only an employee selected */
+let weakScopeYoga: typeof yoga;
+/** The weak member with the business they own selected */
+let strongScopeYoga: typeof yoga;
 
 async function executeRaw<T>(
   query: string,
@@ -334,16 +338,29 @@ beforeAll(async () => {
 
   const pool = db.getPool();
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
-  const yogaFor = (userId: string) =>
+  /** `scopeBusinessId` stands for an `x-business-scope` header selecting that business */
+  const yogaFor = (userId: string, scopeBusinessId?: string) =>
     createYoga({
       maskedErrors: false,
       logging: false,
       plugins: [dbCleanupPlugin(), useGraphQLModules(application), useSchema(transformedSchema)],
-      context: () => ({ env, pool, rawAuth: { authType: 'devBypass', token: userId } }),
+      context: () => ({
+        env,
+        pool,
+        rawAuth: {
+          authType: 'devBypass',
+          token: userId,
+          ...(scopeBusinessId
+            ? { requestedBusinessScope: { kind: 'valid', businessIds: [scopeBusinessId] } }
+            : {}),
+        },
+      }),
     });
   yoga = yogaFor(USER_ID);
   otherYoga = yogaFor(OTHER_USER_ID);
   weakMemberYoga = yogaFor(WEAK_MEMBER_USER_ID);
+  weakScopeYoga = yogaFor(WEAK_MEMBER_USER_ID, OTHER_OWNER_ID);
+  strongScopeYoga = yogaFor(WEAK_MEMBER_USER_ID, OWNER_ID);
 });
 
 beforeEach(removeShareholders);
@@ -667,6 +684,59 @@ describe('report 1214 shareholders', () => {
           SHAREHOLDERS_QUERY,
           { ownerId, year: YEAR },
           weakMemberYoga,
+        );
+        expect(own.errors).toBeUndefined();
+        expect(own.data?.shareholders.map(s => s.fullName)).toEqual(['Dana Cohen']);
+      }
+    });
+
+    it('checks the role in the business an x-business-scope switch makes active', async () => {
+      // business_owner of the suite's owner (the primary membership, whose role the directive
+      // reads) and only an employee of the other owner, which the header selects
+      await withSuperuserClient(async client => {
+        await client.query(
+          `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id, updated_at)
+           VALUES ($1, $2, 'employee', now() - interval '1 day'),
+                  ($1, $3, 'business_owner', now())
+           ON CONFLICT DO NOTHING`,
+          [WEAK_MEMBER_USER_ID, OTHER_OWNER_ID, OWNER_ID],
+        );
+      });
+      await setShareholders(YEAR, [dana]);
+      const roleMessage = `Your role in business ${OTHER_OWNER_ID} does not allow access to its 1214 data`;
+
+      const read = await expectError(SHAREHOLDERS_QUERY, { year: YEAR }, weakScopeYoga);
+      expect(read).toEqual({ code: 'FORBIDDEN', message: roleMessage });
+
+      const write = await expectError(
+        SET_SHAREHOLDERS_MUTATION,
+        { year: YEAR, shareholders: [holdco] },
+        weakScopeYoga,
+      );
+      expect(write).toEqual({ code: 'FORBIDDEN', message: roleMessage });
+
+      const copy = await expectError(
+        COPY_SHAREHOLDERS_MUTATION,
+        { fromYear: YEAR, toYear: OTHER_YEAR },
+        weakScopeYoga,
+      );
+      expect(copy).toEqual({ code: 'FORBIDDEN', message: roleMessage });
+
+      // nothing reached the other owner's books
+      const otherOwnerRows = await withSuperuserClient(client =>
+        client.query(
+          `SELECT 1 FROM ${qualifyTable('shareholders')} WHERE owner_id = $1 AND year BETWEEN 2091 AND 2099`,
+          [OTHER_OWNER_ID],
+        ),
+      );
+      expect(otherOwnerRows.rowCount).toBe(0);
+
+      // with the owned business selected, or no header, the active business is the owned one
+      for (const app of [strongScopeYoga, weakMemberYoga]) {
+        const own = await executeRaw<{ shareholders: Shareholder[] }>(
+          SHAREHOLDERS_QUERY,
+          { year: YEAR },
+          app,
         );
         expect(own.errors).toBeUndefined();
         expect(own.data?.shareholders.map(s => s.fullName)).toEqual(['Dana Cohen']);
