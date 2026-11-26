@@ -228,7 +228,7 @@ export class FinancialEntitiesProvider {
     // TODO: should remove ledger, misc expenses?
 
     // delete entity
-    deleteFinancialEntity.run({ financialEntityId }, this.db);
+    await deleteFinancialEntity.run({ financialEntityId }, this.db);
   }
 
   public async replaceFinancialEntity(

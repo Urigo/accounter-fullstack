@@ -25,6 +25,21 @@ import type {
 } from '../types.js';
 import { commonChargeFields, commonFinancialEntityFields } from './common.js';
 
+/**
+ * What to tell the caller when creating a business failed. Only causes the caller can act on are
+ * named; anything else stays generic, since the raw database message can carry row values.
+ */
+export function describeBusinessInsertError(error: unknown, country?: string | null): string {
+  const constraint = (error as { constraint?: unknown } | null)?.constraint;
+  if (constraint === 'businesses_countries_code_fk') {
+    return `country "${country}" is not in the countries table`;
+  }
+  if (error instanceof GraphQLError) {
+    return error.message;
+  }
+  return 'unexpected error, nothing was created';
+}
+
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<Resolvers, 'Business' | 'UpdateBusinessResponse'> = {
   Query: {
@@ -81,6 +96,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       }
     },
     insertNewBusiness: async (_, { fields }, { injector }) => {
+      // Set once the financial entity exists: the business row is inserted separately, so a
+      // failure after this point has to remove the entity again or it is left without one.
+      let createdEntityId: string | undefined;
       try {
         if (!fields.country) {
           throw new GraphQLError(`Country is required to create a new business`);
@@ -118,6 +136,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             message: `Failed to create core financial entity`,
           };
         }
+        createdEntityId = financialEntity.id;
 
         const suggestions: SuggestionData | undefined = fields.suggestions
           ? normalizeSuggestionListData({
@@ -188,9 +207,20 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         };
       } catch (e) {
         console.error(e);
+        if (createdEntityId) {
+          await injector
+            .get(FinancialEntitiesProvider)
+            .deleteFinancialEntityById(createdEntityId)
+            .catch(cleanupError => {
+              console.error(
+                `Failed to remove financial entity ID="${createdEntityId}" after a failed business insert`,
+                cleanupError,
+              );
+            });
+        }
         return {
           __typename: 'CommonError',
-          message: `Failed to create business`,
+          message: `Failed to create business: ${describeBusinessInsertError(e, fields.country)}`,
         };
       }
     },
