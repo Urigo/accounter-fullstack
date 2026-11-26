@@ -9,6 +9,9 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  *   be cast. Such a deal is now recorded as the card was debited.
  *
  * Both functions are otherwise unchanged from their previous definitions.
+ *
+ * migration-conflict-allow: accounter_schema.insert_amex_transaction_handler because it is redefined from its latest definition (2026-02-19 RLS update) with only the event-date fallback changed
+ * migration-conflict-allow: accounter_schema.insert_cal_creditcard_transaction_handler because it is redefined from its latest definition (2026-02-19 RLS update) with only the currency fallback added
  */
 export default {
   name: '2026-11-26T14-00-00.card-handlers-missing-date-and-foreign-currency.sql',
