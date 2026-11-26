@@ -16,13 +16,9 @@ import { AdminContextProvider } from '../../../../admin-context/providers/admin-
 import { FinancialEntitiesProvider } from '../../../../financial-entities/providers/financial-entities.provider.js';
 import {
   decorateLedgerRecords,
-  getProfitLossReportAmounts,
   type DecoratedLedgerRecord,
 } from '../../../../reports/helpers/profit-and-loss.helper.js';
-import {
-  calculateCumulativeRnDExpenses,
-  calculateTaxAmounts,
-} from '../../../../reports/helpers/tax.helper.js';
+import { calculateYearTax } from '../../../../reports/helpers/tax.helper.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -88,38 +84,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       decoratedLedgerByYear.get(year)?.push(decoratedRecord);
     });
 
-    const profitLossByYear = new Map<number, ReturnType<typeof getProfitLossReportAmounts>>();
-
-    function getProfitLossReportAmountsByYear(year: number) {
-      let amounts = profitLossByYear.get(year);
-      if (!amounts) {
-        const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
-        amounts = getProfitLossReportAmounts(decoratedLedgerRecords);
-        profitLossByYear.set(year, amounts);
-      }
-      return amounts;
-    }
-
-    const cumulativeResearchAndDevelopmentExpensesAmount = calculateCumulativeRnDExpenses(
-      year,
-      decoratedLedgerByYear,
-      profitLossByYear,
-    );
-
-    const taxableCumulativeResearchAndDevelopmentExpensesAmount =
-      cumulativeResearchAndDevelopmentExpensesAmount / 3;
-
-    const { researchAndDevelopmentExpenses, profitBeforeTax } =
-      getProfitLossReportAmountsByYear(year);
-
-    const { currentTaxExpense } = await calculateTaxAmounts(
-      injector,
-      year,
-      decoratedLedgerByYear.get(year) ?? [],
-      researchAndDevelopmentExpenses.amount * -1,
-      taxableCumulativeResearchAndDevelopmentExpensesAmount,
-      profitBeforeTax.amount,
-    );
+    const { currentTaxExpense } = await calculateYearTax(injector, year, decoratedLedgerByYear);
 
     const ledgerEntries: LedgerProto[] = [];
 

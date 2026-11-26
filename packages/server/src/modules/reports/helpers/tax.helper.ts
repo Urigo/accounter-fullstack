@@ -7,12 +7,88 @@ import { businessTripSummary } from '../../business-trips/resolvers/business-tri
 import { BusinessTripProto } from '../../business-trips/types.js';
 import { CorporateTaxesProvider } from '../../corporate-taxes/providers/corporate-taxes.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import type { CommentaryProto } from '../types.js';
 import {
   amountByFinancialEntityIdAndSortCodeValidations,
   FilteringOptions,
   recordsByFinancialEntityIdAndSortCodeValidations,
 } from './misc.helper.js';
 import { DecoratedLedgerRecord, getProfitLossReportAmounts } from './profit-and-loss.helper.js';
+
+const RESERVES_SORT_CODE = 931;
+
+/**
+ * First tax year that keeps reserves (931) out of R&D for tax (#5088). Earlier years were filed with
+ * 931 inside R&D, so they keep that treatment, including their share of the section 20A spread in
+ * the following years, to match what was filed.
+ */
+const RESERVES_RND_CUTOVER_YEAR = 2025;
+
+type ProfitLossReportAmounts = ReturnType<typeof getProfitLossReportAmounts>;
+
+/**
+ * R&D of `year` for the tax computation. Reserves (931) are part of R&D in the P&L, but from
+ * {@link RESERVES_RND_CUTOVER_YEAR} on, tax adjusts them once, as reserves (6111 line 150), and
+ * never through the section 20A spread.
+ */
+export function researchAndDevelopmentForTax(
+  researchAndDevelopment: CommentaryProto,
+  year: number,
+): CommentaryProto {
+  if (year < RESERVES_RND_CUTOVER_YEAR) {
+    return researchAndDevelopment;
+  }
+  const records = researchAndDevelopment.records.filter(
+    record => record.sortCode !== RESERVES_SORT_CODE,
+  );
+  return {
+    amount: records.reduce((sum, record) => sum + record.amount, 0),
+    records,
+  };
+}
+
+/**
+ * The tax computation of `year`, shared by the tax report, the tax-expense charge and 6111 so they
+ * always agree. `decoratedLedgerByYear` must hold `year` and the two years before it (section 20A).
+ */
+export async function calculateYearTax(
+  injector: Injector,
+  year: number,
+  decoratedLedgerByYear: Map<number, DecoratedLedgerRecord[]>,
+  profitLossByYear: Map<number, ProfitLossReportAmounts> = new Map(),
+) {
+  const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
+  let profitAndLoss = profitLossByYear.get(year);
+  if (!profitAndLoss) {
+    profitAndLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
+    profitLossByYear.set(year, profitAndLoss);
+  }
+
+  const researchAndDevelopment = researchAndDevelopmentForTax(
+    profitAndLoss.researchAndDevelopmentExpenses,
+    year,
+  );
+  const researchAndDevelopmentAddBack = researchAndDevelopment.amount * -1;
+  const taxableCumulativeResearchAndDevelopment =
+    calculateCumulativeRnDExpenses(year, decoratedLedgerByYear, profitLossByYear) / 3;
+
+  const taxAmounts = await calculateTaxAmounts(
+    injector,
+    year,
+    decoratedLedgerRecords,
+    researchAndDevelopmentAddBack,
+    taxableCumulativeResearchAndDevelopment,
+    profitAndLoss.profitBeforeTax.amount,
+  );
+
+  return {
+    profitAndLoss,
+    /** R&D for tax, as booked (negative); the tax report lists its records */
+    researchAndDevelopment,
+    researchAndDevelopmentAddBack,
+    ...taxAmounts,
+  };
+}
 
 export async function calculateTaxAmounts(
   injector: Injector,
@@ -71,7 +147,7 @@ export async function calculateTaxAmounts(
   };
   const reservesFilter: FilteringOptions = {
     rule: (financialEntityId, sortCode) =>
-      sortCode === 931 && !excludedTaxCategories.includes(financialEntityId),
+      sortCode === RESERVES_SORT_CODE && !excludedTaxCategories.includes(financialEntityId),
     negate: true,
   };
   const nontaxableLinkageFilter: FilteringOptions = {
@@ -207,7 +283,7 @@ export function computeCurrentTax({
 export function calculateCumulativeRnDExpenses(
   year: number,
   decoratedLedgerByYear: Map<number, DecoratedLedgerRecord[]>,
-  profitLossByYear: Map<number, ReturnType<typeof getProfitLossReportAmounts>> = new Map(),
+  profitLossByYear: Map<number, ProfitLossReportAmounts> = new Map(),
 ): number {
   let cumulativeResearchAndDevelopmentExpensesAmount = 0;
   for (const rndYear of [year - 2, year - 1, year]) {
@@ -218,8 +294,10 @@ export function calculateCumulativeRnDExpenses(
       profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
     }
 
-    cumulativeResearchAndDevelopmentExpensesAmount +=
-      profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
+    cumulativeResearchAndDevelopmentExpensesAmount += researchAndDevelopmentForTax(
+      profitLossHelperReportAmounts.researchAndDevelopmentExpenses,
+      rndYear,
+    ).amount;
   }
 
   return cumulativeResearchAndDevelopmentExpensesAmount;

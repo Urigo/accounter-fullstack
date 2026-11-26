@@ -22,7 +22,7 @@ import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
-import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from '../../helpers/tax.helper.js';
+import { calculateYearTax } from '../../helpers/tax.helper.js';
 
 export const taxReport: ResolverFn<
   ResolversTypes['TaxReport'],
@@ -66,28 +66,10 @@ export const taxReport: ResolverFn<
 
   const yearlyReports: ResolversParentTypes['TaxReportYear'][] = [];
   for (const year of years) {
-    const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
-
-    let profitAndLoss = profitLossByYear.get(year);
-    if (!profitAndLoss) {
-      profitAndLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
-      profitLossByYear.set(year, profitAndLoss);
-    }
-
-    const { profitBeforeTax, researchAndDevelopmentExpenses } = profitAndLoss;
-
-    const adjustedResearchAndDevelopmentExpensesAmount = researchAndDevelopmentExpenses.amount * -1;
-
-    const cumulativeResearchAndDevelopmentExpensesAmount = calculateCumulativeRnDExpenses(
-      year,
-      decoratedLedgerByYear,
-      profitLossByYear,
-    );
-
-    const taxableCumulativeResearchAndDevelopmentExpensesAmount =
-      cumulativeResearchAndDevelopmentExpensesAmount / 3;
-
     const {
+      profitAndLoss: { profitBeforeTax },
+      researchAndDevelopment,
+      researchAndDevelopmentAddBack,
       researchAndDevelopmentExpensesForTax,
       fines,
       untaxableGifts,
@@ -102,21 +84,14 @@ export const taxReport: ResolverFn<
       currentTaxExpense,
       taxableLoss,
       mixedRateLoss,
-    } = await calculateTaxAmounts(
-      injector,
-      year,
-      decoratedLedgerRecords,
-      adjustedResearchAndDevelopmentExpensesAmount,
-      taxableCumulativeResearchAndDevelopmentExpensesAmount,
-      profitBeforeTax.amount,
-    );
+    } = await calculateYearTax(injector, year, decoratedLedgerByYear, profitLossByYear);
 
     yearlyReports.push({
       year,
       profitBeforeTax,
       researchAndDevelopmentExpensesByRecords: {
-        amount: adjustedResearchAndDevelopmentExpensesAmount,
-        records: researchAndDevelopmentExpenses.records.map(record => ({
+        amount: researchAndDevelopmentAddBack,
+        records: researchAndDevelopment.records.map(record => ({
           ...record,
           amount: record.amount * -1,
           records: record.records.map(subRecord => ({
