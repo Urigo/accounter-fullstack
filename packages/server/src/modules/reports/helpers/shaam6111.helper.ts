@@ -16,24 +16,11 @@ import {
   YesNo,
 } from '@accounter/shaam6111-generator';
 import type * as SchemaTypes from '../../../__generated__/types.js';
-import {
-  endOfTimelessYear,
-  getTimelessDateYear,
-  timelessDateFromParts,
-} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AdminBusinessesProvider } from '../../financial-entities/providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { IGetAllFinancialEntitiesResult } from '../../financial-entities/types.js';
-import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
-import type { IGetLedgerRecordsByDatesResult } from '../../ledger/types.js';
-import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
-import {
-  DecoratedLedgerRecord,
-  decorateLedgerRecords,
-  getProfitLossReportAmounts,
-} from './profit-and-loss.helper.js';
+import { loadAnnualTaxData } from './annual-tax-data.helper.js';
 import {
   BALANCE_SHEET_SUMMARY_CODES,
   buildBalanceSheetEntries,
@@ -50,7 +37,6 @@ import {
   retainedProfitFromProfitAndLoss,
   type Shaam6111Issue,
 } from './shaam6111-computation.helper.js';
-import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
 
 /** The SHAAM 6111 file name, per the software-houses specification (IKSP/DKASPI.DAT). */
 export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
@@ -173,20 +159,17 @@ export async function getShaam6111Data(
     throw new Error('Business does not have a VAT number');
   }
 
-  const fromDate = timelessDateFromParts(1990, 1, 1); // TODO: maybe take company init date as from date
-  const toDate = endOfTimelessYear(year);
-  const [ledgerRecords, financialEntities, sortCodes] = await Promise.all([
-    // the report is per business: read that business's books, not the session's default owner
-    injector
-      .get(LedgerProvider)
-      .getLedgerRecordsByDates({ fromDate, toDate, ownerId: financialEntityId }),
-    injector.get(FinancialEntitiesProvider).getAllFinancialEntities(),
-    injector.get(SortCodesProvider).getAllSortCodes(),
-  ]);
+  const {
+    ledgerRecords,
+    ledgerByYear,
+    financialEntities,
+    financialEntitiesById,
+    sortCodes,
+    profitLoss: { profitBeforeTax },
+    researchAndDevelopmentAddBack,
+    taxAmounts,
+  } = await loadAnnualTaxData(injector, financialEntityId, year);
 
-  const financialEntitiesById = new Map<string, IGetAllFinancialEntitiesResult>(
-    financialEntities.map(entity => [entity.id, entity]),
-  );
   const defaultIrsCodeBySortCode = new Map<string, number>();
   const sortCodeNames = new Map<number, string>();
   for (const sortCode of sortCodes) {
@@ -202,14 +185,6 @@ export async function getShaam6111Data(
   }
   const irsCodeByEntity = irsCodesByEntity(financialEntities, defaultIrsCodeBySortCode);
 
-  const ledgerByYear = new Map<number, IGetLedgerRecordsByDatesResult[]>();
-  for (const record of ledgerRecords) {
-    const recordYear = getTimelessDateYear(record.invoice_date);
-    const yearRecords = ledgerByYear.get(recordYear) ?? [];
-    yearRecords.push(record);
-    ledgerByYear.set(recordYear, yearRecords);
-  }
-
   // P&L for the tax year, and retained earnings from the P&L of every year up to it
   const profitAndLoss = buildProfitAndLossEntries(
     netAmountsByFinancialEntity(ledgerByYear.get(year) ?? []),
@@ -224,30 +199,7 @@ export async function getShaam6111Data(
     countRoundedLines(cumulativeProfitAndLoss, 'profitAndLoss'),
   );
 
-  // Tax adjustments use the same computation as the tax report (annual workflow step 13). R&D is
-  // deducted over three years (section 20A), so it needs the two preceding years as well.
-  const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
-  for (const rndYear of [year - 2, year - 1, year]) {
-    decoratedLedgerByYear.set(
-      rndYear,
-      decorateLedgerRecords(ledgerByYear.get(rndYear) ?? [], financialEntitiesById),
-    );
-  }
-  const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
-  const yearProfitLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
-  const profitLossByYear = new Map([[year, yearProfitLoss]]);
-  const { profitBeforeTax, researchAndDevelopmentExpenses } = yearProfitLoss;
-  const researchAndDevelopmentAddBack = researchAndDevelopmentExpenses.amount * -1;
-  const taxableCumulativeResearchAndDevelopment =
-    calculateCumulativeRnDExpenses(year, decoratedLedgerByYear, profitLossByYear) / 3;
-  const taxAmounts = await calculateTaxAmounts(
-    injector,
-    year,
-    decoratedLedgerRecords,
-    researchAndDevelopmentAddBack,
-    taxableCumulativeResearchAndDevelopment,
-    profitBeforeTax.amount,
-  );
+  // Tax adjustments use the same computation as the tax report (annual workflow step 13)
   const taxAdjustment = buildTaxAdjustmentEntries({
     profitBeforeTax: profitBeforeTax.amount,
     // rule 3.7 (100 = 6666) holds whenever the two differ only by rounding
