@@ -245,6 +245,7 @@ carries document content, filenames, or URLs — a signed download link carries 
 | `uploadedCount` / `failedCount`               | `accounter_upload_documents`    | Per-file outcome — upstream reports success per document, so a batch can partially fail. |
 | `requestedChargeCount` / `updatedChargeCount` | `accounter_update_charges_tags` | Charges asked for vs. actually updated. A gap means ids that upstream could not resolve. |
 | `addedTagCount` / `removedTagCount`           | `accounter_update_charges_tags` | Size of each direction of the edit.                                                      |
+| `nested` / `resolvedTagId`                    | `accounter_create_tag`          | Whether a parent was given; whether the new tag's id could be read back after creation.  |
 
 Extraction recipes (pipe your platform's log stream in; `jq -c` on a file works the same):
 

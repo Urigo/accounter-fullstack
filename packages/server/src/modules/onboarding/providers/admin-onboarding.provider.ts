@@ -9,6 +9,7 @@ import { Auth0ManagementProvider } from '../../auth/providers/auth0-management.p
 import { BusinessUsersProvider } from '../../auth/providers/business-users.provider.js';
 import { InvitationsProvider } from '../../auth/providers/invitations.provider.js';
 import { SuperAdminProvider } from '../../auth/providers/super-admin.provider.js';
+import { getCountryByCode, seedCountries } from '../../countries/helpers/seed-countries.helper.js';
 import { AdminBusinessesProvider } from '../../financial-entities/providers/admin-businesses.provider.js';
 import { EntityEnsureProvider } from '../../financial-entities/providers/entity-ensure.provider.js';
 import type {
@@ -99,8 +100,17 @@ export class AdminOnboardingProvider {
         ownerRole,
       } = input;
 
-      // 0. Ensure country reference data (no RLS on countries table)
-      await this.entityEnsure.ensureCountry(countryCode, countryCode, client);
+      // 0. Ensure country reference data (no RLS on countries table). The whole list, not only
+      // the tenant's own country: the table is what `businesses.country` references and what
+      // the country pickers read, and nothing else fills it on a database that was never
+      // seeded by script. Without it the tenant could not record a foreign business.
+      await seedCountries(client);
+      // A code outside the CountryCode enum still gets its row, as before.
+      await this.entityEnsure.ensureCountry(
+        countryCode,
+        getCountryByCode(countryCode)?.name ?? countryCode,
+        client,
+      );
 
       // 1. Determine the new admin entity's deterministic ID so we can set RLS context before inserting
       const adminEntityId = makeUUID('business', businessName);

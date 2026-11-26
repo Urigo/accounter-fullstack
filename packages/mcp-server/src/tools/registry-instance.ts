@@ -21,7 +21,7 @@ import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports/balance-report.js';
 import { vatReportTool } from './reports/vat-report.js';
 import { getSecurityExecutionsTool, listSecurityHoldingsTool } from './securities.js';
-import { updateChargesTagsTool } from './tags-write.js';
+import { createTagTool, updateChargesTagsTool } from './tags-write.js';
 import { explainTerminologyTool } from './terminology.js';
 import { getTransactionsTool } from './transaction-details.js';
 import { updateTransactionsTool } from './transactions-write.js';
@@ -82,6 +82,8 @@ toolRegistry.register(vatReportTool);
 // the first thing in the list. These are also hidden entirely unless
 // `MCP_ENABLE_WRITE_TOOLS=1`, so on a default deployment the list ends above.
 toolRegistry.register(updateChargesTagsTool);
+// Creating a tag sits next to applying one: a business with no tags yet needs it first.
+toolRegistry.register(createTagTool);
 toolRegistry.register(uploadDocumentsTool);
 // The review/matching writes, in the order a review uses them: fix the charge,
 // fold duplicates into it, set counterparties on its rows, move or correct its

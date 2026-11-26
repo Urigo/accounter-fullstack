@@ -364,6 +364,7 @@ async function callTool(name: string, args: JsonRecord, token: string) {
 /** Every mutating tool: all hidden unless `MCP_ENABLE_WRITE_TOOLS=1`. */
 const WRITE_TOOLS = [
   'accounter_update_charges_tags',
+  'accounter_create_tag',
   'accounter_upload_documents',
   'accounter_update_charge',
   'accounter_merge_charges',
