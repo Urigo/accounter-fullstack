@@ -28,3 +28,8 @@ CLAUDE.local.md
 
 **/.wrangler
 packages/email-ingestion-gateway/.dev.vars
+
+# Client e2e (Playwright): the e2e build and run output
+packages/client/dist-e2e/
+packages/client/test-results/
+packages/client/playwright-report/

@@ -75,6 +75,9 @@ React SPA built with Vite, urql (GraphQL), shadcn/ui, and Tailwind CSS.
   `.mock.calls[0][0]` an empty tuple, which vitest ignores and `tsc` rejects. A failing `tsc` also
   skips `vite build` silently, leaving a stale `dist` behind for anything that inspects the bundle.
   Run `tsc --noEmit` alongside the suite.
+- Browser end-to-end tests live in `e2e/` (Playwright, `*.e2e.ts`): a production build against the
+  real server and a seeded local database. Run them with `yarn test:e2e`; they need the server built
+  and ports 4000 and 4183 free. See `e2e/README.md`.
 - **A green run does not prove a test still exists.** When rebasing or restacking, check that the
   test count did not drop: a dropped commit takes its tests with it and the suite still reports
   success.

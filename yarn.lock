@@ -76,6 +76,7 @@ __metadata:
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.6.0"
     "@mui/x-charts": "npm:8.29.3"
+    "@playwright/test": "npm:1.65.1"
     "@storybook/addon-a11y": "npm:10.6.8"
     "@storybook/react-vite": "npm:10.6.8"
     "@tailwindcss/vite": "npm:4.3.5"
@@ -7342,6 +7343,17 @@ __metadata:
   version: 0.3.6
   resolution: "@pkgr/core@npm:0.3.6"
   checksum: 10c0/153f0f4563f505faeba13c733efa0e05e467ce1c6b941055a5fd3b4560da60fbf1dff4b11da0075f034ddda11f2842b90395f60895dde5825875b616edccc11c
+  languageName: node
+  linkType: hard
+
+"@playwright/test@npm:1.65.1":
+  version: 1.65.1
+  resolution: "@playwright/test@npm:1.65.1"
+  dependencies:
+    playwright: "npm:1.65.1"
+  bin:
+    playwright: cli.js
+  checksum: 10c0/f3c0c6ce1d426c84c2ee370e7b7a81fcd4a7a8eaa9d51a880ec853e98ce437482772a09c58c7fbb4444002b127068f076458bec99cecca60c3b51e9ba93e2cc6
   languageName: node
   linkType: hard
 

@@ -1,0 +1,13 @@
+{
+  // The Playwright suite runs in Node, not the browser bundle, so it is kept out of the client's
+  // own tsconfig (and its `vite build`). The seed pulls in server and migration sources, hence the
+  // repo root's settings rather than the client's.
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../../node_modules/.cache/tsbuildinfo/client-e2e.tsbuildinfo",
+    "types": ["node"],
+    "rootDir": "../../..",
+    "noEmit": true
+  },
+  "include": ["**/*.ts", "../../server/src/shared/types/graphql-modules.d.ts"]
+}

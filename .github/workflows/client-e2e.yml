@@ -1,0 +1,138 @@
+name: Client E2E
+
+# Browser end-to-end tests (Playwright, Chromium only): a real Postgres, the real server and a
+# production build of the client. See packages/client/e2e/README.md.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      # The suite drives the client against the server, the database at the latest migration and
+      # the packages the server builds from, so any of them can break it. As in server-tests.yml,
+      # a narrower list would skip the job silently for a change it should have caught.
+      - 'packages/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'codegen.ts'
+      - 'graphql.config.js'
+      - 'tsconfig.json'
+      - '.node-version'
+      - 'docker/pgconfig.json'
+      - '.github/workflows/client-e2e.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Codegen (pgtyped) reads a migrated database; the suite then creates its own
+      # (`accounter_e2e`) from the E2E_* variables below.
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: accounter_test
+      POSTGRES_SSL: '0'
+      E2E_POSTGRES_HOST: 127.0.0.1
+      E2E_POSTGRES_PORT: 5432
+      E2E_POSTGRES_USER: postgres
+      E2E_POSTGRES_PASSWORD: postgres
+      E2E_POSTGRES_DB: accounter_e2e
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: '.node-version'
+          cache: 'yarn'
+
+      - name: Install Dependencies
+        run: yarn install --immutable
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            pg_isready -h 127.0.0.1 -p 5432 -U postgres && exit 0
+            echo "Postgres not ready yet..."
+            sleep 2
+          done
+          echo "Postgres failed to start" >&2
+          exit 1
+
+      - name: Run Migrations (codegen database)
+        run: yarn workspace @accounter-helper/migrations migration:run
+
+      - name: Generate Types
+        run: yarn generate
+
+      # The server resolves these four sibling packages through their `dist` (see
+      # packages/server/README.md); `green-invoice-graphql`'s build also generates its SDK. Same
+      # list as the server's `server:build:prod` and server-tests.yml.
+      - name: Build Server
+        run: |
+          yarn workspaces foreach --all --parallel \
+            --include @accounter/green-invoice-graphql --include @accounter/pcn874-generator \
+            --include @accounter/shaam-uniform-format-generator \
+            --include @accounter/shaam6111-generator run build
+          yarn workspace @accounter/server build
+
+      # Nothing else typechecks the suite: it is outside the client's tsconfig, and lint and
+      # Playwright both skip type checking.
+      - name: Typecheck E2E Suite
+        run: yarn workspace @accounter/client e2e:typecheck
+
+      - name: Resolve Playwright Version
+        id: playwright
+        run:
+          echo "version=$(node -p "require('@playwright/test/package.json').version")" >>
+          "$GITHUB_OUTPUT"
+        working-directory: packages/client
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
+        run: yarn workspace @accounter/client playwright install --with-deps chromium
+
+      - name: Install Chromium System Dependencies
+        if: ${{ steps.playwright-cache.outputs.cache-hit == 'true' }}
+        run: yarn workspace @accounter/client playwright install-deps chromium
+
+      # Seeds the e2e database, starts the server and `vite preview` of a fresh build, then runs
+      # the tests (packages/client/e2e/playwright.config.ts).
+      - name: Run E2E Tests
+        run: yarn workspace @accounter/client e2e
+
+      - name: Upload Report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: client-e2e-report
+          path: |
+            packages/client/playwright-report
+            packages/client/test-results
+          retention-days: 14
