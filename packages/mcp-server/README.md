@@ -639,6 +639,37 @@ Desktop as a custom connector — HTTPS tunnel, Auth0 application, connector fie
 troubleshooting table — see [`docs/local-development.md`](./docs/local-development.md). Note that
 Claude requires an HTTPS connector URL, so `http://localhost:3100` cannot be used directly.
 
+### Local dev-auth mode (no Auth0)
+
+To drive the tools against a GraphQL server on your own machine without an Auth0 token, for example
+from a local agent, set `MCP_LOCAL_DEV_AUTH_USER_ID` to a `business_users.user_id`. Every
+`POST /mcp` request is then served as that user with **no token check**. The membership lookup and
+every tool call go upstream with `X-Dev-Auth: <user id>` instead of `Authorization`; anything the
+caller sends in `Authorization` is ignored and never forwarded.
+
+It is off by default, and the server refuses to start with it unless all of these hold:
+
+- `GRAPHQL_UPSTREAM_URL` is on `localhost`, `127.0.0.0/8` or `::1`, so the header never leaves the
+  machine;
+- `MCP_PUBLIC_BASE_URL` is on one of those hosts too, so the server is not published as a connector;
+- `NODE_ENV` is not `production`.
+
+With it on, the server listens on `127.0.0.1` only and logs a warning plus a banner at startup. The
+upstream honours `X-Dev-Auth` only when it runs with `ALLOW_DEV_AUTH=1`. `yarn local:tenant` (repo
+root) creates a local tenant and prints a user id and the command to start that server.
+
+```bash
+MCP_PUBLIC_BASE_URL=http://localhost:3100 GRAPHQL_UPSTREAM_URL=http://localhost:4000/graphql \
+  AUTH0_ISSUER_URL=https://unused.invalid/ AUTH0_AUDIENCE=unused \
+  MCP_LOCAL_DEV_AUTH_USER_ID=1bb10fc7-90de-5fe9-9e2a-102fb80b9bee \
+  yarn workspace @accounter/mcp-server dev
+curl -sX POST http://127.0.0.1:3100/mcp -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"accounter_list_business_memberships","arguments":{}}}'
+```
+
+The Auth0 variables are still required by the configuration schema, but nothing contacts Auth0 in
+this mode, so any well-formed values do.
+
 ### MCP endpoint
 
 The transport lives at `POST /mcp` and accepts JSON-RPC 2.0. Requests **must** carry a valid Auth0
@@ -677,6 +708,7 @@ startup. The template documents every variable; the table below is the summary.
 | `MCP_TOOL_ALLOWLIST`               | no       | `''` (all tools)         | Comma-separated tool names to expose; empty exposes every tool     |
 | `MCP_ENABLE_WRITE_TOOLS`           | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
 | `AUTH0_JWKS_URL`                   | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
+| `MCP_LOCAL_DEV_AUTH_USER_ID`       | no       | — (off)                  | Local only: act as this user, send `X-Dev-Auth` upstream (below)   |
 | `GRAPHQL_UPSTREAM_TIMEOUT_MS`      | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
 | `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` | no       | `300000`                 | Budget for long-running calls (document ingestion, VAT report)     |
 | `MCP_RATE_LIMIT_CONFIG`            | no       | 60 calls / 60 s          | Per-user, per-tool limit as JSON `{"windowMs": …, "max": …}`       |
