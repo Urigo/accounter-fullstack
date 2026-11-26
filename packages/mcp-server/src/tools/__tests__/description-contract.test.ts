@@ -112,6 +112,7 @@ describe('tool descriptions document their own result', () => {
    */
   it.each([
     ['accounter_update_charges_tags', 'charges'],
+    ['accounter_create_tag', 'tags'],
     ['accounter_upload_documents', 'results'],
     ['accounter_update_charge', 'charges'],
     ['accounter_merge_charges', 'charges'],

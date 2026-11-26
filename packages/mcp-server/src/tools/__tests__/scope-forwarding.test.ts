@@ -132,6 +132,7 @@ function dataFor(query: string): unknown {
   if (query.includes('deleteDocument')) {
     return { deleteDocument: { success: true, chargeId: 'c1', deletedChargeId: null } };
   }
+  if (query.includes('mutation McpCreateTag')) return { addTag: true };
   if (query.includes('insertNewBusiness')) {
     return {
       insertNewBusiness: {
@@ -253,6 +254,7 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },
   accounter_delete_document: { memberBusinessId: B1, documentId: 'd1' },
   accounter_create_business: { memberBusinessId: B1, name: 'Vendor', country: 'USA' },
+  accounter_create_tag: { memberBusinessId: B1, name: 'Groceries' },
   accounter_create_contract: {
     memberBusinessId: B1,
     clientId: 'b1',

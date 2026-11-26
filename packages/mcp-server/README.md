@@ -35,12 +35,13 @@ at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in),
 backend via `traceparent` and `X-Correlation-Id`.
 
 Phase 2 (write scope) has landed behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
-default**: `accounter_update_charges_tags` and `accounter_upload_documents` first, then the six
-review/matching tools (`accounter_update_charge`, `accounter_merge_charges`,
-`accounter_update_transactions`, `accounter_update_document`, `accounter_delete_document`,
-`accounter_create_business`) that let a model act on what it finds in the missing-information views,
-and the two onboarding tools: `accounter_create_client`, which makes a directory business a client,
-and `accounter_create_contract`, which records a client's billing agreement. See
+default**: `accounter_update_charges_tags` and `accounter_upload_documents` first (and
+`accounter_create_tag`, for a business that has no tags yet), then the six review/matching tools
+(`accounter_update_charge`, `accounter_merge_charges`, `accounter_update_transactions`,
+`accounter_update_document`, `accounter_delete_document`, `accounter_create_business`) that let a
+model act on what it finds in the missing-information views, and the two onboarding tools:
+`accounter_create_client`, which makes a directory business a client, and
+`accounter_create_contract`, which records a client's billing agreement. See
 [Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what is
 still out of scope.
 
@@ -294,6 +295,11 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   resolving them here would mean guessing which of several same-named tags was meant — the model
   resolves them with `accounter_list_tags` first. Incremental, not a replacement, and removals run
   before additions so an id in both lists ends up added. Requires `business_owner`/`accountant`.
+- **`accounter_create_tag`** — create a tag (`name`, optional `parentTagId` to nest it), so it can
+  then be put on charges. Upstream `addTag` returns no id and does not stop two tags sharing a name,
+  so the tool reads the tag list around the mutation: a name the business already has is refused
+  with the existing id, and the new tag's id is read back and returned as `tagId`. Requires
+  `business_owner`/`accountant`.
 - **`accounter_upload_documents`** — upload 1–10 documents, given either as `documentUrls`
   (preferred — the server fetches them, so there is no size limit) or as inline base64 `documents`;
   exactly one of the two per call. The target is explicit too: `chargeId` attaches them to an
@@ -792,11 +798,12 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Write tools
 
-Ten mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
+Eleven mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
 | Tool                            | What it does                                                                             |
 | ------------------------------- | ---------------------------------------------------------------------------------------- |
 | `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names)             |
+| `accounter_create_tag`          | Creates a tag, optionally nested under another; refuses a name that already exists       |
 | `accounter_upload_documents`    | Uploads documents — by URL or inline base64 — to an existing charge or a new one         |
 | `accounter_update_charge`       | Edits a charge's description, type, optional-documents/VAT flags and business trip       |
 | `accounter_merge_charges`       | Folds charges into a base charge (transactions, documents and ledger move; rest deleted) |

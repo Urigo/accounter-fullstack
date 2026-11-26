@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpBatchUpdateChargesTagsMutation } from '../gql/index.js';
+import type {
+  McpBatchUpdateChargesTagsMutation,
+  McpCreateTagMutation,
+  McpTagsForCreateQuery,
+} from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
 import type {
@@ -177,4 +181,163 @@ export const updateChargesTagsTool: ToolDefinition<typeof updateChargesTagsInput
   },
   handler: updateChargesTagsHandler,
   observe,
+};
+
+/**
+ * Write tool: create a tag.
+ *
+ * Tagging charges needs tag ids, and a business that has never been categorised
+ * (a newly onboarded one, say) has no tags to list — so without this tool the
+ * model could tag nothing there until someone created the tags in the UI.
+ *
+ * Upstream `addTag` returns only `true`, and nothing stops two tags of one owner
+ * sharing a name. The tool therefore reads the tag list around the mutation: once
+ * before, to refuse a name the business already has (so a retry cannot create a
+ * second one), and once after, to report the id of the tag it created.
+ */
+
+export const CREATE_TAG_TOOL_NAME = 'accounter_create_tag';
+
+/** Longest tag name the tool accepts; a tag is a short label shown on every charge row. */
+export const MAX_TAG_NAME_LENGTH = 100;
+
+const createTagInput = z.object({
+  memberBusinessId: writeTargetBusinessIdInput,
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(MAX_TAG_NAME_LENGTH)
+    .describe(
+      'The tag name as it should appear on charges. The tool refuses a name the business ' +
+        'already has (case-insensitive) and returns the existing id instead.',
+    ),
+  parentTagId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      'Nest the new tag under this tag (resolve the id with accounter_list_tags). Omit for a ' +
+        'top-level tag.',
+    ),
+});
+type CreateTagInput = z.infer<typeof createTagInput>;
+
+const CREATE_TAG_MUTATION = /* GraphQL */ `
+  mutation McpCreateTag($name: String!, $parentId: UUID) {
+    addTag(name: $name, parentId: $parentId)
+  }
+`;
+
+const TAGS_FOR_CREATE_QUERY = /* GraphQL */ `
+  query McpTagsForCreate {
+    allTags {
+      id
+      name
+      namePath
+      ownerId
+    }
+  }
+`;
+
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+async function createTagHandler(
+  input: CreateTagInput,
+  context: ToolExecutionContext,
+): Promise<ToolResult> {
+  // A write targets exactly one business, and that is the scope the executor resolved.
+  const owners = new Set(context.readScope.memberBusinessIds);
+  const tagsOfTarget = async () => {
+    const data = await context.client.query<McpTagsForCreateQuery>(
+      { query: TAGS_FOR_CREATE_QUERY },
+      context.upstream,
+    );
+    return data.allTags.filter(tag => !tag.ownerId || owners.has(tag.ownerId));
+  };
+
+  const before = await tagsOfTarget();
+  const existing = before.find(tag => sameName(tag.name, input.name));
+  if (existing) {
+    throw new ToolInputError(`A tag named "${existing.name}" already exists`, [
+      { path: 'name', message: `use the existing tag ${existing.id}` },
+    ]);
+  }
+
+  const variables: Record<string, unknown> = { name: input.name };
+  if (input.parentTagId !== undefined) variables.parentId = input.parentTagId;
+  const data = await context.client.mutate<McpCreateTagMutation>(
+    { query: CREATE_TAG_MUTATION, variables },
+    context.upstream,
+  );
+  if (data.addTag !== true) {
+    throw new UpstreamError('UPSTREAM_ERROR', 'Tag creation failed', false);
+  }
+
+  // `addTag` returns no id, so find the row that was not there before.
+  const known = new Set(before.map(tag => tag.id));
+  const created = (await tagsOfTarget()).find(
+    tag => !known.has(tag.id) && sameName(tag.name, input.name),
+  );
+  const tags = created
+    ? [
+        {
+          id: created.id,
+          name: created.name,
+          ownerId: created.ownerId,
+          namePath: created.namePath ?? [created.name],
+        },
+      ]
+    : [];
+
+  return shapeWriteResult({
+    action: 'create_tag',
+    outcome: {
+      tagId: created?.id ?? null,
+      name: input.name,
+      parentTagId: input.parentTagId ?? null,
+      scope: { memberBusinessIds: context.readScope.memberBusinessIds },
+    },
+    items: { key: 'tags', values: tags },
+    summary: created
+      ? `Created tag "${created.name}" (${created.id}).`
+      : `Created tag "${input.name}"; look its id up with accounter_list_tags.`,
+  });
+}
+
+function observeCreateTag(input: CreateTagInput, result: ToolResult): ToolObservation {
+  const structured = result.structuredContent as { tagId?: string | null } | undefined;
+  return {
+    fields: {
+      nested: input.parentTagId !== undefined,
+      // False when the tag was created but the re-read did not show it.
+      resolvedTagId: !!structured?.tagId,
+    },
+  };
+}
+
+export const createTagTool: ToolDefinition<typeof createTagInput> = {
+  name: CREATE_TAG_TOOL_NAME,
+  description:
+    'Create a tag for categorizing charges, so it can then be put on charges with ' +
+    '`accounter_update_charges_tags`. Takes a `name` and, to nest the tag under another one, a ' +
+    '`parentTagId`. A name the business already has is refused with the existing id, so a retry ' +
+    'after an error cannot create a duplicate. Call `accounter_list_tags` first: a suitable tag ' +
+    'may already exist under a slightly different name. ' +
+    'The echo under `tags` is the new tag as `{ id, name, ownerId, namePath }`, its id also ' +
+    'reported as `tagId` alongside `name` and `parentTagId`. `tagId` is null (and `tags` empty) ' +
+    'only if the tag was created but could not be read back; resolve it with ' +
+    '`accounter_list_tags` then, and do not create it again. ' +
+    writeResultDescription('tags') +
+    ' ' +
+    WRITE_SCOPE_DESCRIPTION_SUFFIX,
+  inputSchema: createTagInput,
+  policy: {
+    requiredRoles: ['business_owner', 'accountant'],
+    requiresBusinessScope: true,
+    dataClassification: 'business',
+    mutating: true,
+  },
+  handler: createTagHandler,
+  observe: observeCreateTag,
 };
