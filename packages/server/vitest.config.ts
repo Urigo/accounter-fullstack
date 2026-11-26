@@ -36,6 +36,10 @@ export default defineConfig({
         replacement: path.resolve(__dirname, '../green-invoice-graphql/src/index.js'),
       },
       {
+        find: '@accounter/opcn1214-generator',
+        replacement: path.resolve(__dirname, '../opcn1214-generator/src/index.ts'),
+      },
+      {
         find: '@accounter/pcn874-generator',
         replacement: path.resolve(__dirname, '../pcn874-generator/src/index.ts'),
       },

@@ -285,7 +285,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/opcn1214-generator@workspace:packages/opcn1214-generator":
+"@accounter/opcn1214-generator@workspace:^, @accounter/opcn1214-generator@workspace:packages/opcn1214-generator":
   version: 0.0.0-use.local
   resolution: "@accounter/opcn1214-generator@workspace:packages/opcn1214-generator"
   dependencies:
@@ -343,6 +343,7 @@ __metadata:
   resolution: "@accounter/server@workspace:packages/server"
   dependencies:
     "@accounter/green-invoice-graphql": "workspace:^"
+    "@accounter/opcn1214-generator": "workspace:^"
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
