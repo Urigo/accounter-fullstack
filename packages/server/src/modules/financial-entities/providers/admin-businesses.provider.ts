@@ -37,9 +37,9 @@ const getAllAdminBusinesses = sql<IGetAllAdminBusinessesQuery>`
 const updateAdminBusinesses = sql<IUpdateAdminBusinessesQuery>`
     UPDATE accounter_schema.businesses_admin
     SET
-    business_registration_start_date = COALESCE(
-      $businessRegistrationStartDate,
-      business_registration_start_date
+    registration_date = COALESCE(
+      $registrationDate,
+      registration_date
     ),
     company_tax_id = COALESCE(
       $companyTaxId,

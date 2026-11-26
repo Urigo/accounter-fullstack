@@ -23,8 +23,10 @@ export default gql`
   type AdminBusiness {
     id: UUID!
     name: String!
-    governmentId: String!
-    registrationDate: TimelessDate!
+    " Tax or ID number. Null until it is filled in for a newly created business. "
+    governmentId: String
+    " Null until it is filled in for a newly created business. "
+    registrationDate: TimelessDate
     business: LtdFinancialEntity!
     " Tax Advances Info "
     taxAdvancesAnnualIds: [AnnualId!]!

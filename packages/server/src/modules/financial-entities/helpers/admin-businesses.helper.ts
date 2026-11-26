@@ -20,7 +20,7 @@ const taxAdvanceRateSchema = z
 export const adminBusinessUpdateSchema = z
   .object({
     id: z.uuid(),
-    businessRegistrationStartDate: timelessDateSchema.optional(),
+    registrationDate: timelessDateSchema.optional(),
     companyTaxId: z.string().optional(),
     advanceTaxRates: z.array(taxAdvanceRateSchema).optional(),
     taxAdvancesIds: z.array(yearlyIdSchema).optional(),

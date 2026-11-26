@@ -45,6 +45,18 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
         .then(() => true);
     },
     createFinancialAccount: async (_, { input }, { injector }) => {
+      // A bank account is read together with its bank details, so one saved without them
+      // cannot be listed, edited or deleted afterwards. Refuse it before anything is stored.
+      if (
+        input.type === 'BANK_ACCOUNT' &&
+        (input.bankAccountDetails?.bankNumber == null ||
+          input.bankAccountDetails?.branchNumber == null)
+      ) {
+        throw new GraphQLError('A bank account needs a bank number and a branch number', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
       try {
         const bankAccount: IInsertFinancialAccountsParams['bankAccounts'][number] = {
           accountNumber: input.number,
