@@ -975,13 +975,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@changesets/changelog-github@npm:1.0.1":
-  version: 1.0.1
-  resolution: "@changesets/changelog-github@npm:1.0.1"
+"@changesets/changelog-github@npm:2.0.0":
+  version: 2.0.0
+  resolution: "@changesets/changelog-github@npm:2.0.0"
   dependencies:
     "@changesets/get-github-info": "npm:^1.0.1"
-    "@changesets/types": "npm:^7.0.0"
-  checksum: 10c0/d1538b48d8cfa8846ff5428f7c98301342378c5d8fe0c077679dfdcf373f53e989553783159e5e594cf292b61d303560d32de4abb57b77453cc0c872acc8420b
+    "@changesets/types": "npm:^7.1.0"
+  checksum: 10c0/6a4857547635336ffcf6efae780c1851a79cd25a38e02da1ead045a4f952fb47c1fa78629731c4037a05d6a34200ea7e6a0924b25eb237f20a8546a7d3f5a63c
   languageName: node
   linkType: hard
 
@@ -1119,10 +1119,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@changesets/types@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "@changesets/types@npm:7.0.0"
-  checksum: 10c0/494e09ff94968c1c81521f5ac8c6ab60a1e30d7d0cd9ea7f83c2cbac92efba38b03e008ee6fb4592d90b05d69bad864b6ae8155827d52a51c652f5c24d36ec83
+"@changesets/types@npm:^7.0.0, @changesets/types@npm:^7.1.0":
+  version: 7.1.0
+  resolution: "@changesets/types@npm:7.1.0"
+  checksum: 10c0/daff2248efbff94ded111fe86b49e9b7372eae3f5cd1773c8fe76e4d1b1a589617c448395d42070ed468c6723d52b8e9c616de5c7f79cc547f08f7714869259f
   languageName: node
   linkType: hard
 
@@ -11114,7 +11114,7 @@ __metadata:
   resolution: "accounter-monorepo@workspace:."
   dependencies:
     "@0no-co/graphqlsp": "npm:1.18.0"
-    "@changesets/changelog-github": "npm:1.0.1"
+    "@changesets/changelog-github": "npm:2.0.0"
     "@changesets/cli": "npm:3.0.3"
     "@eslint/compat": "npm:2.1.1"
     "@eslint/eslintrc": "npm:3.3.7"
